@@ -342,12 +342,110 @@
 	}
 }
 
-#pc-wrap .header-main .gymflow-search {
- width: 100%;
- height: auto;
- padding: 22px;
- border-radius: 12px;
- background: white;
+#pc-wrap .header-main .container .search-box.gymflow-search {
+	width: 100%;
+	max-width: 100%;
+	height: auto;
+	padding: 22px 28px;
+	box-sizing: border-box;
+	flex-direction: row;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 20px;
+	border: 1px solid rgba(255, 255, 255, 0.18);
+	border-radius: 20px;
+	background: rgba(255, 255, 255, 0.24);
+	-webkit-backdrop-filter: blur(12px);
+	backdrop-filter: blur(12px);
+
+	.search-select {
+		flex: 1 1 210px;
+		min-width: 0;
+		.MuiOutlinedInput-root {
+			height: 72px;
+			border-radius: 16px;
+			background: rgba(255, 255, 255, 0.76);
+			color: #181a20;
+			font-family: $font;
+			font-size: 18px;
+			font-weight: 500;
+			transition: background-color 180ms ease;
+			.MuiOutlinedInput-notchedOutline {
+				border: 1px solid rgba(255, 255, 255, 0.75);
+			}
+			&:hover {
+				background: rgba(255, 255, 255, 0.88);
+				.MuiOutlinedInput-notchedOutline {
+					border-color: #eb6753;
+				}
+			}
+			&.Mui-focused .MuiOutlinedInput-notchedOutline {
+				border: 2px solid #eb6753;
+			}
+		}
+		.MuiSelect-select {
+			padding: 22px 48px 22px 24px;
+		}
+		.MuiSelect-icon {
+			right: 20px;
+			color: #181a20;
+		}
+	}
+	.search-button {
+		flex: 0 0 180px;
+		height: 72px;
+		padding: 0 28px;
+		border-radius: 16px;
+		background: #eb6753;
+		box-shadow: none;
+		color: #ffffff;
+		font-family: $font;
+		font-size: 20px;
+		font-weight: 700;
+		text-transform: none;
+		&:hover {
+			background: #df5b48;
+			box-shadow: none;
+		}
+		&.Mui-focusVisible {
+			outline: 3px solid #ffffff;
+			outline-offset: 3px;
+		}
+	}
+	@media (max-width: 1100px) {
+		padding: 20px;
+		gap: 16px;
+		.search-select {
+			flex-basis: 180px;
+		}
+		.search-button {
+			flex-basis: 150px;
+		}
+	}
+}
+.gymflow-search-menu.MuiPaper-root {
+	margin-top: 8px;
+	max-height: 320px;
+	border: 1px solid rgba(24, 26, 32, 0.08);
+	border-radius: 16px;
+	box-shadow: 0 12px 32px rgba(24, 26, 32, 0.14);
+	.MuiMenu-list {
+		padding: 8px;
+	}
+	.MuiMenuItem-root {
+		min-height: 44px;
+		padding: 10px 16px;
+		border-radius: 10px;
+		font-family: $font;
+		font-size: 14px;
+		white-space: normal;
+		&.Mui-selected {
+			background: rgba(235, 103, 83, 0.12);
+			&:hover {
+				background: rgba(235, 103, 83, 0.2);
+			}
+		}
+	}
 }
 #pc-wrap .card-config .options,
 #pc-wrap .program-big-card-box .options,

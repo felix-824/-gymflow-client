@@ -10,10 +10,10 @@ Images were downloaded from Pexels, resized proportionally to a maximum of 1200 
 | strength-dumbbell-curl.webp | Strength Training | [Focused woman lifting dumbbell in training studio](https://www.pexels.com/photo/focused-woman-lifting-dumbbell-in-training-studio-6551436/) |
 | strength-barbell.webp | Strength Training | [Man lifting a barbell](https://www.pexels.com/photo/man-lifting-a-barbell-4720775/) |
 | strength-lifting.webp | Strength Training | [A man holding a barbell](https://www.pexels.com/photo/a-man-holding-a-barbell-5327525/) |
-| yoga-balance.webp | Yoga | [Person doing yoga pose](https://www.pexels.com/photo/person-doing-yoga-pose-6019964/) |
-| yoga-flow.webp | Yoga | [Mountain asana with prayer hands](https://www.pexels.com/photo/slim-young-lady-standing-in-mountain-asana-with-prayer-hands-during-yoga-practice-6975250/) |
-| yoga-seated.webp | Yoga | [Woman doing yoga](https://www.pexels.com/photo/woman-doing-yoga-4057529/) |
-| yoga-stretch.webp | Yoga | [Woman doing yoga in a bright studio](https://www.pexels.com/photo/woman-in-black-sports-bra-and-gray-leggings-doing-yoga-3823062/) |
+| yoga-mat-practice.webp | Yoga | [Man practising yoga, by Lê Đức](https://www.pexels.com/photo/man-practising-yoga-16131384/) |
+| yoga-outdoor-balance.webp | Yoga | [Outdoor yoga in nature, by Anil Sharma](https://www.pexels.com/photo/serene-outdoor-yoga-in-lush-nature-setting-30858413/) |
+| yoga-senior-practice.webp | Yoga | [Elderly woman doing yoga, by Mikhail Nilov](https://www.pexels.com/photo/elderly-woman-doing-yoga-7500668/) |
+| yoga-outdoor-flow.webp | Yoga | [Outdoor yoga at dawn, by RAY LEI](https://www.pexels.com/photo/woman-doing-yoga-outdoors-at-dawn-13849262/) |
 | cardio-treadmill.webp | Cardio | [Fit focused man running on treadmill](https://www.pexels.com/photo/fit-focused-man-running-on-treadmill-in-sport-club-6455851/) |
 | cardio-running.webp | Cardio | [Sportsman using treadmill for cardio workout](https://www.pexels.com/photo/strong-sportsman-using-treadmill-for-cardio-workout-in-gym-3888343/) |
 | cardio-jump-rope.webp | Cardio | [Man doing a jump rope workout](https://www.pexels.com/photo/man-doing-a-jump-rope-workout-4804349/) |

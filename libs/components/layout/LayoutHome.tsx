@@ -57,7 +57,6 @@ const withLayoutMain = (Component: any) => {
 						<Stack className={'header-main'}>
 							<FiberContainer />
 							<Stack className={'container'}>
-								<h1>Find your training flow.</h1>
 								<HeaderFilter />
 							</Stack>
 						</Stack>

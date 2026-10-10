@@ -18,6 +18,7 @@ const Filter = ({ searchFilter, setSearchFilter, initialInput, compact = false }
 	const { t } = useTranslation('common');
 	const [draft, setDraft] = useState<ProgramsInquiry>(searchFilter);
 	const [error, setError] = useState('');
+	const [openSelect, setOpenSelect] = useState<'locationList' | 'typeList' | 'categoryList' | null>(null);
 	useEffect(() => {
 		setDraft(searchFilter);
 		setError('');
@@ -26,6 +27,7 @@ const Filter = ({ searchFilter, setSearchFilter, initialInput, compact = false }
 	/** HANDLERS **/
 	const selectHandler = (key: 'locationList' | 'typeList' | 'categoryList', value: string[]) => {
 		setDraft({ ...draft, search: { ...draft.search, [key]: value } });
+		if (compact) setOpenSelect(null);
 	};
 	const searchHandler = () => {
 		const range = draft.search.pricesRange;
@@ -58,20 +60,22 @@ const Filter = ({ searchFilter, setSearchFilter, initialInput, compact = false }
 	return (
 		<Stack
 			className={compact ? 'search-box gymflow-search' : 'filter-main'}
-			spacing={2}
-			sx={compact ? { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 2 } : { padding: 2 }}
+			spacing={compact ? 0 : 2}
+			sx={compact ? undefined : { padding: 2 }}
 		>
 			{!compact && <Typography className="title-main">{t('Find Your Program')}</Typography>}
-			<TextField
-				size="small"
-				label={t('Program name')}
-				value={draft.search.text ?? ''}
-				onChange={(e) => setDraft({ ...draft, search: { ...draft.search, text: e.target.value } })}
-				onKeyDown={(e) => {
-					if (e.key === 'Enter') searchHandler();
-				}}
-				inputProps={{ maxLength: 100 }}
-			/>
+			{!compact && (
+				<TextField
+					size="small"
+					label={t('Program name')}
+					value={draft.search.text ?? ''}
+					onChange={(e) => setDraft({ ...draft, search: { ...draft.search, text: e.target.value } })}
+					onKeyDown={(e) => {
+						if (e.key === 'Enter') searchHandler();
+					}}
+					inputProps={{ maxLength: 100 }}
+				/>
+			)}
 			{(
 				[
 					['locationList', 'Location', Object.values(ProgramLocation)],
@@ -81,12 +85,27 @@ const Filter = ({ searchFilter, setSearchFilter, initialInput, compact = false }
 			).map(([key, label, values]) => (
 				<TextField
 					key={key}
+					className={compact ? 'search-select' : undefined}
 					select
 					size="small"
-					label={t(label)}
+					label={compact ? undefined : t(label)}
 					value={draft.search[key] ?? []}
-					SelectProps={{ multiple: true }}
-					sx={{ minWidth: 150 }}
+					SelectProps={
+						compact
+							? {
+									multiple: true,
+									open: openSelect === key,
+									onOpen: () => setOpenSelect(key),
+									onClose: () => setOpenSelect(null),
+									displayEmpty: true,
+									renderValue: (selected) =>
+										(selected as string[]).length ? (selected as string[]).map((value) => t(value)).join(', ') : t(label),
+									MenuProps: { PaperProps: { className: 'gymflow-search-menu' } },
+								}
+							: { multiple: true }
+					}
+					inputProps={compact ? { 'aria-label': t(label) } : undefined}
+					sx={compact ? undefined : { minWidth: 150 }}
 					onChange={(e) =>
 						selectHandler(key, typeof e.target.value === 'string' ? e.target.value.split(',') : e.target.value)
 					}
@@ -98,35 +117,39 @@ const Filter = ({ searchFilter, setSearchFilter, initialInput, compact = false }
 					))}
 				</TextField>
 			))}
-			<TextField
-				size="small"
-				type="number"
-				label={t('Min price (KRW/session)')}
-				value={draft.search.pricesRange?.start ?? ''}
-				onChange={(e) => rangeHandler('start', e.target.value)}
-				inputProps={{ min: 0, max: 2147483647, step: 1 }}
-				sx={{ maxWidth: compact ? 165 : undefined }}
-			/>
-			<TextField
-				size="small"
-				type="number"
-				label={t('Max price (KRW/session)')}
-				value={draft.search.pricesRange?.end === 2147483647 ? '' : draft.search.pricesRange?.end ?? ''}
-				onChange={(e) => rangeHandler('end', e.target.value)}
-				inputProps={{ min: 0, max: 2147483647, step: 1 }}
-				sx={{ maxWidth: compact ? 165 : undefined }}
-			/>
-			<Button variant="contained" onClick={searchHandler}>
-				{t('Program Search')}
+			{!compact && (
+				<>
+					<TextField
+						size="small"
+						type="number"
+						label={t('Min price (KRW/session)')}
+						value={draft.search.pricesRange?.start ?? ''}
+						onChange={(e) => rangeHandler('start', e.target.value)}
+						inputProps={{ min: 0, max: 2147483647, step: 1 }}
+					/>
+					<TextField
+						size="small"
+						type="number"
+						label={t('Max price (KRW/session)')}
+						value={draft.search.pricesRange?.end === 2147483647 ? '' : draft.search.pricesRange?.end ?? ''}
+						onChange={(e) => rangeHandler('end', e.target.value)}
+						inputProps={{ min: 0, max: 2147483647, step: 1 }}
+					/>
+				</>
+			)}
+			<Button className={compact ? 'search-button' : undefined} variant="contained" onClick={searchHandler}>
+				{t(compact ? 'Search' : 'Program Search')}
 			</Button>
-			<Button
-				onClick={() => {
-					setDraft(initialInput);
-					setSearchFilter({ ...initialInput, page: 1, search: {} });
-				}}
-			>
-				{t('Reset')}
-			</Button>
+			{!compact && (
+				<Button
+					onClick={() => {
+						setDraft(initialInput);
+						setSearchFilter({ ...initialInput, page: 1, search: {} });
+					}}
+				>
+					{t('Reset')}
+				</Button>
+			)}
 			{error && (
 				<Typography color="error" role="alert">
 					{error}

@@ -35,11 +35,11 @@ function Pages() {
 
 	return (
 		<>
-			<Page position={[width * 0, 0, 0]} urls={['/img/fiber/strength-dumbbells.webp', '/img/fiber/yoga-balance.webp', '/img/fiber/cardio-treadmill.webp']} />
-			<Page position={[width * 1, 0, 0]} urls={['/img/fiber/pilates-reformer.webp', '/img/fiber/strength-dumbbell-curl.webp', '/img/fiber/yoga-flow.webp']} />
+			<Page position={[width * 0, 0, 0]} urls={['/img/fiber/strength-dumbbells.webp', '/img/fiber/yoga-mat-practice.webp', '/img/fiber/cardio-treadmill.webp']} />
+			<Page position={[width * 1, 0, 0]} urls={['/img/fiber/pilates-reformer.webp', '/img/fiber/strength-dumbbell-curl.webp', '/img/fiber/yoga-outdoor-balance.webp']} />
 			<Page position={[width * 2, 0, 0]} urls={['/img/fiber/cardio-jump-rope.webp', '/img/fiber/pilates-studio.webp', '/img/fiber/strength-barbell.webp']} />
-			<Page position={[width * 3, 0, 0]} urls={['/img/fiber/yoga-seated.webp', '/img/fiber/cardio-running.webp', '/img/fiber/pilates-training.webp']} />
-			<Page position={[width * 4, 0, 0]} urls={['/img/fiber/strength-lifting.webp', '/img/fiber/yoga-stretch.webp', '/img/fiber/cardio-skipping.webp']} />
+			<Page position={[width * 3, 0, 0]} urls={['/img/fiber/yoga-senior-practice.webp', '/img/fiber/cardio-running.webp', '/img/fiber/pilates-training.webp']} />
+			<Page position={[width * 4, 0, 0]} urls={['/img/fiber/strength-lifting.webp', '/img/fiber/yoga-outdoor-flow.webp', '/img/fiber/cardio-skipping.webp']} />
 		</>
 	);
 }
