@@ -35,11 +35,11 @@ function Pages() {
 
 	return (
 		<>
-			<Page position={[width * 0, 0, 0]} urls={['/img/events/BUSAN.webp', '/img/events/DAEGU.webp', '/img/events/SEOUL.webp']} />
-			<Page position={[width * 1, 0, 0]} urls={['/img/events/DAEGU.webp', '/img/events/SEOUL.webp', '/img/events/INCHEON.webp']} />
-			<Page position={[width * 2, 0, 0]} urls={['/img/events/INCHEON.webp', '/img/events/BUSAN.webp', '/img/events/DAEGU.webp']} />
-			<Page position={[width * 3, 0, 0]} urls={['/img/events/BUSAN.webp', '/img/events/DAEGU.webp', '/img/events/SEOUL.webp']} />
-			<Page position={[width * 4, 0, 0]} urls={['/img/events/DAEGU.webp', '/img/events/SEOUL.webp', '/img/events/INCHEON.webp']} />
+			<Page position={[width * 0, 0, 0]} urls={['/img/fiber/strength-dumbbells.webp', '/img/fiber/yoga-balance.webp', '/img/fiber/cardio-treadmill.webp']} />
+			<Page position={[width * 1, 0, 0]} urls={['/img/fiber/pilates-reformer.webp', '/img/fiber/strength-dumbbell-curl.webp', '/img/fiber/yoga-flow.webp']} />
+			<Page position={[width * 2, 0, 0]} urls={['/img/fiber/cardio-jump-rope.webp', '/img/fiber/pilates-studio.webp', '/img/fiber/strength-barbell.webp']} />
+			<Page position={[width * 3, 0, 0]} urls={['/img/fiber/yoga-seated.webp', '/img/fiber/cardio-running.webp', '/img/fiber/pilates-training.webp']} />
+			<Page position={[width * 4, 0, 0]} urls={['/img/fiber/strength-lifting.webp', '/img/fiber/yoga-stretch.webp', '/img/fiber/cardio-skipping.webp']} />
 		</>
 	);
 }
@@ -49,7 +49,7 @@ export default function FiberContainer() {
 		<div className="threeJSContainer" style={{ marginTop: '100px', width: '100%', height: '512px' }}>
 			<Canvas gl={{ antialias: false }} dpr={[1, 1.5]}>
 				<Suspense fallback={null}>
-					<ScrollControls infinite horizontal damping={4} pages={4} distance={1}>
+					<ScrollControls infinite horizontal damping={4} pages={5} distance={1}>
 						<Scroll>
 							<Pages />
 						</Scroll>
