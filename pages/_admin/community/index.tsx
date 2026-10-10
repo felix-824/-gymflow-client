@@ -43,8 +43,8 @@ const {
 	variables: { input: communityInquiry },
 	notifyOnNetworkStatusChange: true,
 	onCompleted: (data: T) => {
-		setArticles(data?.getAllBoardArticlesByAdmin?.list);
-		setArticleTotal(data?.getAllBoardArticlesByAdmin?.metaCounter[0]?.total ?? 0);
+		setArticles(data?.getAllBoardArticlesByAdmin?.list ?? []);
+		setArticleTotal(data?.getAllBoardArticlesByAdmin?.metaCounter?.[0]?.total ?? 0);
 	},
 });
 

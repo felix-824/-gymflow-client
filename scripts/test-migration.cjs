@@ -1,0 +1,137 @@
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const path = require('node:path');
+const vm = require('node:vm');
+const ts = require('typescript');
+
+let checks = 0;
+function check(name, fn) { fn(); checks++; console.log('PASS ' + name); }
+function loadTs(file, mocks = {}, cache = new Map()) {
+	file = path.resolve(file);
+	if (cache.has(file)) return cache.get(file);
+	const output = ts.transpileModule(fs.readFileSync(file, 'utf8'), { fileName: file, compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2019, esModuleInterop: true, jsx: ts.JsxEmit.React } }).outputText;
+	const module = { exports: {} };
+	cache.set(file, module.exports);
+	const localRequire = (name) => {
+		if (Object.hasOwn(mocks, name)) return mocks[name];
+		if (name.startsWith('.')) return loadTs(path.resolve(path.dirname(file), name + '.ts'), mocks, cache);
+		return require(name);
+	};
+	vm.runInThisContext('(function(require,module,exports){' + output + '\n})', { filename: file })(localRequire, module, module.exports);
+	return module.exports;
+}
+const forms = loadTs(path.join(__dirname, '../libs/program.ts'));
+const { ProgramType, ProgramCategory, ProgramLocation } = loadTs(path.join(__dirname, '../libs/enums/program.enum.ts'));
+const valid = {
+	programName: 'Strength training', programType: ProgramType.PT_1ON1, programCategory: ProgramCategory.MUSCLE_GAIN,
+	programLocation: ProgramLocation.SEOUL, programPrice: 0, programDuration: 60, programCapacity: 1,
+	programImages: ['uploads/program/a.png'], programAddress: 'Seoul gym',
+};
+const { formatterStr } = loadTs(path.join(__dirname, '../libs/utils.ts'), { './sweetAlert': { sweetMixinErrorAlert: () => {} } });
+check('free pricing renders as zero rather than an empty price', () => assert.equal(formatterStr(0), '0'));
+check('malformed URL JSON is safe', () => assert.equal(forms.readProgramsInquiry('{').page, 1));
+check('array and null URL values are safe', () => { assert.equal(forms.readProgramsInquiry(null).limit, 9); assert.equal(forms.readProgramsInquiry([]).page, 1); });
+check('URL input drops legacy and administrative fields', () => {
+	const result = forms.readProgramsInquiry({ page: 2, sort: 'programPrice', search: { programRooms: [1], programStatus: 'DELETE', text: ' yoga ', categoryList: ['YOGA', 'APARTMENT'], locationList: ['SEOUL', 'JEJU'], pricesRange: { start: 0, end: 1000 } } });
+	assert.deepEqual(JSON.parse(JSON.stringify(result.search)), { categoryList: ['YOGA'], locationList: ['SEOUL'], text: 'yoga', pricesRange: { start: 0, end: 1000 } });
+	assert.equal(result.page, 2);
+});
+check('pagination and sorting are bounded to backend fields', () => {
+	const result = forms.readProgramsInquiry({ page: 2147483648, limit: 10000, sort: 'programRent', direction: 'INVALID' });
+	assert.equal(result.page, 1); assert.equal(result.limit, 9); assert.equal(result.sort, 'createdAt'); assert.equal(result.direction, 'DESC');
+});
+check('invalid price and createdAt ranges are omitted', () => {
+	for (const range of [{ start: -1, end: 1 }, { start: 10, end: 1 }, { start: 0.5, end: 1 }, { start: 0, end: Infinity }]) assert.equal(forms.readProgramsInquiry({ search: { pricesRange: range } }).search.pricesRange, undefined);
+	assert.equal(forms.readProgramsInquiry({ search: { periodsRange: { start: 'bad', end: 'bad' } } }).search.periodsRange, undefined);
+});
+check('trainer management allows paused but excludes deleted', () => {
+	assert.equal(forms.readTrainerProgramsInquiry('{"page":2,"search":{"programStatus":"PAUSED"}}').search.programStatus, 'PAUSED');
+	assert.equal(forms.readTrainerProgramsInquiry({ search: { programStatus: 'DELETE' } }).search.programStatus, undefined);
+});
+check('trainer URL search keeps only allowed fields', () => {
+	const result = forms.readTrainersInquiry({ page: -1, sort: 'memberProperties', search: { text: ' trainer ', memberType: 'ADMIN' } }, { page: 1, limit: 9, sort: 'createdAt', search: {} });
+	assert.equal(result.page, 1); assert.equal(result.sort, 'createdAt'); assert.deepEqual(JSON.parse(JSON.stringify(result.search)), { text: 'trainer' });
+});
+check('a free program is valid', () => assert.equal(forms.programFormError(valid), ''));
+check('numeric fields reject fractions, overflow and missing values', () => {
+	for (const patch of [{ programPrice: -1 }, { programPrice: 1.2 }, { programPrice: NaN }, { programDuration: 0 }, { programCapacity: 0 }, { programDuration: 2147483648 }]) assert.ok(forms.programFormError({ ...valid, ...patch }));
+});
+check('PT capacity and online pairing are enforced', () => {
+	assert.ok(forms.programFormError({ ...valid, programCapacity: 2 }));
+	assert.ok(forms.programFormError({ ...valid, programType: 'ONLINE' }));
+	assert.ok(forms.programFormError({ ...valid, programLocation: 'ONLINE' }));
+	assert.equal(forms.programFormError({ ...valid, programType: 'ONLINE', programLocation: 'ONLINE', programAddress: '' }), '');
+});
+check('offline address, name, description and images have boundaries', () => {
+	for (const patch of [{ programAddress: '' }, { programAddress: 'ab' }, { programName: 'ab' }, { programName: 'a'.repeat(101) }, { programDesc: 'abcd' }, { programDesc: 'a'.repeat(501) }, { programImages: [] }, { programImages: [''] }]) assert.ok(forms.programFormError({ ...valid, ...patch }));
+	assert.equal(forms.programFormError({ ...valid, programName: 'a'.repeat(100), programDesc: 'a'.repeat(500) }), '');
+});
+check('create payload whitelists fields and omits blank optional values', () => {
+	const result = forms.programPayload({ ...valid, _id: 'untrusted', memberId: 'owner', programRank: 9, programAddress: '', programDesc: '   ' });
+	assert.equal(result._id, undefined); assert.equal(result.memberId, undefined); assert.equal(result.programRank, undefined);
+	assert.equal(Object.hasOwn(result, 'programAddress'), false); assert.equal(Object.hasOwn(result, 'programDesc'), false);
+});
+check('update payload uses null to clear optional fields', () => {
+	const result = forms.programPayload({ ...valid, programAddress: '', programDesc: '' }, true);
+	assert.equal(result.programAddress, null); assert.equal(result.programDesc, null);
+});
+
+const createVar = (initial) => { let state = initial; return (...args) => { if (args.length) state = args[0]; return state; }; };
+function authHarness() {
+	const storage = new Map();
+	const store = { emptyUser: { _id: '', memberType: '' }, userVar: createVar({ _id: '', memberType: '' }), authReadyVar: createVar(false), authErrorVar: createVar('') };
+	const calls = [];
+	const client = { clearStore: async () => {}, query: async (request) => { calls.push(request); return client.respond(request); }, respond: async (request) => request.query === 'CHECK_AUTH' ? { data: { checkAuth: 'ok' } } : { data: { getMember: member } }, mutate: async () => ({ data: { login: member, signup: member } }) };
+	const member = { _id: 'a'.repeat(24), memberNick: 'trainer', memberType: 'TRAINER', memberStatus: 'ACTIVE', memberPrograms: 2, memberImage: null };
+	const token = JSON.stringify({ sub: member._id, exp: Math.floor(Date.now() / 1000) + 3600 });
+	member.accessToken = token;
+	global.window = { location: { reload() {} } };
+	global.localStorage = { getItem: (key) => storage.get(key) ?? null, setItem: (key, value) => storage.set(key, value), removeItem: (key) => storage.delete(key) };
+	const auth = loadTs(path.join(__dirname, '../libs/auth/index.ts'), {
+		'jwt-decode': (value) => JSON.parse(value), '../../apollo/client': { initializeApollo: () => client },
+		'../../apollo/store': store, '../../apollo/user/mutation': { LOGIN: 'LOGIN', SIGN_UP: 'SIGN_UP' }, '../../apollo/user/query': { CHECK_AUTH: 'CHECK_AUTH', GET_MEMBER: 'GET_MEMBER' },
+	});
+	return { auth, storage, store, client, calls, member, token };
+}
+async function authChecks() {
+	let h = authHarness();
+	await h.auth.logIn('trainer', 'password');
+	check('login reads Member response instead of JWT profile claims', () => { assert.equal(h.store.userVar().memberNick, 'trainer'); assert.equal(h.store.userVar().memberPrograms, 2); assert.equal(h.storage.get('accessToken'), h.token); });
+	await assert.rejects(h.auth.signUp('a', 'b', 'c', 'ADMIN'));
+	check('signup rejects administrative escalation', () => assert.equal(h.store.userVar().memberType, 'TRAINER'));
+	h = authHarness(); h.storage.set('accessToken', h.token);
+	const first = h.auth.updateUserInfo(h.token);
+	const duplicate = h.auth.updateUserInfo(h.token);
+	assert.equal(first, duplicate); await first;
+	check('restore deduplicates and checks auth before loading current profile', () => {
+		assert.deepEqual(h.calls.map((call) => call.query), ['CHECK_AUTH', 'GET_MEMBER']);
+		assert.equal(h.calls[1].variables.input, h.member._id); assert.equal(h.store.authReadyVar(), true);
+	});
+	h = authHarness(); const expired = JSON.stringify({ sub: h.member._id, exp: 1 }); h.storage.set('accessToken', expired); await h.auth.updateUserInfo(expired);
+	check('expired token resets identity without API calls', () => { assert.equal(h.storage.has('accessToken'), false); assert.equal(h.calls.length, 0); assert.equal(h.store.userVar()._id, ''); });
+	h = authHarness(); h.storage.set('accessToken', 'broken'); await h.auth.updateUserInfo('broken');
+	check('malformed token resets identity', () => assert.equal(h.storage.has('accessToken'), false));
+	h = authHarness(); h.storage.set('accessToken', h.token); h.client.respond = async () => { throw new Error('Network unavailable'); }; await h.auth.updateUserInfo(h.token);
+	check('network failure preserves token and exposes retry state', () => { assert.equal(h.storage.get('accessToken'), h.token); assert.ok(h.store.authErrorVar()); });
+	h = authHarness(); h.storage.set('accessToken', h.token); h.client.respond = async () => { throw { graphQLErrors: [{ extensions: { code: 'UNAUTHENTICATED' } }] }; }; await h.auth.updateUserInfo(h.token);
+	check('unauthenticated session clears token and profile', () => { assert.equal(h.storage.has('accessToken'), false); assert.equal(h.store.userVar()._id, ''); });
+	h = authHarness(); h.storage.set('accessToken', h.token); h.member.memberStatus = 'BLOCK'; await h.auth.updateUserInfo(h.token);
+	check('blocked member clears the session', () => assert.equal(h.storage.has('accessToken'), false));
+	h = authHarness(); h.storage.set('accessToken', h.token); h.member.memberType = 'USER'; await h.auth.updateUserInfo(h.token);
+	check('restoration applies current server role', () => assert.equal(h.store.userVar().memberType, 'USER'));
+	check('ownership and role denial do not mean logout', () => { assert.equal(h.auth.isAuthenticationError({ graphQLErrors: [{ extensions: { code: 'FORBIDDEN' } }] }), false); });
+	h = authHarness(); h.storage.set('accessToken', h.token);
+	let resume;
+	h.client.respond = () => new Promise((resolve) => { resume = resolve; });
+	const pending = h.auth.updateUserInfo(h.token);
+	h.storage.set('accessToken', 'different-session');
+	resume({ data: { checkAuth: 'ok' } });
+	await pending;
+	check('stale restoration cannot replace another session profile', () => assert.equal(h.store.userVar()._id, ''));
+	delete global.window; delete global.localStorage;
+}
+const watchdog = setTimeout(() => { console.error('Migration unit tests did not settle'); process.exitCode = 1; }, 60000);
+authChecks().then(async () => {
+	checks += await require('./test-form.cjs')(loadTs, forms);
+	console.log(checks + ' migration unit checks passed.');
+}).catch((error) => { console.error(error); process.exitCode = 1; }).finally(() => clearTimeout(watchdog));

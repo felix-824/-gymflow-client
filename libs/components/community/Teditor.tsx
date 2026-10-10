@@ -2,7 +2,7 @@ import React, { useMemo, useRef, useState } from 'react';
 import { Box, Button, FormControl, MenuItem, Stack, Typography, Select, TextField } from '@mui/material';
 import { BoardArticleCategory } from '../../enums/board-article.enum';
 import { Editor } from '@toast-ui/react-editor';
-import { getJwtToken } from '../../auth';
+import { getJwtToken, invalidateSession, isAuthenticationError } from '../../auth';
 import { REACT_APP_API_URL } from '../../config';
 import { useRouter } from 'next/router';
 import axios from 'axios';
@@ -20,7 +20,7 @@ const TuiEditor = () => {
 	const [articleCategory, setArticleCategory] = useState<BoardArticleCategory>(BoardArticleCategory.FREE);
 
 	/** APOLLO REQUESTS **/
-	const [createboartdArticle] = useMutation(CREATE_BOARD_ARTICLE);
+	const [createBoardArticle, { loading: creating }] = useMutation(CREATE_BOARD_ARTICLE);
 
 	const memoizedValues = useMemo(() => {
 		const articleTitle = '',
@@ -33,6 +33,7 @@ const TuiEditor = () => {
 	/** HANDLERS **/
 	const uploadImage = async (image: any) => {
 		try {
+			if (!['image/jpeg', 'image/png'].includes(image.type)) throw new Error('Only JPEG and PNG images are allowed.');
 			const formData = new FormData();
 			formData.append(
 				'operations',
@@ -62,13 +63,18 @@ const TuiEditor = () => {
 				},
 			});
 
-			const responseImage = response.data.data.imageUploader;
-			console.log('=responseImage: ', responseImage);
+			if (response.data.errors?.length) {
+				if (isAuthenticationError({ graphQLErrors: response.data.errors })) invalidateSession();
+				throw new Error(response.data.errors[0].message);
+			}
+			const responseImage = response.data.data?.imageUploader;
+			if (typeof responseImage !== 'string' || !responseImage) throw new Error('Image upload failed.');
 			memoizedValues.articleImage = responseImage;
 
 			return `${REACT_APP_API_URL}/${responseImage}`;
 		} catch (err) {
-			console.log('Error, uploadImage:', err);
+			if (isAuthenticationError(err)) invalidateSession();
+			await sweetErrorHandling(err);
 		}
 	};
 
@@ -81,7 +87,7 @@ const TuiEditor = () => {
 		memoizedValues.articleTitle = e.target.value;
 	};
 
-	const handleRegisterButton = async () => {try {
+	const handleRegisterButton = async () => {if (creating) return; try {
 	const editor = editorRef.current;
 	const articleContent = editor?.getInstance().getHTML() as string;
 	memoizedValues.articleContent = articleContent;
@@ -105,7 +111,7 @@ const TuiEditor = () => {
 	});
 } catch (err: any) {
 	console.log(err);
-	sweetErrorHandling(new Error(Message.INSERT_ALL_INPUTS)).then();
+	sweetErrorHandling(err).then();
 }};
 
 	const doDisabledCheck = () => {
@@ -166,7 +172,7 @@ const TuiEditor = () => {
 				hooks={{
 					addImageBlobHook: async (image: any, callback: any) => {
 						const uploadedImageURL = await uploadImage(image);
-						callback(uploadedImageURL);
+						if (uploadedImageURL) callback(uploadedImageURL);
 						return false;
 					},
 				}}
@@ -181,6 +187,7 @@ const TuiEditor = () => {
 					color="primary"
 					style={{ margin: '30px', width: '250px', height: '45px' }}
 					onClick={handleRegisterButton}
+					disabled={creating}
 				>
 					Register
 				</Button>

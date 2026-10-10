@@ -21,7 +21,7 @@ import { BoardArticle } from '../../libs/types/board-article/board-article';
 import { useMutation, useQuery, useReactiveVar } from '@apollo/client';
 import { GET_BOARD_ARTICLE, GET_COMMENTS } from '../../apollo/user/query';
 import { CommentInput, CommentsInquiry } from '../../libs/types/comment/comment.input';
-import { CommentGroup, CommentStatus } from '../../libs/enums/comment.enum';
+import { CommentStatus } from '../../libs/enums/comment.enum';
 import { Messages } from '../../libs/config';
 import { CommentUpdate } from '../../libs/types/comment/comment.update';
 import {
@@ -70,8 +70,8 @@ const CommunityDetail: NextPage = ({ initialInput, ...props }: T) => {
 
 	/** APOLLO REQUESTS **/
 const [likeTargetBoardArticle] = useMutation(LIKE_TARGET_BOARD_ARTICLE);
-const [createComment] = useMutation(CREATE_COMMENT);
-const [updateComment] = useMutation(UPDATE_COMMENT);
+const [createComment, { loading: creatingComment }] = useMutation(CREATE_COMMENT);
+const [updateComment, { loading: updatingComment }] = useMutation(UPDATE_COMMENT);
 
 const {
 	loading: boardArticleLoading,
@@ -83,6 +83,7 @@ const {
 	variables: {
 		input: articleId,
 	},
+	skip: !articleId,
 	notifyOnNetworkStatusChange: true,
 	onCompleted(data: any) {
 		setBoardArticle(data?.getBoardArticle);
@@ -102,16 +103,17 @@ const {
 	variables: {
 		input: searchFilter,
 	},
+	skip: !searchFilter.search.articleId,
 	notifyOnNetworkStatusChange: true,
 	onCompleted(data: any) {
-		setComments(data?.getComments?.list);
+		setComments(data?.getComments?.list ?? []);
 		setTotal(data?.getComments?.metaCounter?.[0]?.total || 0);
 	},
 });
 
 	/** LIFECYCLES **/
 	useEffect(() => {
-		if (articleId) setSearchFilter({ ...searchFilter, search: { commentRefId: articleId } });
+		if (articleId) setSearchFilter((previous) => ({ ...previous, page: 1, search: { articleId } }));
 	}, [articleId]);
 
 	/** HANDLERS **/
@@ -151,15 +153,16 @@ const {
 };
 
 	const createCommentHandler = async () => {
-	if (!comment) return;
+	if (creatingComment || !comment.trim()) return;
 
 	try {
 		if (!user?._id) throw new Error(Messages.error2);
+		if (comment.trim().length > 100) throw new Error('Comments must contain 1–100 characters.');
 
 		const commentInput: CommentInput = {
-			commentGroup: CommentGroup.ARTICLE,
-			commentRefId: articleId,
-			commentContent: comment,
+
+			articleId: articleId,
+			commentContent: comment.trim(),
 		};
 
 		await createComment({
@@ -178,6 +181,7 @@ const {
 };
 
 	const updateButtonHandler = async (commentId: string, commentStatus?: CommentStatus.DELETE) => {
+	if (updatingComment) return;
 	try {
 		if (!user?._id) throw new Error(Messages.error2);
 		if (!commentId) throw new Error('Select a comment to update!');
@@ -186,7 +190,7 @@ const {
 		const updateData: CommentUpdate = {
 			_id: commentId,
 			...(commentStatus && { commentStatus: commentStatus }),
-			...(updatedComment && { commentContent: updatedComment }),
+			...(!commentStatus && { commentContent: updatedComment.trim() }),
 		};
 
 		if (!updateData?.commentContent && !updateData?.commentStatus)
@@ -256,7 +260,7 @@ const {
 					<Stack className="main-box">
 						<Stack className="left-config">
 							<Stack className={'image-info'}>
-								<img src={'/img/logo/logoText.svg'} />
+								<strong className="gymflow-logo">GymFlow</strong>
 								<Stack className={'community-name'}>
 									<Typography className={'name'}>Community Board Article</Typography>
 								</Stack>
@@ -540,7 +544,7 @@ CommunityDetail.defaultProps = {
 		limit: 5,
 		sort: 'createdAt',
 		direction: 'DESC',
-		search: { commentRefId: '' },
+		search: { articleId: '' },
 	},
 };
 

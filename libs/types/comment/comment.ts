@@ -1,13 +1,12 @@
-import { CommentGroup, CommentStatus } from '../../enums/comment.enum';
-import { MeLiked, TotalCounter } from '../property/property';
+import { CommentStatus } from '../../enums/comment.enum';
+import { MeLiked, TotalCounter } from '../program/program';
 import { Member } from '../member/member';
 
 export interface Comment {
 	_id: string;
 	commentStatus: CommentStatus;
-	commentGroup: CommentGroup;
 	commentContent: string;
-	commentRefId: string;
+	articleId: string;
 	memberId: string;
 	createdAt: Date;
 	updatedAt: Date;

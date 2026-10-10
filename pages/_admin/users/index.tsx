@@ -45,8 +45,8 @@ const {
 	variables: { input: membersInquiry },
 	notifyOnNetworkStatusChange: true,
 	onCompleted: (data: T) => {
-		setMembers(data?.getAllMembersByAdmin?.list);
-		setMembersTotal(data?.getAllMembersByAdmin?.metaCounter[0]?.total ?? 0);
+		setMembers(data?.getAllMembersByAdmin?.list ?? []);
+		setMembersTotal(data?.getAllMembersByAdmin?.metaCounter?.[0]?.total ?? 0);
 	},
 });
 
@@ -243,8 +243,8 @@ const {
 									<MenuItem value={'USER'} onClick={() => searchTypeHandler('USER')}>
 										User
 									</MenuItem>
-									<MenuItem value={'AGENT'} onClick={() => searchTypeHandler('AGENT')}>
-										Agent
+									<MenuItem value={'TRAINER'} onClick={() => searchTypeHandler('TRAINER')}>
+										Trainer
 									</MenuItem>
 									<MenuItem value={'ADMIN'} onClick={() => searchTypeHandler('ADMIN')}>
 										Admin

@@ -20,7 +20,7 @@ export const GET_ALL_MEMBERS_BY_ADMIN = gql`
 				memberDesc
 				memberWarnings
 				memberBlocks
-				memberProperties
+				memberPrograms
 				memberRank
 				memberArticles
 				memberPoints
@@ -39,33 +39,33 @@ export const GET_ALL_MEMBERS_BY_ADMIN = gql`
 `;
 
 /**************************
- *        PROPERTY        *
+ *        PROGRAM        *
  *************************/
 
-export const GET_ALL_PROPERTIES_BY_ADMIN = gql`
-	query GetAllPropertiesByAdmin($input: AllPropertiesInquiry!) {
-		getAllPropertiesByAdmin(input: $input) {
+export const GET_ALL_PROGRAMS_BY_ADMIN = gql`
+	query GetAllProgramsByAdmin($input: AllProgramsInquiry!) {
+		getAllProgramsByAdmin(input: $input) {
 			list {
 				_id
-				propertyType
-				propertyStatus
-				propertyLocation
-				propertyAddress
-				propertyTitle
-				propertyPrice
-				propertySquare
-				propertyBeds
-				propertyRooms
-				propertyViews
-				propertyLikes
-				propertyImages
-				propertyDesc
-				propertyBarter
-				propertyRent
+				programType
+				programStatus
+				programLocation
+				programAddress
+				programName
+				programPrice
+				programDuration
+				programCapacity
+				programCategory
+				programViews
+				programLikes
+				programImages
+				programDesc
+
+
 				memberId
-				soldAt
+
 				deletedAt
-				constructedAt
+
 				createdAt
 				updatedAt
 				memberData {
@@ -81,7 +81,7 @@ export const GET_ALL_PROPERTIES_BY_ADMIN = gql`
 					memberDesc
 					memberWarnings
 					memberBlocks
-					memberProperties
+					memberPrograms
 					memberRank
 					memberPoints
 					memberLikes
@@ -131,7 +131,7 @@ export const GET_ALL_BOARD_ARTICLES_BY_ADMIN = gql`
 					memberDesc
 					memberWarnings
 					memberBlocks
-					memberProperties
+					memberPrograms
 					memberRank
 					memberPoints
 					memberLikes
@@ -159,9 +159,9 @@ export const GET_COMMENTS = gql`
 			list {
 				_id
 				commentStatus
-				commentGroup
+
 				commentContent
-				commentRefId
+				articleId
 				memberId
 				createdAt
 				updatedAt
@@ -178,7 +178,7 @@ export const GET_COMMENTS = gql`
 					memberDesc
 					memberWarnings
 					memberBlocks
-					memberProperties
+					memberPrograms
 					memberRank
 					memberPoints
 					memberLikes

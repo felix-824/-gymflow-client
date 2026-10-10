@@ -1,5 +1,5 @@
 {
-	"name": "nestar-next",
+	"name": "gymflow-next",
 	"version": "2.2.0",
 	"private": true,
 	"license": "ITC",
@@ -8,7 +8,11 @@
 		"build": "next build",
 		"start": "next start",
 		"lint": "next lint",
-		"changelog": "standard-version --skip.tag"
+		"changelog": "standard-version --skip.tag",
+		"typecheck": "tsc --noEmit --incremental false",
+		"check:graphql": "node scripts/check-graphql.cjs",
+		"test:migration": "node scripts/test-migration.cjs",
+		"test:integration": "node scripts/test-integration.cjs"
 	},
 	"dependencies": {
 		"@mui/material": "^5.10.1",

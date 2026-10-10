@@ -2,18 +2,18 @@ import numeral from 'numeral';
 import { sweetMixinErrorAlert } from './sweetAlert';
 
 export const formatterStr = (value: number | undefined): string => {
-	return numeral(value).format('0,0') != '0' ? numeral(value).format('0,0') : '';
+	return numeral(value ?? 0).format('0,0');
 };
 
-export const likeTargetPropertyHandler = async (likeTargetProperty: any, id: string) => {
+export const likeTargetProgramHandler = async (likeTargetProgram: any, id: string) => {
 	try {
-		await likeTargetProperty({
+		await likeTargetProgram({
 			variables: {
 				input: id,
 			},
 		});
 	} catch (err: any) {
-		console.log('ERROR, likeTargetPropertyHandler:', err.message);
+		console.log('ERROR, likeTargetProgramHandler:', err.message);
 		sweetMixinErrorAlert(err.message).then();
 	}
 };

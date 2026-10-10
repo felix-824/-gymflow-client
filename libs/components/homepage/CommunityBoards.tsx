@@ -36,7 +36,7 @@ const CommunityBoards = () => {
 	},
 	notifyOnNetworkStatusChange: true,
 	onCompleted: (data: T) => {
-		setNewsArticles(data?.getBoardArticles?.list);
+		setNewsArticles(data?.getBoardArticles?.list ?? []);
 	},
 });
 
@@ -56,7 +56,7 @@ const {
 	},
 	notifyOnNetworkStatusChange: true,
 	onCompleted: (data: T) => {
-		setFreeArticles(data?.getBoardArticles?.list);
+		setFreeArticles(data?.getBoardArticles?.list ?? []);
 	},
 });
 

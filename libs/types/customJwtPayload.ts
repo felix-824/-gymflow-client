@@ -1,6 +1,11 @@
 import { JwtPayload } from 'jwt-decode';
 
 export interface CustomJwtPayload extends JwtPayload {
+	sub: string;
+}
+
+// Profiles come from Member responses, never from JWT profile claims.
+export interface UserProfile {
 	_id: string;
 	memberType: string;
 	memberStatus: string;
@@ -11,12 +16,15 @@ export interface CustomJwtPayload extends JwtPayload {
 	memberImage?: string;
 	memberAddress?: string;
 	memberDesc?: string;
-	memberProperties: number;
+	memberPrograms: number;
 	memberRank: number;
 	memberArticles: number;
 	memberPoints: number;
 	memberLikes: number;
 	memberViews: number;
+	memberComments: number;
+	memberFollowers?: number;
+	memberFollowings?: number;
 	memberWarnings: number;
 	memberBlocks: number;
 }

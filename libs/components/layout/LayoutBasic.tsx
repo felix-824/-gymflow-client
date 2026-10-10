@@ -1,26 +1,24 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useMemo } from 'react';
 import { useRouter } from 'next/router';
 import useDeviceDetect from '../../hooks/useDeviceDetect';
 import Head from 'next/head';
 import Top from '../Top';
 import Footer from '../Footer';
 import { Stack } from '@mui/material';
-import { getJwtToken, updateUserInfo } from '../../auth';
+
 import Chat from '../Chat';
-import { useReactiveVar } from '@apollo/client';
-import { userVar } from '../../../apollo/store';
+
 import { useTranslation } from 'next-i18next';
 import 'swiper/css';
 import 'swiper/css/pagination';
 import 'swiper/css/navigation';
 
 const withLayoutBasic = (Component: any) => {
-	return (props: any) => {
+	return function BasicLayout(props: any) {
 		const router = useRouter();
 		const { t, i18n } = useTranslation('common');
 		const device = useDeviceDetect();
-		const [authHeader, setAuthHeader] = useState<boolean>(false);
-		const user = useReactiveVar(userVar);
+		const authHeader = router.pathname === '/account/join';
 
 		const memoizedValues = useMemo(() => {
 			let title = '',
@@ -28,34 +26,34 @@ const withLayoutBasic = (Component: any) => {
 				bgImage = '';
 
 			switch (router.pathname) {
-				case '/property':
-					title = 'Property Search';
+				case '/program':
+					title = 'Program Search';
 					desc = 'We are glad to see you again!';
 					bgImage = '/img/banner/properties.png';
 					break;
-				case '/agent':
-					title = 'Agents';
-					desc = 'Home / For Rent';
+				case '/trainer':
+					title = 'Trainers';
+					desc = 'Home / Programs';
 					bgImage = '/img/banner/agents.webp';
 					break;
-				case '/agent/detail':
-					title = 'Agent Page';
-					desc = 'Home / For Rent';
+				case '/trainer/detail':
+					title = 'Trainer Page';
+					desc = 'Home / Programs';
 					bgImage = '/img/banner/header2.svg';
 					break;
 				case '/mypage':
 					title = 'my page';
-					desc = 'Home / For Rent';
+					desc = 'Home / Programs';
 					bgImage = '/img/banner/header1.svg';
 					break;
 				case '/community':
 					title = 'Community';
-					desc = 'Home / For Rent';
+					desc = 'Home / Programs';
 					bgImage = '/img/banner/header2.svg';
 					break;
 				case '/community/detail':
 					title = 'Community Detail';
-					desc = 'Home / For Rent';
+					desc = 'Home / Programs';
 					bgImage = '/img/banner/header2.svg';
 					break;
 				case '/cs':
@@ -67,12 +65,16 @@ const withLayoutBasic = (Component: any) => {
 					title = 'Login/Signup';
 					desc = 'Authentication Process';
 					bgImage = '/img/banner/header2.svg';
-					setAuthHeader(true);
 					break;
 				case '/member':
 					title = 'Member Page';
-					desc = 'Home / For Rent';
+					desc = 'Home / Programs';
 					bgImage = '/img/banner/header1.svg';
+					break;
+				case '/about':
+					title = 'About GymFlow';
+					desc = 'Fitness for your goals';
+					bgImage = '/img/banner/header2.svg';
 					break;
 				default:
 					break;
@@ -82,10 +84,6 @@ const withLayoutBasic = (Component: any) => {
 		}, [router.pathname]);
 
 		/** LIFECYCLES **/
-		useEffect(() => {
-			const jwt = getJwtToken();
-			if (jwt) updateUserInfo(jwt);
-		}, []);
 
 		/** HANDLERS **/
 
@@ -93,8 +91,8 @@ const withLayoutBasic = (Component: any) => {
 			return (
 				<>
 					<Head>
-						<title>Nestar</title>
-						<meta name={'title'} content={`Nestar`} />
+						<title>GymFlow</title>
+						<meta name={'title'} content={`GymFlow`} />
 					</Head>
 					<Stack id="mobile-wrap">
 						<Stack id={'top'}>
@@ -115,8 +113,8 @@ const withLayoutBasic = (Component: any) => {
 			return (
 				<>
 					<Head>
-						<title>Nestar</title>
-						<meta name={'title'} content={`Nestar`} />
+						<title>GymFlow</title>
+						<meta name={'title'} content={`GymFlow`} />
 					</Head>
 					<Stack id="pc-wrap">
 						<Stack id={'top'}>
@@ -141,7 +139,7 @@ const withLayoutBasic = (Component: any) => {
 							<Component {...props} />
 						</Stack>
 
-						 <Chat />
+						<Chat />
 
 						<Stack id={'footer'}>
 							<Footer />

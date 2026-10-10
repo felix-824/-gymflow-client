@@ -37,8 +37,8 @@ const {
 	},
 	notifyOnNetworkStatusChange: true,
 	onCompleted(data: T) {
-		setBoardArticles(data?.getBoardArticles?.list);
-		setTotalCount(data?.getBoardArticles?.metaCounter[0]?.total);
+		setBoardArticles(data?.getBoardArticles?.list ?? []);
+		setTotalCount(data?.getBoardArticles?.metaCounter?.[0]?.total);
 	},
 });
 

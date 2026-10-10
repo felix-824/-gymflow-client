@@ -38,3 +38,17 @@ Before making any changes, read:
 ```bash
 yarn install
 ```
+## Coding Style and Implementation Consistency
+
+- Follow the original nestar-next frontend coding style.
+- Inspect the corresponding nestar-next implementation before making changes.
+- Preserve the existing Next.js architecture and folder structure.
+- Maintain established React components, hooks, state management, and event handlers.
+- Follow existing TypeScript types, interfaces, and naming conventions.
+- Preserve GraphQL/Apollo Client query and mutation patterns.
+- Maintain existing async/await and error-handling conventions.
+- Do not introduce unnecessary dependencies or new architectural patterns.
+- Adapt Nestar functionality to GymFlow's Program and TRAINER domain.
+- Keep changes small and incremental.
+- Run typecheck after each implementation phase.
+- Do not modify unrelated files.

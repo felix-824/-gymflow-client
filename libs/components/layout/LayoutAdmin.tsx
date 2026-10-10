@@ -15,15 +15,17 @@ import Typography from '@mui/material/Typography';
 import Tooltip from '@mui/material/Tooltip';
 import { getJwtToken, logOut, updateUserInfo } from '../../auth';
 import { useReactiveVar } from '@apollo/client';
-import { userVar } from '../../../apollo/store';
+import { userVar, authReadyVar, authErrorVar } from '../../../apollo/store';
 import { REACT_APP_API_URL } from '../../config';
 import { MemberType } from '../../enums/member.enum';
 const drawerWidth = 280;
 
 const withAdminLayout = (Component: ComponentType) => {
-	return (props: object) => {
+	return function AdminLayout(props: object) {
 		const router = useRouter();
 		const user = useReactiveVar(userVar);
+		const authReady = useReactiveVar(authReadyVar);
+		const authError = useReactiveVar(authErrorVar);
 		const [settingsState, setSettingsStateState] = useState(false);
 		const [anchorElUser, setAnchorElUser] = React.useState<null | HTMLElement>(null);
 		const [openMenu, setOpenMenu] = useState(false);
@@ -33,16 +35,14 @@ const withAdminLayout = (Component: ComponentType) => {
 
 		/** LIFECYCLES **/
 		useEffect(() => {
-			const jwt = getJwtToken();
-			if (jwt) updateUserInfo(jwt);
 			setLoading(false);
 		}, []);
 
 		useEffect(() => {
-			if (!loading && user.memberType !== MemberType.ADMIN) {
+			if (authReady && !authError && !loading && user.memberType !== MemberType.ADMIN) {
 				router.push('/').then();
 			}
-		}, [loading, user, router]);
+		}, [authReady, authError, loading, user, router]);
 
 		/** HANDLERS **/
 		const handleOpenUserMenu = (event: React.MouseEvent<HTMLElement>) => {
@@ -58,7 +58,8 @@ const withAdminLayout = (Component: ComponentType) => {
 			router.push('/').then();
 		};
 
-		if (!user || user?.memberType !== MemberType.ADMIN) return null;
+		if (authError) return <p role="alert">{authError}</p>;
+		if (!authReady || !user || user?.memberType !== MemberType.ADMIN) return null;
 
 		return (
 			<main id="pc-wrap" className="admin">
@@ -142,7 +143,7 @@ const withAdminLayout = (Component: ComponentType) => {
 					>
 						<Toolbar sx={{ flexDirection: 'column', alignItems: 'flexStart' }}>
 							<Stack className={'logo-box'}>
-								<img src={'/img/logo/logoText.svg'} alt={'logo'} />
+								<strong className="gymflow-logo">GymFlow</strong>
 							</Stack>
 
 							<Stack

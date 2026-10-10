@@ -4,14 +4,14 @@ import { NextPage } from 'next';
 import { Stack } from '@mui/material';
 import useDeviceDetect from '../../libs/hooks/useDeviceDetect';
 import withLayoutBasic from '../../libs/components/layout/LayoutBasic';
-import MyProperties from '../../libs/components/mypage/MyProperties';
+import MyPrograms from '../../libs/components/mypage/MyPrograms';
 import MyFavorites from '../../libs/components/mypage/MyFavorites';
 import RecentlyVisited from '../../libs/components/mypage/RecentlyVisited';
-import AddProperty from '../../libs/components/mypage/AddNewProperty';
+import AddProgram from '../../libs/components/mypage/AddNewProgram';
 import MyProfile from '../../libs/components/mypage/MyProfile';
 import MyArticles from '../../libs/components/mypage/MyArticles';
 import { useMutation, useReactiveVar } from '@apollo/client';
-import { userVar } from '../../apollo/store';
+import { userVar, authReadyVar, authErrorVar } from '../../apollo/store';
 import MyMenu from '../../libs/components/mypage/MyMenu';
 import WriteArticle from '../../libs/components/mypage/WriteArticle';
 import MemberFollowers from '../../libs/components/member/MemberFollowers';
@@ -30,6 +30,8 @@ export const getStaticProps = async ({ locale }: any) => ({
 const MyPage: NextPage = () => {
 	const device = useDeviceDetect();
 	const user = useReactiveVar(userVar);
+const authReady = useReactiveVar(authReadyVar);
+const authError = useReactiveVar(authErrorVar);
 	const router = useRouter();
 	const category: any = router.query?.category ?? 'myProfile';
 
@@ -40,8 +42,8 @@ const MyPage: NextPage = () => {
 
 	/** LIFECYCLES **/
 	useEffect(() => {
-		if (!user._id) router.push('/').then();
-	}, [user]);
+		if (authReady && !authError && !user._id) router.push('/').then();
+	}, [user, authReady, authError, router]);
 
 	/** HANDLERS **/
 	const subscribeHandler = async (id: string, refetch: any, query: any) => {
@@ -110,7 +112,9 @@ const likeMemberHandler = async (id: string, refetch: any, query: any) => {
 		}
 	};
 
-	if (device === 'mobile') {
+	if (authError) return <p role='alert'>{authError}</p>;
+if (!authReady || !user._id) return <p>Loading profile...</p>;
+if (device === 'mobile') {
 		return <div>MY PAGE</div>;
 	} else {
 		return (
@@ -123,8 +127,8 @@ const likeMemberHandler = async (id: string, refetch: any, query: any) => {
 							</Stack>
 							<Stack className="main-config" mb={'76px'}>
 								<Stack className={'list-config'}>
-									{category === 'addProperty' && <AddProperty />}
-									{category === 'myProperties' && <MyProperties />}
+									{category === 'addProgram' && <AddProgram />}
+									{category === 'myPrograms' && <MyPrograms />}
 									{category === 'myFavorites' && <MyFavorites />}
 									{category === 'recentlyVisited' && <RecentlyVisited />}
 									{category === 'myArticles' && <MyArticles />}

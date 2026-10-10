@@ -19,9 +19,12 @@ export const SIGN_UP = gql`
 			memberDesc
 			memberWarnings
 			memberBlocks
-			memberProperties
-			memberRank
+			memberPrograms
 			memberArticles
+			memberComments
+			memberFollowers
+			memberFollowings
+			memberRank
 			memberPoints
 			memberLikes
 			memberViews
@@ -48,7 +51,11 @@ export const LOGIN = gql`
 			memberDesc
 			memberWarnings
 			memberBlocks
-			memberProperties
+			memberPrograms
+			memberArticles
+			memberComments
+			memberFollowers
+			memberFollowings
 			memberRank
 			memberPoints
 			memberLikes
@@ -62,7 +69,7 @@ export const LOGIN = gql`
 `;
 
 export const UPDATE_MEMBER = gql`
-	mutation UpdateMember($input: MemberUpdate!) {
+	mutation UpdateMember($input: MemberSelfUpdate!) {
 		updateMember(input: $input) {
 			_id
 			memberType
@@ -74,9 +81,12 @@ export const UPDATE_MEMBER = gql`
 			memberImage
 			memberAddress
 			memberDesc
-			memberProperties
-			memberRank
+			memberPrograms
 			memberArticles
+			memberComments
+			memberFollowers
+			memberFollowings
+			memberRank
 			memberPoints
 			memberLikes
 			memberViews
@@ -105,7 +115,11 @@ export const LIKE_TARGET_MEMBER = gql`
 			memberDesc
 			memberWarnings
 			memberBlocks
-			memberProperties
+			memberPrograms
+			memberArticles
+			memberComments
+			memberFollowers
+			memberFollowings
 			memberRank
 			memberPoints
 			memberLikes
@@ -119,90 +133,87 @@ export const LIKE_TARGET_MEMBER = gql`
 `;
 
 /**************************
- *        PROPERTY        *
+ *        PROGRAM        *
  *************************/
 
-export const CREATE_PROPERTY = gql`
-	mutation CreateProperty($input: PropertyInput!) {
-		createProperty(input: $input) {
+export const CREATE_PROGRAM = gql`
+	mutation CreateProgram($input: ProgramInput!) {
+		createProgram(input: $input) {
 			_id
-			propertyType
-			propertyStatus
-			propertyLocation
-			propertyAddress
-			propertyTitle
-			propertyPrice
-			propertySquare
-			propertyBeds
-			propertyRooms
-			propertyViews
-			propertyLikes
-			propertyImages
-			propertyDesc
-			propertyBarter
-			propertyRent
+			programType
+			programStatus
+			programLocation
+			programAddress
+			programName
+			programPrice
+			programDuration
+			programCapacity
+			programCategory
+			programViews
+			programLikes
+			programImages
+			programDesc
+
 			memberId
-			soldAt
+
 			deletedAt
-			constructedAt
+
 			createdAt
 			updatedAt
 		}
 	}
 `;
 
-export const UPDATE_PROPERTY = gql`
-	mutation UpdateProperty($input: PropertyUpdate!) {
-		updateProperty(input: $input) {
+export const UPDATE_PROGRAM = gql`
+	mutation UpdateProgram($input: ProgramUpdate!) {
+		updateProgram(input: $input) {
 			_id
-			propertyType
-			propertyStatus
-			propertyLocation
-			propertyAddress
-			propertyTitle
-			propertyPrice
-			propertySquare
-			propertyBeds
-			propertyRooms
-			propertyViews
-			propertyLikes
-			propertyImages
-			propertyDesc
-			propertyBarter
-			propertyRent
+			programType
+			programStatus
+			programLocation
+			programAddress
+			programName
+			programPrice
+			programDuration
+			programCapacity
+			programCategory
+			programViews
+			programLikes
+			programImages
+			programDesc
+
 			memberId
-			soldAt
+
 			deletedAt
-			constructedAt
+
 			createdAt
 			updatedAt
 		}
 	}
 `;
 
-export const LIKE_TARGET_PROPERTY = gql`
-	mutation LikeTargetProperty($input: String!) {
-		likeTargetProperty(propertyId: $input) {
+export const LIKE_TARGET_PROGRAM = gql`
+	mutation LikeTargetProgram($input: String!) {
+		likeTargetProgram(programId: $input) {
 			_id
-			propertyType
-			propertyStatus
-			propertyLocation
-			propertyAddress
-			propertyTitle
-			propertyPrice
-			propertySquare
-			propertyBeds
-			propertyRooms
-			propertyViews
-			propertyLikes
-			propertyImages
-			propertyDesc
-			propertyBarter
-			propertyRent
+			programType
+			programStatus
+			programLocation
+			programAddress
+			programName
+			programPrice
+			programDuration
+			programCapacity
+			programCategory
+			programViews
+			programLikes
+			programImages
+			programDesc
+
 			memberId
-			soldAt
+
 			deletedAt
-			constructedAt
+
 			createdAt
 			updatedAt
 		}
@@ -276,9 +287,9 @@ export const CREATE_COMMENT = gql`
 		createComment(input: $input) {
 			_id
 			commentStatus
-			commentGroup
+
 			commentContent
-			commentRefId
+			articleId
 			memberId
 			createdAt
 			updatedAt
@@ -291,9 +302,9 @@ export const UPDATE_COMMENT = gql`
 		updateComment(input: $input) {
 			_id
 			commentStatus
-			commentGroup
+
 			commentContent
-			commentRefId
+			articleId
 			memberId
 			createdAt
 			updatedAt

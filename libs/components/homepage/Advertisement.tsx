@@ -1,41 +1,26 @@
 import React from 'react';
-import useDeviceDetect from '../../hooks/useDeviceDetect';
-import { Stack } from '@mui/material';
+import { Stack, Typography, Button } from '@mui/material';
+import Link from 'next/link';
 
-const Advertisement = () => {
-	const device = useDeviceDetect();
-
-	if (device == 'mobile') {
-		return (
-			<Stack className={'video-frame'}>
-				<video
-					autoPlay
-					muted
-					loop
-					playsInline
-					preload="auto"
-					style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-				>
-					<source src="/video/ads.mov" type="video/mp4" />
-				</video>
-			</Stack>
-		);
-	} else {
-		return (
-			<Stack className={'video-frame'}>
-				<video
-					autoPlay
-					muted
-					loop
-					playsInline
-					preload="auto"
-					style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-				>
-					<source src="/video/ads.mov" type="video/mp4" />
-				</video>
-			</Stack>
-		);
-	}
-};
-
+const Advertisement = () => (
+	<Stack
+		className="video-frame"
+		sx={{
+			alignItems: 'center',
+			justifyContent: 'center',
+			gap: 3,
+			background: 'linear-gradient(120deg, #181a20, #394a42)',
+			color: 'white',
+			padding: 4,
+		}}
+	>
+		<Typography variant="h3" align="center">
+			Make room for your next fitness goal.
+		</Typography>
+		<Typography align="center">Personal training, group classes and online programs in one place.</Typography>
+		<Link href="/program">
+			<Button variant="contained">Explore programs</Button>
+		</Link>
+	</Stack>
+);
 export default Advertisement;

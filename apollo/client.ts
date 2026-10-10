@@ -1,10 +1,10 @@
 import { useMemo } from 'react';
-import { ApolloClient, ApolloLink, InMemoryCache, split, from, NormalizedCacheObject } from '@apollo/client';
+import { ApolloClient, ApolloLink, HttpLink, InMemoryCache, split, from, NormalizedCacheObject } from '@apollo/client';
 import createUploadLink from 'apollo-upload-client/public/createUploadLink.js';
 import { WebSocketLink } from '@apollo/client/link/ws';
 import { getMainDefinition } from '@apollo/client/utilities';
 import { onError } from '@apollo/client/link/error';
-import { getJwtToken } from '../libs/auth';
+import { getJwtToken, invalidateSession, updateUserInfo } from '../libs/auth';
 import { TokenRefreshLink } from 'apollo-link-token-refresh';
 import { sweetErrorAlert } from '../libs/sweetAlert';
 import { socketVar } from './store';
@@ -66,12 +66,12 @@ function createIsomorphicLink() {
 	if (typeof window !== 'undefined') {
 		const authLink = new ApolloLink((operation, forward) => {
 			operation.setContext(({ headers = {} }) => ({
+				authToken: getJwtToken(),
 				headers: {
 					...headers,
 					...getHeaders(),
 				},
 			}));
-			console.warn('requesting.. ', operation);
 			return forward(operation);
 		});
 
@@ -91,20 +91,32 @@ function createIsomorphicLink() {
 					return { headers: getHeaders() };
 				},
 			},
-             webSocketImpl: LoggingWebSocket
+			webSocketImpl: LoggingWebSocket,
 		});
 
-		const errorLink = onError(({ graphQLErrors, networkError, response }) => {
+		const errorLink = onError(({ graphQLErrors, networkError, operation }) => {
+			const currentSession = operation.getContext().authToken === getJwtToken();
+			if (
+				currentSession &&
+				(graphQLErrors?.some(
+					(error) =>
+						error.extensions?.code === 'UNAUTHENTICATED' ||
+						(error.extensions?.originalError as any)?.statusCode === 401 ||
+						error.message === 'Unauthorized',
+				) ||
+					(networkError as any)?.statusCode === 401)
+			) {
+				invalidateSession();
+			} else if (currentSession && graphQLErrors?.some((error) => error.extensions?.code === 'FORBIDDEN')) {
+				void updateUserInfo(getJwtToken());
+			}
 			if (graphQLErrors) {
-				graphQLErrors.map(({ message, locations, path, extensions }) => { 
+				graphQLErrors.map(({ message, locations, path, extensions }) => {
 					console.log(`[GraphQL error]: Message: ${message}, Location: ${locations}, Path: ${path}`);
-				    if (!message.includes('input')) sweetErrorAlert(message);
+					if (!message.includes('input')) sweetErrorAlert(message);
 				});
 			}
 			if (networkError) console.log(`[Network error]: ${networkError}`);
-			// @ts-ignore
-			if (networkError?.statusCode === 401) {
-			}
 		});
 
 		const splitLink = split(
@@ -118,6 +130,7 @@ function createIsomorphicLink() {
 
 		return from([errorLink, tokenRefreshLink, splitLink]);
 	}
+	return new HttpLink({ uri: process.env.REACT_APP_API_GRAPHQL_URL ?? 'http://localhost:3007/graphql' });
 }
 
 function createApolloClient() {

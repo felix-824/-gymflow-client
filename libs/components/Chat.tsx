@@ -65,6 +65,7 @@ const Chat = () => {
 	/** LIFECYCLES **/
 
 	useEffect(() => {
+	if (!socket) return;
 	socket.onmessage = (msg) => {
 		const data = JSON.parse(msg.data);
 		console.log('WebSocket message:', data);

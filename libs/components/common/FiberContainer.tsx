@@ -35,11 +35,11 @@ function Pages() {
 
 	return (
 		<>
-			<Page position={[width * 0, 0, 0]} urls={['/img/fiber/img7.jpg', '/img/fiber/img8.jpg', '/img/fiber/img1.jpg']} />
-			<Page position={[width * 1, 0, 0]} urls={['/img/fiber/img4.jpg', '/img/fiber/img5.jpg', '/img/fiber/img6.jpg']} />
-			<Page position={[width * 2, 0, 0]} urls={['/img/fiber/img2.jpg', '/img/fiber/img3.jpg', '/img/fiber/img4.jpg']} />
-			<Page position={[width * 3, 0, 0]} urls={['/img/fiber/img7.jpg', '/img/fiber/img8.jpg', '/img/fiber/img1.jpg']} />
-			<Page position={[width * 4, 0, 0]} urls={['/img/fiber/img4.jpg', '/img/fiber/img5.jpg', '/img/fiber/img6.jpg']} />
+			<Page position={[width * 0, 0, 0]} urls={['/img/events/BUSAN.webp', '/img/events/DAEGU.webp', '/img/events/SEOUL.webp']} />
+			<Page position={[width * 1, 0, 0]} urls={['/img/events/DAEGU.webp', '/img/events/SEOUL.webp', '/img/events/INCHEON.webp']} />
+			<Page position={[width * 2, 0, 0]} urls={['/img/events/INCHEON.webp', '/img/events/BUSAN.webp', '/img/events/DAEGU.webp']} />
+			<Page position={[width * 3, 0, 0]} urls={['/img/events/BUSAN.webp', '/img/events/DAEGU.webp', '/img/events/SEOUL.webp']} />
+			<Page position={[width * 4, 0, 0]} urls={['/img/events/DAEGU.webp', '/img/events/SEOUL.webp', '/img/events/INCHEON.webp']} />
 		</>
 	);
 }

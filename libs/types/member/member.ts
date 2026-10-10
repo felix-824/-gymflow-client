@@ -1,5 +1,5 @@
 import { MemberAuthType, MemberStatus, MemberType } from '../../enums/member.enum';
-import { MeLiked, TotalCounter } from '../property/property';
+import { MeLiked, TotalCounter } from '../program/program';
 import { MeFollowed } from '../follow/follow';
 
 export interface Member {
@@ -14,7 +14,7 @@ export interface Member {
 	memberImage?: string;
 	memberAddress?: string;
 	memberDesc?: string;
-	memberProperties: number;
+	memberPrograms: number;
 	memberRank: number;
 	memberArticles: number;
 	memberPoints: number;

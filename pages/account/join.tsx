@@ -19,6 +19,7 @@ const Join: NextPage = () => {
 	const device = useDeviceDetect();
 	const [input, setInput] = useState({ nick: '', password: '', phone: '', type: 'USER' });
 	const [loginView, setLoginView] = useState<boolean>(true);
+	const [submitting, setSubmitting] = useState(false);
 
 	/** HANDLERS **/
 	const viewChangeHandler = (state: boolean) => {
@@ -42,26 +43,36 @@ const Join: NextPage = () => {
 	}, []);
 
 	const doLogin = useCallback(async () => {
-		console.warn(input);
+		if (submitting) return;
+		setSubmitting(true);
 		try {
 			await logIn(input.nick, input.password);
-			await router.push(`${router.query.referrer ?? '/'}`);
+			const referrer = router.query.referrer;
+			await router.push(
+				typeof referrer === 'string' && referrer.startsWith('/') && !referrer.startsWith('//') ? referrer : '/',
+			);
 		} catch (err: any) {
 			await sweetMixinErrorAlert(err.message);
+		} finally {
+			setSubmitting(false);
 		}
-	}, [input]);
+	}, [input, router, submitting]);
 
 	const doSignUp = useCallback(async () => {
-		console.warn(input);
+		if (submitting) return;
+		setSubmitting(true);
 		try {
 			await signUp(input.nick, input.password, input.phone, input.type);
-			await router.push(`${router.query.referrer ?? '/'}`);
+			const referrer = router.query.referrer;
+			await router.push(
+				typeof referrer === 'string' && referrer.startsWith('/') && !referrer.startsWith('//') ? referrer : '/',
+			);
 		} catch (err: any) {
 			await sweetMixinErrorAlert(err.message);
+		} finally {
+			setSubmitting(false);
 		}
-	}, [input]);
-
-	console.log('+input: ', input);
+	}, [input, router, submitting]);
 
 	if (device === 'mobile') {
 		return <div>LOGIN MOBILE</div>;
@@ -73,8 +84,8 @@ const Join: NextPage = () => {
 						<Stack className={'left'}>
 							{/* @ts-ignore */}
 							<Box className={'logo'}>
-								<img src="/img/logo/logoText.svg" alt="" />
-								<span>Nestar</span>
+								<strong className="gymflow-logo">GymFlow</strong>
+								<span>GymFlow</span>
 							</Box>
 							<Box className={'info'}>
 								<span>{loginView ? 'login' : 'signup'}</span>
@@ -145,12 +156,12 @@ const Join: NextPage = () => {
 													control={
 														<Checkbox
 															size="small"
-															name={'AGENT'}
+															name={'TRAINER'}
 															onChange={checkUserTypeHandler}
-															checked={input?.type == 'AGENT'}
+															checked={input?.type == 'TRAINER'}
 														/>
 													}
-													label="Agent"
+													label="Trainer"
 												/>
 											</FormGroup>
 										</div>
@@ -170,7 +181,7 @@ const Join: NextPage = () => {
 									<Button
 										variant="contained"
 										endIcon={<img src="/img/icons/rightup.svg" alt="" />}
-										disabled={input.nick == '' || input.password == ''}
+										disabled={submitting || input.nick == '' || input.password == ''}
 										onClick={doLogin}
 									>
 										LOGIN
@@ -178,7 +189,9 @@ const Join: NextPage = () => {
 								) : (
 									<Button
 										variant="contained"
-										disabled={input.nick == '' || input.password == '' || input.phone == '' || input.type == ''}
+										disabled={
+											submitting || input.nick == '' || input.password == '' || input.phone == '' || input.type == ''
+										}
 										onClick={doSignUp}
 										endIcon={<img src="/img/icons/rightup.svg" alt="" />}
 									>

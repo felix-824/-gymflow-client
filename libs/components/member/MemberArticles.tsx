@@ -36,7 +36,7 @@ const {
 	},
 	notifyOnNetworkStatusChange: true,
 	onCompleted: (data: any) => {
-		setMemberBoArticles(data?.getBoardArticles?.list);
+		setMemberBoArticles(data?.getBoardArticles?.list ?? []);
 		setTotal(data?.getBoardArticles?.metaCounter?.[0]?.total || 0);
 	},
 });
@@ -67,7 +67,7 @@ const {
 		await boardArticlesRefetch({ input: searchFilter });
 		await sweetTopSmallSuccessAlert('success', 800);
 	} catch (err: any) {
-		console.log('ERROR, likePropertyHandler:', err.message);
+		console.log('ERROR, likeProgramHandler:', err.message);
 		sweetMixinErrorAlert(err.message).then();
 	}
 };
@@ -113,7 +113,7 @@ const {
 							/>
 						</Stack>
 						<Stack className="total-result">
-							<Typography>{total} property available</Typography>
+							<Typography>{total} program available</Typography>
 						</Stack>
 					</Stack>
 				)}

@@ -4,9 +4,9 @@ import useDeviceDetect from '../../hooks/useDeviceDetect';
 import { Button, Stack, Typography } from '@mui/material';
 import axios from 'axios';
 import { userVar } from '../../../apollo/store';
-import { MemberUpdate } from '../../types/member/member.update';
+import { MemberSelfUpdate } from '../../types/member/member.update';
 import { useMutation, useReactiveVar } from '@apollo/client';
-import { getJwtToken, updateStorage, updateUserInfo } from '../../auth';
+import { getJwtToken, updateStorage, updateUserInfo, invalidateSession, isAuthenticationError } from '../../auth';
 import { UPDATE_MEMBER } from '../../../apollo/user/mutation';
 import { sweetErrorHandling, sweetMixinSuccessAlert } from '../../sweetAlert';
 import { Messages, REACT_APP_API_URL } from '../../config';
@@ -15,27 +15,30 @@ const MyProfile: NextPage = ({ initialValues, ...props }: any) => {
 	const device = useDeviceDetect();
 	const token = getJwtToken();
 	const user = useReactiveVar(userVar);
-	const [updateData, setUpdateData] = useState<MemberUpdate>(initialValues);
+	const [updateData, setUpdateData] = useState<MemberSelfUpdate>(initialValues);
+	const [uploading, setUploading] = useState(false);
 
 	/** APOLLO REQUESTS **/
-	const [updateMember] = useMutation(UPDATE_MEMBER);
+	const [updateMember, { loading: saving }] = useMutation(UPDATE_MEMBER);
 
 	/** LIFECYCLES **/
 	useEffect(() => {
-		setUpdateData({
-			...updateData,
+		setUpdateData((previous) => ({
+			...previous,
 			memberNick: user.memberNick,
 			memberPhone: user.memberPhone,
 			memberAddress: user.memberAddress,
 			memberImage: user.memberImage,
-		});
+		}));
 	}, [user]);
 
 	/** HANDLERS **/
 	const uploadImage = async (e: any) => {
+		if (uploading || saving || !e.target.files?.length) return;
+		setUploading(true);
 		try {
 			const image = e.target.files[0];
-			console.log('+image:', image);
+			if (!['image/jpeg', 'image/png'].includes(image.type)) throw new Error(Messages.error5);
 
 			const formData = new FormData();
 			formData.append(
@@ -66,53 +69,52 @@ const MyProfile: NextPage = ({ initialValues, ...props }: any) => {
 				},
 			});
 
-			const responseImage = response.data.data.imageUploader;
-			console.log('+responseImage: ', responseImage);
-			updateData.memberImage = responseImage;
-			setUpdateData({ ...updateData });
+			if (response.data.errors?.length) {
+				if (isAuthenticationError({ graphQLErrors: response.data.errors })) invalidateSession();
+				throw new Error(response.data.errors[0].message);
+			}
+			const responseImage = response.data.data?.imageUploader;
+			if (typeof responseImage !== 'string' || !responseImage) throw new Error('Image upload failed.');
+			setUpdateData((previous) => ({ ...previous, memberImage: responseImage }));
 
 			return `${REACT_APP_API_URL}/${responseImage}`;
 		} catch (err) {
-			console.log('Error, uploadImage:', err);
+			if (isAuthenticationError(err)) invalidateSession();
+			await sweetErrorHandling(err);
+		} finally {
+			setUploading(false);
+			e.target.value = '';
 		}
 	};
 
-	const updatePropertyHandler = useCallback(async () => {
+	const updateProfileHandler = useCallback(async () => {
+		if (saving || uploading) return;
 		try {
-	if (!user._id) throw new Error(Messages.error2);
+			if (!user._id) throw new Error(Messages.error2);
 
-	updateData._id = user._id;
+			const result = await updateMember({
+				variables: {
+					input: updateData,
+				},
+			});
 
-	const result = await updateMember({
-		variables: {
-			input: updateData,
-		},
-	});
+			// @ts-ignore
+			const jwtToken = result.data.updateMember?.accessToken;
 
-	// @ts-ignore
-	const jwtToken = result.data.updateMember?.accessToken;
+			await updateStorage({ jwtToken });
+			await updateUserInfo(jwtToken, result.data.updateMember);
 
-	await updateStorage({ jwtToken });
-	updateUserInfo(result.data.updateMember?.accessToken);
-
-	await sweetMixinSuccessAlert('information updated successfully.');
-} catch (err: any) {
-	sweetErrorHandling(err).then();
-}
-	}, [updateData]);
+			await sweetMixinSuccessAlert('information updated successfully.');
+		} catch (err: any) {
+			sweetErrorHandling(err).then();
+		}
+	}, [updateData, saving, uploading, user._id, updateMember]);
 
 	const doDisabledCheck = () => {
-		if (
-			updateData.memberNick === '' ||
-			updateData.memberPhone === '' ||
-			updateData.memberAddress === '' ||
-			updateData.memberImage === ''
-		) {
+		if (updateData.memberNick === '' || updateData.memberPhone === '') {
 			return true;
 		}
 	};
-
-	console.log('+updateData', updateData);
 
 	if (device === 'mobile') {
 		return <>MY PROFILE PAGE MOBILE</>;
@@ -184,7 +186,11 @@ const MyProfile: NextPage = ({ initialValues, ...props }: any) => {
 						/>
 					</Stack>
 					<Stack className="about-me-box">
-						<Button className="update-button" onClick={updatePropertyHandler} disabled={doDisabledCheck()}>
+						<Button
+							className="update-button"
+							onClick={updateProfileHandler}
+							disabled={saving || uploading || doDisabledCheck()}
+						>
 							<Typography>Update Profile</Typography>
 							<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 13 13" fill="none">
 								<g clipPath="url(#clip0_7065_6985)">
@@ -208,7 +214,6 @@ const MyProfile: NextPage = ({ initialValues, ...props }: any) => {
 
 MyProfile.defaultProps = {
 	initialValues: {
-		_id: '',
 		memberImage: '',
 		memberNick: '',
 		memberPhone: '',

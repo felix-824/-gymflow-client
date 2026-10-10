@@ -1,12 +1,18 @@
 import { gql } from '@apollo/client';
 
+export const CHECK_AUTH = gql`
+	query CheckAuth {
+		checkAuth
+	}
+`;
+
 /**************************
  *         MEMBER         *
  *************************/
 
-export const GET_AGENTS = gql`
-	query GetAgents($input: AgentsInquiry!) {
-		getAgents(input: $input) {
+export const GET_TRAINERS = gql`
+	query GetTrainers($input: TrainersInquiry!) {
+		getTrainers(input: $input) {
 			list {
 				_id
 				memberType
@@ -20,7 +26,7 @@ export const GET_AGENTS = gql`
 				memberDesc
 				memberWarnings
 				memberBlocks
-				memberProperties
+				memberPrograms
 				memberRank
 				memberPoints
 				memberLikes
@@ -55,8 +61,9 @@ query GetMember($input: String!) {
         memberImage
         memberAddress
         memberDesc
-        memberProperties
+        memberPrograms
         memberArticles
+		memberComments
         memberPoints
         memberLikes
         memberViews
@@ -79,32 +86,31 @@ query GetMember($input: String!) {
 `);
 
 /**************************
- *        PROPERTY        *
+ *        PROGRAM        *
  *************************/
 
-export const GET_PROPERTY = gql`
-	query GetProperty($input: String!) {
-		getProperty(propertyId: $input) {
+export const GET_PROGRAM = gql`
+	query GetProgram($input: String!) {
+		getProgram(programId: $input) {
 			_id
-			propertyType
-			propertyStatus
-			propertyLocation
-			propertyAddress
-			propertyTitle
-			propertyPrice
-			propertySquare
-			propertyBeds
-			propertyRooms
-			propertyViews
-			propertyLikes
-			propertyImages
-			propertyDesc
-			propertyBarter
-			propertyRent
+			programType
+			programStatus
+			programLocation
+			programAddress
+			programName
+			programPrice
+			programDuration
+			programCapacity
+			programCategory
+			programViews
+			programLikes
+			programImages
+			programDesc
+
 			memberId
-			soldAt
+
 			deletedAt
-			constructedAt
+
 			createdAt
 			updatedAt
 			memberData {
@@ -137,31 +143,30 @@ export const GET_PROPERTY = gql`
 	}
 `;
 
-export const GET_PROPERTIES = gql`
-	query GetProperties($input: PropertiesInquiry!) {
-		getProperties(input: $input) {
+export const GET_PROGRAMS = gql`
+	query GetPrograms($input: ProgramsInquiry!) {
+		getPrograms(input: $input) {
 			list {
 				_id
-				propertyType
-				propertyStatus
-				propertyLocation
-				propertyAddress
-				propertyTitle
-				propertyPrice
-				propertySquare
-				propertyBeds
-				propertyRooms
-				propertyViews
-				propertyLikes
-				propertyRank
-				propertyImages
-				propertyDesc
-				propertyBarter
-				propertyRent
+				programType
+				programStatus
+				programLocation
+				programAddress
+				programName
+				programPrice
+				programDuration
+				programCapacity
+				programCategory
+				programViews
+				programLikes
+				programRank
+				programImages
+				programDesc
+
 				memberId
-				soldAt
+
 				deletedAt
-				constructedAt
+
 				createdAt
 				updatedAt
 				memberData {
@@ -177,7 +182,7 @@ export const GET_PROPERTIES = gql`
 					memberDesc
 					memberWarnings
 					memberBlocks
-					memberProperties
+					memberPrograms
 					memberRank
 					memberPoints
 					memberLikes
@@ -199,30 +204,29 @@ export const GET_PROPERTIES = gql`
 	}
 `;
 
-export const GET_AGENT_PROPERTIES = gql`
-	query GetAgentProperties($input: AgentPropertiesInquiry!) {
-		getAgentProperties(input: $input) {
+export const GET_TRAINER_PROGRAMS = gql`
+	query GetTrainerPrograms($input: TrainerProgramsInquiry!) {
+		getTrainerPrograms(input: $input) {
 			list {
 				_id
-				propertyType
-				propertyStatus
-				propertyLocation
-				propertyAddress
-				propertyTitle
-				propertyPrice
-				propertySquare
-				propertyBeds
-				propertyRooms
-				propertyViews
-				propertyLikes
-				propertyImages
-				propertyDesc
-				propertyBarter
-				propertyRent
+				programType
+				programStatus
+				programLocation
+				programAddress
+				programName
+				programPrice
+				programDuration
+				programCapacity
+				programCategory
+				programViews
+				programLikes
+				programImages
+				programDesc
+
 				memberId
-				soldAt
+
 				deletedAt
-				constructedAt
+
 				createdAt
 				updatedAt
 			}
@@ -238,27 +242,26 @@ export const GET_FAVORITES = gql`
 		getFavorites(input: $input) {
 			list {
 				_id
-				propertyType
-				propertyStatus
-				propertyLocation
-				propertyAddress
-				propertyTitle
-				propertyPrice
-				propertySquare
-				propertyBeds
-				propertyRooms
-				propertyViews
-				propertyLikes
-				propertyComments
-				propertyRank
-				propertyImages
-				propertyDesc
-				propertyBarter
-				propertyRent
+				programType
+				programStatus
+				programLocation
+				programAddress
+				programName
+				programPrice
+				programDuration
+				programCapacity
+				programCategory
+				programViews
+				programLikes
+
+				programRank
+				programImages
+				programDesc
+
 				memberId
-				soldAt
+
 				deletedAt
-				constructedAt
+
 				createdAt
 				updatedAt
 				memberData {
@@ -272,7 +275,7 @@ export const GET_FAVORITES = gql`
 					memberImage
 					memberAddress
 					memberDesc
-					memberProperties
+					memberPrograms
 					memberArticles
 					memberPoints
 					memberLikes
@@ -301,27 +304,26 @@ export const GET_VISITED = gql`
 		getVisited(input: $input) {
 			list {
 				_id
-				propertyType
-				propertyStatus
-				propertyLocation
-				propertyAddress
-				propertyTitle
-				propertyPrice
-				propertySquare
-				propertyBeds
-				propertyRooms
-				propertyViews
-				propertyLikes
-				propertyComments
-				propertyRank
-				propertyImages
-				propertyDesc
-				propertyBarter
-				propertyRent
+				programType
+				programStatus
+				programLocation
+				programAddress
+				programName
+				programPrice
+				programDuration
+				programCapacity
+				programCategory
+				programViews
+				programLikes
+
+				programRank
+				programImages
+				programDesc
+
 				memberId
-				soldAt
+
 				deletedAt
-				constructedAt
+
 				createdAt
 				updatedAt
 				memberData {
@@ -335,7 +337,7 @@ export const GET_VISITED = gql`
 					memberImage
 					memberAddress
 					memberDesc
-					memberProperties
+					memberPrograms
 					memberArticles
 					memberPoints
 					memberLikes
@@ -391,7 +393,7 @@ export const GET_BOARD_ARTICLE = gql`
 				memberDesc
 				memberWarnings
 				memberBlocks
-				memberProperties
+				memberPrograms
 				memberRank
 				memberPoints
 				memberLikes
@@ -443,7 +445,7 @@ export const GET_BOARD_ARTICLES = gql`
 					memberDesc
 					memberWarnings
 					memberBlocks
-					memberProperties
+					memberPrograms
 					memberRank
 					memberPoints
 					memberLikes
@@ -470,9 +472,9 @@ export const GET_COMMENTS = gql`
 			list {
 				_id
 				commentStatus
-				commentGroup
+
 				commentContent
-				commentRefId
+				articleId
 				memberId
 				createdAt
 				updatedAt
@@ -489,7 +491,7 @@ export const GET_COMMENTS = gql`
 					memberDesc
 					memberWarnings
 					memberBlocks
-					memberProperties
+					memberPrograms
 					memberRank
 					memberPoints
 					memberLikes
@@ -540,7 +542,7 @@ export const GET_MEMBER_FOLLOWERS = gql`
 					memberImage
 					memberAddress
 					memberDesc
-					memberProperties
+					memberPrograms
 					memberArticles
 					memberPoints
 					memberLikes
@@ -583,7 +585,7 @@ export const GET_MEMBER_FOLLOWINGS = gql`
 					memberImage
 					memberAddress
 					memberDesc
-					memberProperties
+					memberPrograms
 					memberArticles
 					memberPoints
 					memberLikes

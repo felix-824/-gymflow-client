@@ -26,3 +26,5 @@ export interface AdminMemberUpdate {
 	memberDesc?: string;
 	deletedAt?: Date;
 }
+
+export type MemberSelfUpdate = Omit<MemberUpdate, '_id' | 'memberType' | 'memberStatus' | 'deletedAt'>;

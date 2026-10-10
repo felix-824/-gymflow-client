@@ -48,8 +48,8 @@ const {
 	},
 	notifyOnNetworkStatusChange: true,
 	onCompleted: (data: T) => {
-		setBoardArticles(data?.getBoardArticles?.list);
-		setTotalCount(data?.getBoardArticles?.metaCounter[0]?.total);
+		setBoardArticles(data?.getBoardArticles?.list ?? []);
+		setTotalCount(data?.getBoardArticles?.metaCounter?.[0]?.total);
 	},
 });
 
@@ -100,7 +100,7 @@ const {
 		await boardArticlesRefetch({ input: searchCommunity });
 		await sweetTopSmallSuccessAlert('success', 800);
 	} catch (err: any) {
-		console.log('ERROR, likePropertyHandler:', err.message);
+		console.log('ERROR, likeProgramHandler:', err.message);
 		sweetMixinErrorAlert(err.message).then();
 	}
 };
@@ -115,9 +115,9 @@ const {
 						<Stack className="main-box">
 							<Stack className="left-config">
 								<Stack className={'image-info'}>
-									<img src={'/img/logo/logoText.svg'} />
+									<strong className="gymflow-logo">GymFlow</strong>
 									<Stack className={'community-name'}>
-										<Typography className={'name'}>Nestar Community</Typography>
+										<Typography className={'name'}>GymFlow Community</Typography>
 									</Stack>
 								</Stack>
 
