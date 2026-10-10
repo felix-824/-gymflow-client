@@ -60,6 +60,59 @@ body::-webkit-scrollbar {
 				&.transparent {
 					background-color: #181a209e;
 				}
+				&.home-navbar {
+					background: rgba(24, 26, 32, 0.48);
+					border-bottom: 1px solid rgba(255, 255, 255, 0.14);
+					box-shadow: 0 8px 24px rgba(12, 14, 20, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+					-webkit-backdrop-filter: blur(16px);
+					backdrop-filter: blur(16px);
+					&.transparent {
+						background: rgba(24, 26, 32, 0.82);
+					}
+					.router-box > a {
+						position: relative;
+						border-radius: 4px;
+						&::after {
+							content: '';
+							position: absolute;
+							bottom: -8px;
+							left: 0;
+							right: 0;
+							height: 2px;
+							border-radius: 2px;
+							background: #eb6753;
+							transform: scaleX(0);
+							transform-origin: left;
+						}
+						&:hover::after,
+						&:focus-visible::after {
+							transform: scaleX(1);
+						}
+						&:focus-visible {
+							outline: 2px solid #eb6753;
+							outline-offset: 6px;
+						}
+					}
+					.container .user-box .join-box {
+						border-color: rgba(255, 255, 255, 0.4);
+						background: rgba(255, 255, 255, 0.08);
+						box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12);
+					}
+					.container .lan-box .btn-lang {
+						border: 1px solid rgba(255, 255, 255, 0.18);
+						border-radius: 12px;
+						background: rgba(255, 255, 255, 0.08);
+						.MuiButton-endIcon svg {
+							color: #ffffff;
+						}
+					}
+					@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+						background: #24262d;
+						&.transparent {
+							background: #181a20;
+						}
+					}
+				}
 				.container {
 					flex-direction: row;
 					align-items: center;
