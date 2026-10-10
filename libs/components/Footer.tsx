@@ -11,7 +11,7 @@ const Footer = () => {
 				<Stack className="left">
 					<Box component="div" className="footer-box">
 						<Link href="/">
-							<strong className="gymflow-logo">GymFlow</strong>
+							<img src="/img/logo/logoWhite.svg" alt="GymFlow" className={'logo gymflow-logo'} />
 						</Link>
 					</Box>
 					<Box component="div" className="footer-box">

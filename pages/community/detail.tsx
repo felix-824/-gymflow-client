@@ -260,7 +260,7 @@ const {
 					<Stack className="main-box">
 						<Stack className="left-config">
 							<Stack className={'image-info'}>
-								<strong className="gymflow-logo">GymFlow</strong>
+								<img src={'/img/logo/logoText.svg'} alt={'GymFlow'} className={'gymflow-logo'} />
 								<Stack className={'community-name'}>
 									<Typography className={'name'}>Community Board Article</Typography>
 								</Stack>

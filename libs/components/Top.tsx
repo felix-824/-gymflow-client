@@ -160,7 +160,7 @@ const Top = () => {
 					<Stack className={'container'}>
 						<Box component={'div'} className={'logo-box'}>
 							<Link href={'/'}>
-								<strong className="gymflow-logo">GymFlow</strong>
+								<img src="/img/logo/logoWhite.svg" alt="GymFlow" className={'gymflow-logo'} />
 							</Link>
 						</Box>
 						<Box component={'div'} className={'router-box'}>

@@ -1,3 +1,30 @@
+.gymflow-logo {
+	transform-origin: center;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+	.gymflow-logo {
+		transition: transform 560ms cubic-bezier(0.22, 1, 0.36, 1);
+	}
+
+	@media (hover: hover) and (pointer: fine) {
+		.gymflow-logo:hover,
+		a:hover > .gymflow-logo {
+			transform: translateY(-1px) scale(1.025);
+		}
+	}
+
+	a:focus-visible > .gymflow-logo {
+		transform: translateY(-1px) scale(1.025);
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.gymflow-logo {
+		transition: none;
+	}
+}
+
 .program-big-card-box {
 	position: relative;
 	margin-right: 8px;
@@ -315,14 +342,6 @@
 	}
 }
 
-.gymflow-logo {
- font-family: $font;
- font-size: 28px;
- font-weight: 700;
- letter-spacing: -1px;
- color: inherit;
- white-space: nowrap;
-}
 #pc-wrap .header-main .gymflow-search {
  width: 100%;
  height: auto;
