@@ -5,6 +5,10 @@ import { ProgramCategory, ProgramLocation, ProgramType } from '../../enums/progr
 import { ProgramsInquiry } from '../../types/program/program.input';
 import { readProgramsInquiry } from '../../program';
 import { useTranslation } from 'next-i18next';
+import { motion, useReducedMotion } from 'framer-motion';
+
+const MotionStack = motion.create(Stack);
+const MotionButton = motion.create(Button);
 
 interface FilterType {
 	searchFilter: ProgramsInquiry;
@@ -16,9 +20,17 @@ interface FilterType {
 const Filter = ({ searchFilter, setSearchFilter, initialInput, compact = false }: FilterType) => {
 	const device = useDeviceDetect();
 	const { t } = useTranslation('common');
+	const shouldReduceMotion = useReducedMotion();
+	const SearchStack = compact ? MotionStack : Stack;
+	const SearchButton = compact ? MotionButton : Button;
+	const [motionReady, setMotionReady] = useState(false);
 	const [draft, setDraft] = useState<ProgramsInquiry>(searchFilter);
 	const [error, setError] = useState('');
 	const [openSelect, setOpenSelect] = useState<'locationList' | 'typeList' | 'categoryList' | null>(null);
+	useEffect(() => {
+		setMotionReady(true);
+	}, []);
+
 	useEffect(() => {
 		setDraft(searchFilter);
 		setError('');
@@ -58,10 +70,17 @@ const Filter = ({ searchFilter, setSearchFilter, initialInput, compact = false }
 	if (device === 'mobile') return <div>PROGRAM FILTER MOBILE</div>;
 
 	return (
-		<Stack
+		<SearchStack
 			className={compact ? 'search-box gymflow-search' : 'filter-main'}
 			spacing={compact ? 0 : 2}
 			sx={compact ? undefined : { padding: 2 }}
+			{...(compact
+				? {
+						initial: false as const,
+						animate: motionReady && shouldReduceMotion === false ? { opacity: [0, 1] } : { opacity: 1 },
+						transition: { duration: shouldReduceMotion ? 0 : 0.4, ease: 'easeOut' as const },
+					}
+				: {})}
 		>
 			{!compact && <Typography className="title-main">{t('Find Your Program')}</Typography>}
 			{!compact && (
@@ -100,7 +119,11 @@ const Filter = ({ searchFilter, setSearchFilter, initialInput, compact = false }
 									displayEmpty: true,
 									renderValue: (selected) =>
 										(selected as string[]).length ? (selected as string[]).map((value) => t(value)).join(', ') : t(label),
-									MenuProps: { disableScrollLock: true, PaperProps: { className: 'gymflow-search-menu' } },
+									MenuProps: {
+										disableScrollLock: true,
+										transitionDuration: shouldReduceMotion ? 0 : { enter: 140, exit: 100 },
+										PaperProps: { className: 'gymflow-search-menu' },
+									},
 								}
 							: { multiple: true }
 					}
@@ -137,9 +160,20 @@ const Filter = ({ searchFilter, setSearchFilter, initialInput, compact = false }
 					/>
 				</>
 			)}
-			<Button className={compact ? 'search-button' : undefined} variant="contained" onClick={searchHandler}>
+			<SearchButton
+				className={compact ? 'search-button' : undefined}
+				variant="contained"
+				onClick={searchHandler}
+				{...(compact && shouldReduceMotion === false
+					? {
+							whileHover: { y: -1 },
+							whileTap: { scale: 0.98 },
+							transition: { type: 'spring' as const, stiffness: 350, damping: 28 },
+						}
+					: {})}
+			>
 				{t(compact ? 'Search' : 'Program Search')}
-			</Button>
+			</SearchButton>
 			{!compact && (
 				<Button
 					onClick={() => {
@@ -155,7 +189,7 @@ const Filter = ({ searchFilter, setSearchFilter, initialInput, compact = false }
 					{error}
 				</Typography>
 			)}
-		</Stack>
+		</SearchStack>
 	);
 };
 

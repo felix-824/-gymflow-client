@@ -83,6 +83,9 @@ body::-webkit-scrollbar {
 							background: #eb6753;
 							transform: scaleX(0);
 							transform-origin: left;
+							@media (prefers-reduced-motion: no-preference) {
+								transition: transform 180ms ease-out;
+							}
 						}
 						&:hover::after,
 						&:focus-visible::after {

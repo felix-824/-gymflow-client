@@ -17,6 +17,9 @@ import { useReactiveVar } from '@apollo/client';
 import { userVar } from '../../apollo/store';
 import { Logout } from '@mui/icons-material';
 import { REACT_APP_API_URL } from '../config';
+import { motion, useReducedMotion } from 'framer-motion';
+
+const MotionStack = motion.create(Stack);
 
 const Top = () => {
 	const device = useDeviceDetect();
@@ -24,6 +27,9 @@ const Top = () => {
 	const { t, i18n } = useTranslation('common');
 	const router = useRouter();
 	const isHome = router.pathname === '/';
+	const shouldReduceMotion = useReducedMotion();
+	const NavbarContent = isHome ? MotionStack : Stack;
+	const [motionReady, setMotionReady] = useState(false);
 	const [anchorEl2, setAnchorEl2] = useState<null | HTMLElement>(null);
 	const [lang, setLang] = useState<string | null>('en');
 	const drop = Boolean(anchorEl2);
@@ -35,6 +41,10 @@ const Top = () => {
 	const logoutOpen = Boolean(logoutAnchor);
 
 	/** LIFECYCLES **/
+	useEffect(() => {
+		setMotionReady(true);
+	}, []);
+
 	useEffect(() => {
 		if (localStorage.getItem('locale') === null) {
 			localStorage.setItem('locale', 'en');
@@ -50,8 +60,12 @@ const Top = () => {
 			default: setBgColor(false); break;
 		}
 	}, [router]);
-
-
+	useEffect(() => {
+		const changeNavbarColor = () => setColorChange(window.scrollY >= 50);
+		changeNavbarColor();
+		window.addEventListener('scroll', changeNavbarColor, { passive: true });
+		return () => window.removeEventListener('scroll', changeNavbarColor);
+	}, []);
 
 	/** HANDLERS **/
 	const langClick = (e: any) => {
@@ -71,14 +85,6 @@ const Top = () => {
 		},
 		[router],
 	);
-
-	const changeNavbarColor = () => {
-		if (window.scrollY >= 50) {
-			setColorChange(true);
-		} else {
-			setColorChange(false);
-		}
-	};
 
 	const handleClose = () => {
 		setAnchorEl(null);
@@ -130,10 +136,6 @@ const Top = () => {
 		},
 	}));
 
-	if (typeof window !== 'undefined') {
-		window.addEventListener('scroll', changeNavbarColor);
-	}
-
 	if (device == 'mobile') {
 		return (
 			<Stack className={'top'}>
@@ -160,7 +162,16 @@ const Top = () => {
 				<Stack
 					className={`navbar-main ${isHome ? 'home-navbar' : ''} ${colorChange ? 'transparent' : ''} ${bgColor ? 'transparent' : ''}`}
 				>
-					<Stack className={'container'}>
+					<NavbarContent
+						className={'container'}
+						{...(isHome
+							? {
+									initial: false as const,
+									animate: motionReady && shouldReduceMotion === false ? { opacity: [0, 1], y: [-6, 0] } : { opacity: 1, y: 0 },
+									transition: { duration: shouldReduceMotion ? 0 : 0.32, ease: 'easeOut' as const },
+								}
+							: {})}
+					>
 						<Box component={'div'} className={'logo-box'}>
 							<Link href={'/'}>
 								<img src="/img/logo/logoWhite.svg" alt="GymFlow" className={'gymflow-logo'} />
@@ -277,7 +288,7 @@ const Top = () => {
 								</StyledMenu>
 							</div>
 						</Box>
-					</Stack>
+					</NavbarContent>
 				</Stack>
 			</Stack>
 		);

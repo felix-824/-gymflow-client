@@ -375,7 +375,9 @@
 			font-family: $font;
 			font-size: 18px;
 			font-weight: 500;
-			transition: background-color 180ms ease;
+			@media (prefers-reduced-motion: no-preference) {
+				transition: background-color 180ms ease;
+			}
 			.MuiOutlinedInput-notchedOutline {
 				border: 1px solid rgba(255, 255, 255, 0.75);
 			}
