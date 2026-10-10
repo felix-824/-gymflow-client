@@ -100,7 +100,7 @@ const Filter = ({ searchFilter, setSearchFilter, initialInput, compact = false }
 									displayEmpty: true,
 									renderValue: (selected) =>
 										(selected as string[]).length ? (selected as string[]).map((value) => t(value)).join(', ') : t(label),
-									MenuProps: { PaperProps: { className: 'gymflow-search-menu' } },
+									MenuProps: { disableScrollLock: true, PaperProps: { className: 'gymflow-search-menu' } },
 								}
 							: { multiple: true }
 					}
