@@ -45,5 +45,18 @@
 	"DAEGU": "Daegu",
 	"DAEJEON": "Daejeon",
 	"GWANGJU": "Gwangju",
-	"ETC": "Other"
+	"ETC": "Other",
+	"Trend Programs": "Trend Programs",
+	"Trend is based on likes": "Discover the programs our community loves.",
+	"No trending programs": "No trending programs yet.",
+	"View program": "View {{name}}",
+	"Like program": "Like {{name}}",
+	"Unlike program": "Unlike {{name}}",
+	"Session duration": "{{duration}} min/session",
+	"Session capacity": "{{capacity}} participants/session",
+	"Per session": "/session",
+	"Program views": "{{views}} views",
+	"Program likes": "{{likes}} likes",
+	"Previous programs": "Previous programs",
+	"Next programs": "Next programs"
 }

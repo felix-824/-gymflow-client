@@ -45,5 +45,18 @@
 	"DAEGU": "Тэгу",
 	"DAEJEON": "Тэджон",
 	"GWANGJU": "Кванджу",
-	"ETC": "Другое"
+	"ETC": "Другое",
+	"Trend Programs": "Популярные программы",
+	"Trend is based on likes": "Программы, которые нравятся нашему сообществу.",
+	"No trending programs": "Популярных программ пока нет.",
+	"View program": "Открыть {{name}}",
+	"Like program": "Нравится: {{name}}",
+	"Unlike program": "Убрать отметку «Нравится»: {{name}}",
+	"Session duration": "{{duration}} мин/занятие",
+	"Session capacity": "Участников за занятие: {{capacity}}",
+	"Per session": "/занятие",
+	"Program views": "Просмотров: {{views}}",
+	"Program likes": "Отметок «Нравится»: {{likes}}",
+	"Previous programs": "Предыдущие программы",
+	"Next programs": "Следующие программы"
 }

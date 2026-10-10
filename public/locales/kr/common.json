@@ -45,5 +45,18 @@
 	"DAEGU": "대구",
 	"DAEJEON": "대전",
 	"GWANGJU": "광주",
-	"ETC": "기타"
+	"ETC": "기타",
+	"Trend Programs": "인기 급상승 프로그램",
+	"Trend is based on likes": "커뮤니티가 좋아하는 프로그램을 만나보세요.",
+	"No trending programs": "아직 인기 급상승 프로그램이 없습니다.",
+	"View program": "{{name}} 보기",
+	"Like program": "{{name}} 좋아요",
+	"Unlike program": "{{name}} 좋아요 취소",
+	"Session duration": "회당 {{duration}}분",
+	"Session capacity": "회당 {{capacity}}명",
+	"Per session": "/회",
+	"Program views": "조회 {{views}}회",
+	"Program likes": "좋아요 {{likes}}개",
+	"Previous programs": "이전 프로그램",
+	"Next programs": "다음 프로그램"
 }

@@ -1,0 +1,284 @@
+// Shared by the existing desktop and mobile Home trend sections only.
+@mixin trend-programs {
+	width: 100%;
+	height: auto;
+	box-sizing: border-box;
+	.container {
+		flex-direction: column;
+		min-width: 0;
+		.info-box {
+			align-items: center;
+			h2 {
+				margin: 0;
+				color: #232522;
+				font-family: $font;
+				font-size: 34px;
+				font-weight: 600;
+				line-height: 1.3;
+				letter-spacing: -0.8px;
+			}
+			.left p {
+				margin-top: 10px;
+				color: #6b706a;
+				font-size: 14px;
+			}
+			.right {
+				align-items: center;
+			}
+			.pagination-box {
+				gap: 12px;
+				.swiper-trend-prev,
+				.swiper-trend-next {
+					margin: 0;
+					width: 40px;
+					height: 40px;
+					border: 1px solid #e4e6e0;
+					border-radius: 50%;
+					color: #434940;
+					background: #fff;
+					&:hover {
+						background: #f5f6f2;
+					}
+					&.swiper-button-disabled {
+						opacity: 0.4;
+						cursor: default;
+					}
+					svg {
+						font-size: 18px;
+					}
+				}
+				.swiper-pagination-bullet-active {
+					background: #eb6753;
+				}
+			}
+		}
+		.card-box {
+			position: relative;
+			margin-top: 36px;
+			min-width: 0;
+			.empty-list {
+				width: 100%;
+				min-height: 280px;
+				display: flex;
+				align-items: center;
+				justify-content: center;
+				color: #6b706a;
+			}
+			.trend-program-swiper {
+				width: 100%;
+				height: auto;
+				padding: 6px 0 22px;
+				.swiper-wrapper {
+					align-items: stretch;
+				}
+				.trend-program-slide {
+					width: 300px;
+					height: auto;
+					display: flex;
+				}
+			}
+			.trend-card-box {
+				width: 300px;
+				min-width: 0;
+				height: auto;
+				box-sizing: border-box;
+				overflow: hidden;
+				border: 1px solid #e7e8e2;
+				border-radius: 20px;
+				background: #fff;
+				box-shadow: 0 4px 14px rgba(35, 37, 34, 0.045);
+				font-family: $font;
+				a:focus-visible,
+				button:focus-visible {
+					outline: 2px solid #eb6753;
+					outline-offset: 3px;
+				}
+				.card-media {
+					position: relative;
+					flex-shrink: 0;
+				}
+				.card-img {
+					display: block;
+					width: 100%;
+					height: 190px;
+					background: #f0f1eb;
+					&:focus-visible {
+						outline-offset: -4px;
+					}
+					img {
+						display: block;
+						width: 100%;
+						height: 100%;
+						object-fit: cover;
+						object-position: center;
+					}
+					.image-fallback {
+						display: flex;
+						width: 100%;
+						height: 100%;
+						align-items: center;
+						justify-content: center;
+						color: #8c9588;
+						svg {
+							font-size: 44px;
+						}
+					}
+				}
+				.category-badge {
+					position: absolute;
+					top: 14px;
+					left: 14px;
+					max-width: calc(100% - 80px);
+					padding: 7px 11px;
+					border: 1px solid rgba(255, 255, 255, 0.75);
+					border-radius: 100px;
+					background: #fff;
+					color: #434940;
+					font-size: 12px;
+					font-weight: 600;
+					line-height: 1.4;
+					pointer-events: none;
+				}
+				.like-button {
+					position: absolute;
+					top: 12px;
+					right: 12px;
+					width: 40px;
+					height: 40px;
+					background: #fff;
+					color: #494e47;
+					box-shadow: 0 2px 8px rgba(35, 37, 34, 0.08);
+					&:hover {
+						background: #fff4f0;
+					}
+					&.is-liked {
+						color: #c84e3d;
+					}
+					svg {
+						font-size: 20px;
+					}
+				}
+				.info {
+					display: flex;
+					flex: 1;
+					flex-direction: column;
+					gap: 12px;
+					padding: 20px;
+					min-width: 0;
+				}
+				.program-type {
+					margin: 0;
+					color: #99604c;
+					font-size: 12px;
+					font-weight: 600;
+					line-height: 1.5;
+				}
+				.title {
+					margin: 0;
+					min-height: 48px;
+					font-size: 18px;
+					font-weight: 600;
+					line-height: 24px;
+					letter-spacing: -0.3px;
+					a {
+						display: -webkit-box;
+						-webkit-box-orient: vertical;
+						-webkit-line-clamp: 2;
+						overflow: hidden;
+						white-space: normal;
+						overflow-wrap: anywhere;
+						color: #232522;
+						&:hover {
+							color: #b44837;
+						}
+					}
+				}
+				.program-location,
+				.session-details > span,
+				.engagement > span {
+					display: flex;
+					align-items: center;
+					gap: 6px;
+				}
+				.program-location {
+					margin: 0;
+					color: #6b706a;
+					font-size: 13px;
+					line-height: 20px;
+				}
+				.program-location svg,
+				.session-details svg,
+				.engagement svg {
+					flex-shrink: 0;
+					font-size: 17px;
+				}
+				.desc {
+					margin: 0;
+					display: -webkit-box;
+					-webkit-box-orient: vertical;
+					-webkit-line-clamp: 2;
+					overflow: hidden;
+					overflow-wrap: anywhere;
+					color: #6b706a;
+					font-size: 13px;
+					line-height: 20px;
+				}
+				.session-details {
+					display: flex;
+					flex-wrap: wrap;
+					gap: 10px 14px;
+					padding: 4px 0;
+					color: #5f665c;
+					font-size: 12px;
+					line-height: 18px;
+				}
+				.card-footer {
+					display: flex;
+					flex-wrap: wrap;
+					align-items: center;
+					justify-content: space-between;
+					gap: 12px;
+					margin-top: auto;
+					padding-top: 16px;
+					border-top: 1px solid #eeeee8;
+				}
+				.program-price {
+					margin: 0;
+					display: flex;
+					flex-wrap: wrap;
+					align-items: baseline;
+					gap: 5px;
+					strong {
+						color: #232522;
+						font-size: 19px;
+						font-weight: 600;
+						line-height: 1.4;
+					}
+					span {
+						color: #6b706a;
+						font-size: 12px;
+					}
+				}
+				.engagement {
+					display: flex;
+					flex-wrap: wrap;
+					gap: 10px;
+					color: #6b706a;
+					font-size: 12px;
+				}
+				@media (hover: hover) and (prefers-reduced-motion: no-preference) {
+					transition: transform 220ms ease, box-shadow 220ms ease;
+					&:hover {
+						transform: translateY(-3px);
+						box-shadow: 0 10px 24px rgba(35, 37, 34, 0.09);
+					}
+				}
+			}
+		}
+	}
+	.swiper-trend-prev:focus-visible,
+	.swiper-trend-next:focus-visible {
+		outline: 2px solid #eb6753;
+		outline-offset: 3px;
+	}
+}

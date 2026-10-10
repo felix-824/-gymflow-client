@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { Stack, Box } from '@mui/material';
+import { Stack, Box, IconButton } from '@mui/material';
+import { useTranslation } from 'next-i18next';
 import useDeviceDetect from '../../hooks/useDeviceDetect';
 import WestIcon from '@mui/icons-material/West';
 import EastIcon from '@mui/icons-material/East';
@@ -22,6 +23,7 @@ interface TrendProgramsProps {
 const TrendPrograms = (props: TrendProgramsProps) => {
 	const { initialInput } = props;
 	const device = useDeviceDetect();
+	const { t } = useTranslation('common');
 	const [trendPrograms, setTrendPrograms] = useState<Program[]>([]);
 
 	/** APOLLO REQUESTS **/
@@ -71,12 +73,12 @@ const {
 			<Stack className={'trend-programs'}>
 				<Stack className={'container'}>
 					<Stack className={'info-box'}>
-						<span>Trend Programs</span>
+						<h2>{t('Trend Programs')}</h2>
 					</Stack>
 					<Stack className={'card-box'}>
 						{trendPrograms.length === 0 ? (
 							<Box component={'div'} className={'empty-list'}>
-								Trends Empty
+								{t('No trending programs')}
 							</Box>
 						) : (
 							<Swiper
@@ -105,21 +107,25 @@ const {
 				<Stack className={'container'}>
 					<Stack className={'info-box'}>
 						<Box component={'div'} className={'left'}>
-							<span>Trend Programs</span>
-							<p>Trend is based on likes</p>
+							<h2>{t('Trend Programs')}</h2>
+							<p>{t('Trend is based on likes')}</p>
 						</Box>
 						<Box component={'div'} className={'right'}>
 							<div className={'pagination-box'}>
-								<WestIcon className={'swiper-trend-prev'} />
+								<IconButton className={'swiper-trend-prev'} aria-label={t('Previous programs')}>
+									<WestIcon />
+								</IconButton>
 								<div className={'swiper-trend-pagination'}></div>
-								<EastIcon className={'swiper-trend-next'} />
+								<IconButton className={'swiper-trend-next'} aria-label={t('Next programs')}>
+									<EastIcon />
+								</IconButton>
 							</div>
 						</Box>
 					</Stack>
 					<Stack className={'card-box'}>
 						{trendPrograms.length === 0 ? (
 							<Box component={'div'} className={'empty-list'}>
-								Trends Empty
+								{t('No trending programs')}
 							</Box>
 						) : (
 							<Swiper
