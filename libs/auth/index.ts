@@ -78,7 +78,6 @@ export const updateUserInfo = (jwtToken: string, member?: Member): Promise<void>
 	if (restoring && restoringToken === jwtToken) return restoring;
 	if (profileToken !== jwtToken) {
 		userVar({ ...emptyUser });
-		void initializeApollo().clearStore();
 	}
 	restoringToken = jwtToken;
 	authReadyVar(false);
@@ -97,6 +96,7 @@ export const updateUserInfo = (jwtToken: string, member?: Member): Promise<void>
 		}
 		try {
 			const client = initializeApollo();
+			if (profileToken !== jwtToken) await client.clearStore();
 			await client.query({ query: CHECK_AUTH, fetchPolicy: 'network-only' });
 			if (getJwtToken() !== jwtToken) return;
 			const result = await client.query({

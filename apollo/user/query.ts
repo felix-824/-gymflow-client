@@ -27,6 +27,7 @@ export const GET_TRAINERS = gql`
 				memberWarnings
 				memberBlocks
 				memberPrograms
+				memberFollowers
 				memberRank
 				memberPoints
 				memberLikes
@@ -39,6 +40,9 @@ export const GET_TRAINERS = gql`
 					memberId
 					likeRefId
 					myFavorite
+				}
+				meFollowed {
+					myFollowing
 				}
 			}
 			metaCounter {

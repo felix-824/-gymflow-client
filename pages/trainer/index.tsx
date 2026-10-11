@@ -1,4 +1,4 @@
-import React, { ChangeEvent, MouseEvent, useEffect, useMemo, useState } from 'react';
+import React, { ChangeEvent, MouseEvent, useEffect, useMemo, useRef, useState } from 'react';
 import { NextPage } from 'next';
 import Head from 'next/head';
 import withLayoutBasic from '../../libs/components/layout/LayoutBasic';
@@ -16,7 +16,7 @@ import { Member } from '../../libs/types/member/member';
 import { useMutation, useQuery, useReactiveVar } from '@apollo/client';
 import { authReadyVar } from '../../apollo/store';
 import { GET_TRAINERS } from '../../apollo/user/query';
-import { LIKE_TARGET_MEMBER } from '../../apollo/user/mutation';
+import { LIKE_TARGET_MEMBER, SUBSCRIBE, UNSUBSCRIBE } from '../../apollo/user/mutation';
 import { sweetMixinErrorAlert, sweetTopSmallSuccessAlert } from '../../libs/sweetAlert';
 import { Messages } from '../../libs/config';
 
@@ -40,9 +40,13 @@ const TrainerList: NextPage = ({ initialInput }: any) => {
 	);
 	const currentPage = searchFilter.page;
 	const [searchText, setSearchText] = useState<string>('');
+	const pendingFollowIds = useRef(new Set<string>());
+	const [pendingFollows, setPendingFollows] = useState<Set<string>>(new Set());
 
 	/** APOLLO REQUESTS **/
 	const [likeTargetMember] = useMutation(LIKE_TARGET_MEMBER);
+	const [subscribe] = useMutation(SUBSCRIBE);
+	const [unsubscribe] = useMutation(UNSUBSCRIBE);
 
 	const {
 		data: getTrainersData,
@@ -123,6 +127,29 @@ const TrainerList: NextPage = ({ initialInput }: any) => {
 		} catch (err: any) {
 			console.log('ERROR, likeProgramHandler:', err.message);
 			sweetMixinErrorAlert(err.message).then();
+		}
+	};
+
+	const followMemberHandler = async (user: any, id: string, following: boolean) => {
+		if (!id || id === user._id || pendingFollowIds.current.has(id)) return;
+		let submitted = false;
+		try {
+			if (!user._id) throw new Error(Messages.error2);
+			pendingFollowIds.current.add(id);
+			setPendingFollows(new Set(pendingFollowIds.current));
+			submitted = true;
+			await (following ? unsubscribe : subscribe)({ variables: { input: id } });
+			await getTrainersRefetch();
+			await sweetTopSmallSuccessAlert(
+				t(following ? 'Trainer discovery.Unfollowed' : 'Trainer discovery.Followed'),
+				800,
+			);
+		} catch (err: any) {
+			if (submitted) await getTrainersRefetch().catch(() => undefined);
+			void sweetMixinErrorAlert(err.message);
+		} finally {
+			pendingFollowIds.current.delete(id);
+			setPendingFollows(new Set(pendingFollowIds.current));
 		}
 	};
 
@@ -261,7 +288,13 @@ const TrainerList: NextPage = ({ initialInput }: any) => {
 								</div>
 						  ))
 						: trainers.map((trainer: Member) => (
-								<TrainerCard trainer={trainer} likeMemberHandler={likeMemberHandler} key={trainer._id} />
+								<TrainerCard
+									trainer={trainer}
+									likeMemberHandler={likeMemberHandler}
+									followMemberHandler={followMemberHandler}
+									followPending={pendingFollows.has(trainer._id)}
+									key={trainer._id}
+								/>
 						  ))}
 				</div>
 				{!initialLoading && !getTrainersLoading && !getTrainersError && trainers.length === 0 && (

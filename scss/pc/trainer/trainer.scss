@@ -174,6 +174,33 @@
 			box-shadow: 0 2px 8px rgba(18, 21, 29, 0.06);
 		}
 		.trainer-discovery-card {
+			.trainer-card-media {
+				position: relative;
+			}
+			.trainer-card-like {
+				position: absolute;
+				top: 12px;
+				right: 12px;
+				min-width: 64px;
+				min-height: 44px;
+				gap: 6px;
+				padding: 8px 12px;
+				border-radius: 24px;
+				color: #595f6a;
+				background: #fff;
+				font-size: 13px;
+				font-weight: 600;
+				font-variant-numeric: tabular-nums;
+				svg {
+					font-size: 19px;
+				}
+				&:hover {
+					background: #f2f4f6;
+				}
+				&[aria-pressed='true'] {
+					color: #a53425;
+				}
+			}
 			.trainer-card-photo {
 				display: block;
 				aspect-ratio: 4 / 3;
@@ -268,7 +295,7 @@
 			}
 			.trainer-card-stats {
 				display: grid;
-				grid-template-columns: repeat(2, minmax(0, 1fr));
+				grid-template-columns: repeat(3, minmax(0, 1fr));
 				gap: 12px;
 				margin: 0;
 				padding: 12px;
@@ -276,8 +303,9 @@
 				border-radius: 8px;
 				> div {
 					display: flex;
-					flex-wrap: wrap;
-					align-items: baseline;
+					flex-direction: column;
+					align-items: center;
+					text-align: center;
 					gap: 4px 8px;
 					min-width: 0;
 				}
@@ -325,25 +353,34 @@
 						background: #2e313b;
 					}
 				}
-				.trainer-card-like {
-					min-width: 72px;
+				.trainer-card-follow {
+					min-width: 0;
 					gap: 6px;
 					padding: 8px 12px;
 					border-radius: 24px;
-					color: #595f6a;
+					color: #12151d;
 					background: #f2f4f6;
 					font-size: 13px;
 					line-height: 1.5;
 					font-weight: 600;
-					font-variant-numeric: tabular-nums;
+					text-transform: none;
+					flex: 1;
+					span {
+						overflow-wrap: anywhere;
+					}
 					svg {
 						font-size: 19px;
+						flex-shrink: 0;
 					}
 					&:hover {
 						background: #edeef0;
 					}
 					&[aria-pressed='true'] {
 						color: #a53425;
+						background: #fcece8;
+					}
+					&.Mui-disabled {
+						opacity: 0.6;
 					}
 				}
 			}
@@ -472,6 +509,10 @@
 			}
 			.trainer-discovery-card .trainer-card-body {
 				padding: 16px;
+			}
+			.trainer-discovery-card .trainer-card-like {
+				left: 12px;
+				right: auto;
 			}
 			.trainer-discovery-pagination {
 				margin-top: 28px;
