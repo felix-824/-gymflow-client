@@ -5,6 +5,7 @@ import Head from 'next/head';
 import Top from '../Top';
 import Footer from '../Footer';
 import { Stack } from '@mui/material';
+import { createTheme, ThemeProvider, useTheme } from '@mui/material/styles';
 
 import Chat from '../Chat';
 
@@ -19,6 +20,23 @@ const withLayoutBasic = (Component: any) => {
 		const { t, i18n } = useTranslation('common');
 		const device = useDeviceDetect();
 		const authHeader = router.pathname === '/account/join';
+		const theme = useTheme();
+		const programTheme = useMemo(() => {
+			if (router.pathname !== '/program') return theme;
+			const fontFamily = "'Plus Jakarta Sans', sans-serif";
+			const typography = Object.fromEntries(
+				Object.entries(theme.typography).map(([variant, value]) => [
+					variant,
+					typeof value === 'object' ? { ...value, fontFamily } : value,
+				]),
+			);
+			return createTheme(theme, {
+				palette: {
+					primary: { main: '#EB6753', dark: '#A53425', contrastText: '#12151D' },
+				},
+				typography: { ...typography, fontFamily },
+			});
+		}, [theme, router.pathname]);
 
 		const memoizedValues = useMemo(() => {
 			let title = '',
@@ -86,6 +104,33 @@ const withLayoutBasic = (Component: any) => {
 		/** LIFECYCLES **/
 
 		/** HANDLERS **/
+
+		if (router.pathname === '/program') {
+			return (
+				<ThemeProvider theme={programTheme}>
+					<Head>
+						<title>GymFlow</title>
+						<meta name={'title'} content={`GymFlow`} />
+						<link
+							rel="stylesheet"
+							href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap"
+						/>
+					</Head>
+					<Stack id="pc-wrap" className={`program-discovery-layout${device === 'mobile' ? ' is-mobile' : ''}`}>
+						<Stack id={'top'}>
+							<Top />
+						</Stack>
+						<Stack id={'main'} component="main">
+							<Component {...props} />
+						</Stack>
+						{device !== 'mobile' && <Chat />}
+						<Stack id={'footer'}>
+							<Footer />
+						</Stack>
+					</Stack>
+				</ThemeProvider>
+			);
+		}
 
 		if (device == 'mobile') {
 			return (

@@ -14,7 +14,7 @@
 				button {
 					margin-left: 10px;
 					color: #181a20;
-					font-family: $font;
+					font-family: var(--program-font, #{$font});
 					font-size: 14px;
 					font-style: normal;
 					font-weight: bold;
@@ -56,7 +56,7 @@
 								width: 100%;
 								height: 25px;
 								color: #181a20;
-								font-family: $font;
+								font-family: var(--program-font, #{$font});
 								font-size: 15px;
 								font-style: normal;
 								font-weight: 600;
@@ -66,7 +66,7 @@
 								width: auto;
 								height: auto;
 								color: #181a20;
-								font-family: $font;
+								font-family: var(--program-font, #{$font});
 								font-size: 14px;
 								font-style: normal;
 								font-weight: 600;
@@ -89,7 +89,7 @@
 									outline: none;
 									padding-left: 43px;
 									color: #717171;
-									font-family: $font;
+									font-family: var(--program-font, #{$font});
 									font-size: 14px;
 									font-style: normal;
 									font-weight: 400;
@@ -124,7 +124,7 @@
 								cursor: pointer;
 								box-shadow: rgba(50, 50, 93, 0.25) 0px 6px 12px -2px, rgba(0, 0, 0, 0.3) 0px 3px 7px -3px;
 								color: #717171;
-								font-family: $font;
+								font-family: var(--program-font, #{$font});
 								font-size: 14px;
 								font-style: normal;
 								font-weight: 400;
@@ -147,7 +147,7 @@
 							}
 							.program-type {
 								color: #181a20;
-								font-family: $font;
+								font-family: var(--program-font, #{$font});
 								font-size: 14px;
 								font-style: normal;
 								font-weight: 400;
@@ -161,7 +161,7 @@
 									width: 100%;
 									color: #181a20;
 									text-align: center;
-									font-family: $font;
+									font-family: var(--program-font, #{$font});
 									font-size: 13px;
 									font-style: normal;
 									font-weight: 600;
@@ -191,7 +191,7 @@
 								}
 								input::placeholder {
 									color: #717171;
-									font-family: $font;
+									font-family: var(--program-font, #{$font});
 									font-size: 14px;
 									font-style: normal;
 									font-weight: 400;
@@ -247,7 +247,7 @@
 									color: #fff;
 									text-align: center;
 									text-shadow: 0px 4px 4px rgba(0, 0, 0, 0.25);
-									font-family: $font;
+									font-family: var(--program-font, #{$font});
 									font-size: 12px;
 									font-style: normal;
 									font-weight: 600;
@@ -267,7 +267,7 @@
 									background: #fff;
 									p {
 										color: #181a20;
-										font-family: $font;
+										font-family: var(--program-font, #{$font});
 										font-size: 15px;
 										font-style: normal;
 										font-weight: 600;
@@ -290,7 +290,7 @@
 										overflow: hidden;
 										p {
 											color: #181a20;
-											font-family: $font;
+											font-family: var(--program-font, #{$font});
 											font-size: 15px;
 											font-style: normal;
 											font-weight: 600;
@@ -303,7 +303,7 @@
 										overflow: hidden;
 										p {
 											color: #717171;
-											font-family: $font;
+											font-family: var(--program-font, #{$font});
 											font-size: 13px;
 											font-style: normal;
 											font-weight: 400;
@@ -323,7 +323,7 @@
 										align-items: center;
 										p {
 											color: #181a20;
-											font-family: $font;
+											font-family: var(--program-font, #{$font});
 											font-size: 13px;
 											font-style: normal;
 											font-weight: 400;
@@ -348,13 +348,13 @@
 										gap: 7px;
 										p {
 											color: #181a20;
-											font-family: $font;
+											font-family: var(--program-font, #{$font});
 											font-style: normal;
 											line-height: normal;
 										}
 										.disabled-type {
 											color: rgba(143, 143, 143, 0.54);
-											font-family: $font;
+											font-family: var(--program-font, #{$font});
 											font-style: normal;
 											line-height: normal;
 										}
@@ -390,7 +390,7 @@
 							p {
 								color: #181a20;
 								text-align: center;
-								font-family: $font;
+								font-family: var(--program-font, #{$font});
 								font-size: 24px;
 								font-style: normal;
 								font-weight: 275;
@@ -401,5 +401,238 @@
 				}
 			}
 		}
+	}
+}
+
+#pc-wrap.program-discovery-layout {
+	--program-primary: #eb6753;
+	--program-primary-pressed: #a53425;
+	--program-dark: #12151d;
+	--program-canvas: #f8f9fb;
+	--program-surface: #ffffff;
+	--program-text: #17191f;
+	--program-muted: #737985;
+	--program-border: #e7e9ee;
+	--program-font: 'Plus Jakarta Sans', sans-serif;
+	--program-gutter: 32px;
+	min-height: 100vh;
+	background: var(--program-canvas);
+	color: var(--program-text);
+	font-family: var(--program-font);
+	line-height: 1.5;
+
+	.container,
+	#footer .footer-container {
+		width: calc(100% - var(--program-gutter) * 2);
+		max-width: 1280px;
+		min-width: 0;
+	}
+
+	#main {
+		flex: 1;
+		min-width: 0;
+		padding-top: 87px;
+	}
+
+	#main ::selection {
+		background: rgba(235, 103, 83, 0.2);
+		color: var(--program-dark);
+	}
+
+	#main :focus-visible {
+		outline: 2px solid var(--program-primary);
+		outline-offset: 3px;
+	}
+
+	#main input {
+		caret-color: var(--program-primary);
+	}
+
+	#top .navbar .navbar-main {
+		background: var(--program-dark);
+		.container {
+			gap: 24px;
+			.router-box {
+				width: auto;
+				min-width: 0;
+				flex: 1;
+				gap: 20px;
+			}
+			.user-box {
+				width: auto;
+				flex-shrink: 0;
+			}
+			.lan-box {
+				margin-left: 12px;
+			}
+		}
+	}
+
+	#top > .top {
+		position: fixed;
+		inset: 0 0 auto;
+		z-index: 99;
+		min-height: 72px;
+		padding: 16px var(--program-gutter);
+		flex-direction: row;
+		align-items: center;
+		gap: 24px;
+		overflow-x: auto;
+		background: var(--program-dark);
+		a {
+			color: var(--program-surface);
+		}
+	}
+
+	#program-list-page {
+		padding: 32px 0 48px;
+		background: var(--program-canvas);
+		> .container {
+			flex-direction: column;
+			gap: 24px;
+			> .right {
+				position: static;
+				align-self: flex-end;
+				flex-wrap: wrap;
+				gap: 8px;
+			}
+			.program-page {
+				display: grid;
+				grid-template-columns: 280px minmax(0, 1fr);
+				align-items: start;
+				gap: 24px;
+				padding-top: 0;
+				.filter-config {
+					width: auto;
+					min-width: 0;
+					.filter-main {
+						box-sizing: border-box;
+					}
+				}
+				.main-config {
+					width: 100%;
+					min-width: 0;
+					gap: 32px;
+					margin-bottom: 0;
+					.list-config {
+						display: grid;
+						grid-template-columns: repeat(2, minmax(0, 1fr));
+						align-items: start;
+						gap: 24px;
+						> p,
+						> .no-data {
+							grid-column: 1 / -1;
+						}
+						.card-config {
+							width: 100%;
+							min-width: 0;
+							height: auto;
+							margin-bottom: 0;
+							.bottom {
+								height: auto;
+								.options,
+								.type-buttons,
+								.type-buttons .type {
+									flex-wrap: wrap;
+									gap: 8px;
+									height: auto;
+								}
+							}
+						}
+					}
+					.pagination-config {
+						width: 100%;
+						height: auto;
+						.total-result p {
+							font-size: 14px;
+							font-weight: 400;
+							color: var(--program-muted);
+						}
+					}
+				}
+			}
+		}
+	}
+
+	#program-list-page p,
+	#program-list-page span,
+	#program-list-page button,
+	#program-list-page input,
+	#program-list-page label {
+		font-family: var(--program-font);
+	}
+
+	#program-list-page .price-box,
+	#program-list-page .view-cnt,
+	#program-list-page input[type='number'] {
+		font-variant-numeric: tabular-nums;
+	}
+
+	#footer {
+		background: var(--program-dark);
+	}
+
+	@media (min-width: 1280px) {
+		#program-list-page > .container .program-page .main-config .list-config {
+			grid-template-columns: repeat(3, minmax(0, 1fr));
+		}
+	}
+
+	@media (max-width: 1023px) {
+		--program-gutter: 24px;
+		#main {
+			padding-top: 132px;
+		}
+		#top .navbar .navbar-main {
+			height: auto;
+			padding: 16px 0;
+			.container {
+				flex-wrap: wrap;
+				gap: 16px;
+				.router-box {
+					order: 3;
+					flex: 0 0 100%;
+					overflow-x: auto;
+					padding-bottom: 4px;
+				}
+			}
+		}
+		#program-list-page > .container .program-page {
+			grid-template-columns: minmax(0, 1fr);
+		}
+		#footer .footer-container .main {
+			flex-direction: column;
+			gap: 32px;
+			.left {
+				height: auto;
+				gap: 24px;
+			}
+			.right .bottom {
+				margin-top: 0;
+				flex-wrap: wrap;
+				gap: 24px;
+			}
+		}
+	}
+
+	@media (max-width: 767px) {
+		--program-gutter: 16px;
+		#program-list-page {
+			padding: 24px 0 32px;
+			> .container .program-page .main-config .list-config {
+				grid-template-columns: minmax(0, 1fr);
+			}
+		}
+		#top .navbar .navbar-main .container .logo-box img {
+			width: 112px;
+		}
+		#top .navbar .navbar-main .container .user-box .join-box {
+			width: auto;
+			padding: 0 12px;
+		}
+	}
+
+	&.is-mobile #main {
+		padding-top: 72px;
 	}
 }
