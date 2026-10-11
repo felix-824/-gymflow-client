@@ -1,81 +1,595 @@
-#pc-wrap {
+#pc-wrap.trainer-discovery-layout {
+	#top .navbar .navbar-main {
+		background: #12151d;
+	}
+}
+
+#pc-wrap.trainer-discovery-layout,
+#mobile-wrap.trainer-discovery-layout {
 	.trainer-list-page {
-		position: relative;
-		padding: 147px 0 75px;
-		width: 100%;
-		height: auto;
-		display: flex;
-		flex-direction: row;
-		justify-content: center;
-		.container {
+		--trainer-font: 'Plus Jakarta Sans', sans-serif;
+		padding: 127px 32px 64px;
+		background: #f8f9fb;
+		color: #12151d;
+		font-family: var(--trainer-font);
+		min-width: 0;
+		*,
+		input,
+		button {
+			box-sizing: border-box;
+			font-family: var(--trainer-font);
+		}
+		a {
+			white-space: normal;
+		}
+		a:focus-visible,
+		button:focus-visible,
+		input:focus-visible,
+		.Mui-focusVisible {
+			outline: 2px solid #a53425;
+			outline-offset: 4px;
+		}
+		.trainer-discovery-container {
+			width: 100%;
+			max-width: 1216px;
+			margin: 0 auto;
+			min-width: 0;
+		}
+		.trainer-discovery-intro {
+			margin-bottom: 24px;
+			h1 {
+				margin: 0 0 8px;
+				font-size: 36px;
+				font-weight: 700;
+				line-height: 1.22;
+				letter-spacing: -0.03em;
+			}
+			p {
+				margin: 0;
+				color: #5b5e68;
+				font-size: 16px;
+				line-height: 1.65;
+				max-width: 65ch;
+			}
+		}
+		.trainer-discovery-controls {
+			padding: 16px;
+			background: #fff;
+			border-radius: 12px;
+			box-shadow: 0 2px 8px rgba(18, 21, 29, 0.04);
+		}
+		.trainer-search {
 			display: flex;
-			flex-direction: column;
-			.filter {
+			align-items: center;
+			gap: 12px;
+			.trainer-search-input {
 				display: flex;
-				flex-direction: row;
-				justify-content: space-between;
 				align-items: center;
-				.left {
-					display: flex;
-					flex-direction: row;
-					input {
-						padding: 22px 10px;
-						width: 333px;
-						height: 50px;
-						border-radius: 40px;
-						border: 1px solid #ddd;
-						background: #fff;
-						color: #181a20;
-						font-family: $font;
-						font-size: 14px;
-						font-style: normal;
-						font-weight: 400;
-						line-height: 26px;
-						box-sizing: border-box;
-					}
+				gap: 10px;
+				flex: 1;
+				min-width: 0;
+				padding: 0 14px;
+				min-height: 46px;
+				background: #f2f4f6;
+				border-radius: 8px;
+				> svg {
+					color: #595f6a;
+					font-size: 21px;
+					flex-shrink: 0;
 				}
-				.right {
-					display: flex;
-					flex-direction: row;
-					align-items: center;
-					button {
-						margin-left: 10px;
-						color: #181a20;
-						font-family: $font;
-						font-size: 14px;
-						font-style: normal;
-						font-weight: bold;
-						line-height: 26px;
-						&:hover {
-							background: none;
-						}
-					}
+				&:focus-within {
+					outline: 2px solid #a53425;
+					outline-offset: 2px;
+					background: #fff;
 				}
-			}
-			.card-wrap {
-				position: relative;
-				margin-top: 35px;
-				width: 100%;
-				min-height: 500px;
-				height: auto;
-				display: flex;
-				flex-direction: row;
-				flex-wrap: wrap;
-			}
-			.pagination {
-				display: flex;
-				flex-direction: column;
-				align-items: center;
-				span {
-					margin-top: 20px;
-					color: #181a20;
-					font-family: $font;
+				input {
+					width: 100%;
+					min-width: 0;
+					height: 46px;
+					border: 0;
+					outline: none;
+					padding: 0;
+					color: #12151d;
 					font-size: 14px;
-					font-style: normal;
-					font-weight: 400;
-					line-height: 26px; /* 185.714% */
+					background: transparent;
+					caret-color: #a53425;
+					&::placeholder {
+						color: #595f6a;
+						opacity: 1;
+					}
+					&:focus-visible {
+						outline: none;
+					}
+				}
+			}
+			.trainer-search-submit {
+				min-height: 46px;
+				padding: 10px 32px;
+				border-radius: 24px;
+				background: #eb6753;
+				color: #12151d;
+				font-size: 14px;
+				font-weight: 700;
+				text-transform: none;
+				.trainer-search-submit-icon {
+					display: none;
+				}
+				&:hover {
+					background: #e85b46;
 				}
 			}
 		}
+		.trainer-results-toolbar {
+			display: flex;
+			align-items: center;
+			justify-content: space-between;
+			gap: 12px;
+			margin-top: 20px;
+			.trainer-results-count {
+				margin: 0;
+				font-size: 14px;
+				font-weight: 600;
+				line-height: 1.5;
+			}
+			.trainer-sort {
+				display: flex;
+				align-items: center;
+				gap: 8px;
+				min-width: 0;
+				> span {
+					color: #595f6a;
+					font-size: 13px;
+					white-space: nowrap;
+				}
+				button {
+					color: #12151d;
+					font-size: 13px;
+					font-weight: 600;
+					line-height: 1.4;
+					background: #f2f4f6;
+					padding: 8px 12px;
+					border-radius: 8px;
+					text-transform: none;
+				}
+			}
+		}
+		.trainer-results-status {
+			min-height: 32px;
+			padding: 8px 0;
+			font-size: 12px;
+			line-height: 16px;
+			color: #595f6a;
+		}
+		.trainer-discovery-grid {
+			display: grid;
+			grid-template-columns: repeat(3, minmax(0, 1fr));
+			gap: 24px;
+		}
+		.trainer-discovery-card,
+		.trainer-discovery-skeleton {
+			min-width: 0;
+			border-radius: 12px;
+			overflow: hidden;
+			background: #fff;
+			box-shadow: 0 2px 8px rgba(18, 21, 29, 0.06);
+		}
+		.trainer-discovery-card {
+			.trainer-card-photo {
+				display: block;
+				aspect-ratio: 4 / 3;
+				background: #e7e8ea;
+				overflow: hidden;
+				flex-shrink: 0;
+				img {
+					display: block;
+					width: 100%;
+					height: 100%;
+					object-fit: cover;
+					object-position: center;
+				}
+				img[src='/img/profile/defaultUser.svg'] {
+					object-fit: contain;
+					padding: 48px;
+				}
+				&:focus-visible {
+					outline-offset: -4px;
+				}
+			}
+			.trainer-card-body {
+				padding: 20px;
+				display: flex;
+				flex-direction: column;
+				gap: 16px;
+				flex: 1;
+				min-width: 0;
+			}
+			.trainer-card-copy {
+				flex: 1;
+				min-width: 0;
+			}
+			.trainer-card-heading {
+				display: flex;
+				flex-wrap: wrap;
+				justify-content: space-between;
+				align-items: baseline;
+				gap: 4px 12px;
+				margin-bottom: 8px;
+				h2 {
+					min-width: 0;
+					margin: 0;
+					font-size: 18px;
+					font-weight: 700;
+					line-height: 1.45;
+					letter-spacing: -0.02em;
+					overflow-wrap: anywhere;
+				}
+				h2 a {
+					color: #12151d;
+					&:hover {
+						color: #a53425;
+					}
+				}
+				.trainer-card-nickname {
+					min-width: 0;
+					color: #595f6a;
+					font-size: 12px;
+					line-height: 1.5;
+					overflow-wrap: anywhere;
+				}
+			}
+			.trainer-card-address {
+				display: flex;
+				align-items: flex-start;
+				gap: 4px;
+				margin: 0 0 8px;
+				color: #595f6a;
+				font-size: 13px;
+				line-height: 1.5;
+				svg {
+					color: #a53425;
+					font-size: 18px;
+					flex-shrink: 0;
+				}
+				span {
+					line-height: inherit;
+					overflow-wrap: anywhere;
+				}
+			}
+			.trainer-card-description {
+				margin: 0;
+				color: #5b5e68;
+				font-size: 14px;
+				line-height: 1.6;
+				overflow-wrap: anywhere;
+				display: -webkit-box;
+				-webkit-line-clamp: 2;
+				-webkit-box-orient: vertical;
+				overflow: hidden;
+			}
+			.trainer-card-stats {
+				display: grid;
+				grid-template-columns: repeat(2, minmax(0, 1fr));
+				gap: 12px;
+				margin: 0;
+				padding: 12px;
+				background: #f2f4f6;
+				border-radius: 8px;
+				> div {
+					display: flex;
+					flex-wrap: wrap;
+					align-items: baseline;
+					gap: 4px 8px;
+					min-width: 0;
+				}
+				dt {
+					font-size: 12px;
+					line-height: 1.5;
+					color: #595f6a;
+					overflow-wrap: anywhere;
+				}
+				dd {
+					margin: 0;
+					font-size: 14px;
+					line-height: 1.5;
+					font-weight: 700;
+					font-variant-numeric: tabular-nums;
+					overflow-wrap: anywhere;
+				}
+			}
+			.trainer-card-actions {
+				display: flex;
+				align-items: stretch;
+				gap: 8px;
+				min-width: 0;
+				.trainer-card-profile {
+					display: flex;
+					justify-content: center;
+					align-items: center;
+					gap: 8px;
+					flex: 1;
+					min-width: 0;
+					min-height: 44px;
+					padding: 10px 14px;
+					border-radius: 24px;
+					background: #12151d;
+					color: #fff;
+					font-size: 14px;
+					line-height: 1.5;
+					font-weight: 600;
+					text-align: center;
+					svg {
+						font-size: 18px;
+						flex-shrink: 0;
+					}
+					&:hover {
+						background: #2e313b;
+					}
+				}
+				.trainer-card-like {
+					min-width: 72px;
+					gap: 6px;
+					padding: 8px 12px;
+					border-radius: 24px;
+					color: #595f6a;
+					background: #f2f4f6;
+					font-size: 13px;
+					line-height: 1.5;
+					font-weight: 600;
+					font-variant-numeric: tabular-nums;
+					svg {
+						font-size: 19px;
+					}
+					&:hover {
+						background: #edeef0;
+					}
+					&[aria-pressed='true'] {
+						color: #a53425;
+					}
+				}
+			}
+		}
+		.trainer-discovery-skeleton {
+			.trainer-skeleton-image {
+				width: 100%;
+				height: auto;
+				aspect-ratio: 4 / 3;
+			}
+			> div {
+				padding: 20px;
+			}
+		}
+		.trainer-discovery-state {
+			padding: 56px 20px;
+			text-align: center;
+			> svg {
+				font-size: 36px;
+				color: #595f6a;
+				margin-bottom: 16px;
+			}
+			h2 {
+				margin: 0 0 8px;
+				font-size: 20px;
+				font-weight: 600;
+				line-height: 1.4;
+			}
+			p {
+				margin: 0;
+				color: #595f6a;
+				font-size: 14px;
+				line-height: 1.65;
+			}
+			button {
+				margin-top: 16px;
+				padding: 8px 20px;
+				border-radius: 24px;
+				background: #12151d;
+				color: #fff;
+				&:hover {
+					background: #2e313b;
+				}
+			}
+			&.trainer-discovery-error {
+				padding: 24px;
+				background: #fff;
+				border-radius: 12px;
+				margin-bottom: 24px;
+			}
+		}
+		.trainer-discovery-pagination {
+			margin-top: 40px;
+			.MuiPagination-ul {
+				justify-content: center;
+				gap: 4px;
+			}
+			.MuiPaginationItem-root {
+				min-width: 40px;
+				height: 40px;
+				color: #595f6a;
+				font-size: 14px;
+			}
+			.Mui-selected {
+				background: #12151d;
+				color: #fff;
+				&:hover {
+					background: #2e313b;
+				}
+			}
+		}
+		@media (min-width: 768px) and (max-width: 1199px) {
+			.trainer-discovery-grid {
+				grid-template-columns: repeat(2, minmax(0, 1fr));
+			}
+		}
+		@media (max-width: 767px) {
+			padding: 119px 16px 40px;
+			.trainer-discovery-intro {
+				margin-bottom: 20px;
+				h1 {
+					font-size: 26px;
+				}
+				p {
+					font-size: 14px;
+				}
+			}
+			.trainer-discovery-controls {
+				padding: 12px;
+			}
+			.trainer-search {
+				position: relative;
+				.trainer-search-input {
+					min-height: 52px;
+					padding: 0 58px 0 12px;
+				}
+				.trainer-search-submit {
+					position: absolute;
+					inset: 4px 4px auto auto;
+					min-width: 44px;
+					min-height: 44px;
+					padding: 10px;
+					border-radius: 8px;
+					.trainer-search-submit-label {
+						display: none;
+					}
+					.trainer-search-submit-icon {
+						display: block;
+						font-size: 22px;
+					}
+				}
+			}
+			.trainer-results-toolbar {
+				flex-wrap: wrap;
+				align-items: flex-start;
+				gap: 12px;
+				.trainer-sort {
+					margin-left: auto;
+					flex-wrap: wrap;
+					justify-content: flex-end;
+				}
+			}
+			.trainer-discovery-grid {
+				grid-template-columns: minmax(0, 1fr);
+				gap: 20px;
+			}
+			.trainer-discovery-card .trainer-card-body {
+				padding: 16px;
+			}
+			.trainer-discovery-pagination {
+				margin-top: 28px;
+				.MuiPagination-ul {
+					gap: 0;
+				}
+				.MuiPaginationItem-root {
+					min-width: 36px;
+					height: 36px;
+					margin: 0 2px;
+				}
+			}
+		}
+		@media (prefers-reduced-motion: no-preference) {
+			.trainer-discovery-card {
+				transition: box-shadow 180ms ease-out;
+				&:hover {
+					box-shadow: 0 6px 18px rgba(18, 21, 29, 0.1);
+				}
+			}
+		}
+		@media (prefers-reduced-motion: reduce) {
+			*,
+			*::before,
+			*::after {
+				animation: none !important;
+				transition: none !important;
+			}
+		}
+	}
+}
+
+@media (max-width: 767px) {
+	#pc-wrap.trainer-discovery-layout {
+		.chatting .chat-button {
+			right: max(16px, env(safe-area-inset-right, 0px));
+			bottom: var(--trainer-chat-bottom, calc(104px + env(safe-area-inset-bottom, 0px)));
+		}
+		.trainer-list-page {
+			padding-top: 24px;
+		}
+		#footer {
+			padding: 24px 16px;
+			.footer-container {
+				width: 100%;
+				min-width: 0;
+				font-family: 'Plus Jakarta Sans', sans-serif;
+				.main {
+					flex-direction: column;
+					gap: 24px;
+					.left {
+						height: auto;
+						gap: 12px;
+						align-items: center;
+						text-align: center;
+						.footer-box p {
+							margin: 0 0 4px;
+						}
+					}
+					.right .bottom {
+						margin-top: 0;
+						display: grid;
+						grid-template-columns: repeat(3, minmax(0, 1fr));
+						gap: 12px;
+						div {
+							min-width: 0;
+							strong {
+								margin-bottom: 8px;
+								font-size: 13px;
+								line-height: 20px;
+								overflow-wrap: anywhere;
+							}
+							a {
+								display: flex;
+								align-items: center;
+								min-height: 44px;
+								color: #bebdbd;
+								font-size: 13px;
+								line-height: 20px;
+								white-space: normal;
+								overflow-wrap: anywhere;
+								&:focus-visible {
+									outline: 2px solid #eb6753;
+									outline-offset: 2px;
+								}
+							}
+						}
+					}
+				}
+				.second {
+					height: auto;
+					margin-top: 24px;
+					padding-top: 16px;
+					justify-content: center;
+					line-height: 20px;
+				}
+			}
+		}
+	}
+}
+
+#mobile-wrap.trainer-discovery-layout .trainer-list-page {
+	padding-top: 24px;
+}
+
+.trainer-sort-paper {
+	border-radius: 12px;
+	.MuiMenuItem-root {
+		font-family: 'Plus Jakarta Sans', sans-serif;
+		font-size: 14px;
+		min-height: 44px;
+	}
+	.MuiMenuItem-root.Mui-selected {
+		background: #fcece8;
+		color: #a53425;
+	}
+	.MuiMenuItem-root.Mui-focusVisible {
+		outline: 2px solid #a53425;
+		outline-offset: -3px;
 	}
 }

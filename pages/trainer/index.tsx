@@ -1,21 +1,24 @@
-import React, { ChangeEvent, MouseEvent, useEffect, useState } from 'react';
+import React, { ChangeEvent, MouseEvent, useEffect, useMemo, useState } from 'react';
 import { NextPage } from 'next';
-import useDeviceDetect from '../../libs/hooks/useDeviceDetect';
+import Head from 'next/head';
 import withLayoutBasic from '../../libs/components/layout/LayoutBasic';
-import { Stack, Box, Button, Pagination } from '@mui/material';
+import { Stack, Button, Pagination, Skeleton, useMediaQuery } from '@mui/material';
 import { Menu, MenuItem } from '@mui/material';
 import KeyboardArrowDownRoundedIcon from '@mui/icons-material/KeyboardArrowDownRounded';
+import SearchRoundedIcon from '@mui/icons-material/SearchRounded';
+import PeopleOutlineRoundedIcon from '@mui/icons-material/PeopleOutlineRounded';
+import { useTranslation } from 'next-i18next';
 import TrainerCard from '../../libs/components/common/TrainerCard';
 import { useRouter } from 'next/router';
 import { readTrainersInquiry } from '../../libs/program';
 import { serverSideTranslations } from 'next-i18next/serverSideTranslations';
 import { Member } from '../../libs/types/member/member';
-import { useMutation, useQuery } from '@apollo/client';
+import { useMutation, useQuery, useReactiveVar } from '@apollo/client';
+import { authReadyVar } from '../../apollo/store';
 import { GET_TRAINERS } from '../../apollo/user/query';
 import { LIKE_TARGET_MEMBER } from '../../apollo/user/mutation';
 import { sweetMixinErrorAlert, sweetTopSmallSuccessAlert } from '../../libs/sweetAlert';
 import { Messages } from '../../libs/config';
-import { T } from '../../libs/types/common';
 
 export const getStaticProps = async ({ locale }: any) => ({
 	props: {
@@ -23,54 +26,45 @@ export const getStaticProps = async ({ locale }: any) => ({
 	},
 });
 
-const TrainerList: NextPage = ({ initialInput, ...props }: any) => {
-	const device = useDeviceDetect();
+const TrainerList: NextPage = ({ initialInput }: any) => {
+	const { t } = useTranslation('common');
+	const compact = useMediaQuery('(max-width: 767px)');
+	const reducedMotion = useMediaQuery('(prefers-reduced-motion: reduce)');
 	const router = useRouter();
-	const [anchorEl2, setAnchorEl2] = useState<null | HTMLElement>(null);
-	const [filterSortName, setFilterSortName] = useState('Recent');
+	const authReady = useReactiveVar(authReadyVar);
 	const [sortingOpen, setSortingOpen] = useState(false);
 	const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
-	const [searchFilter, setSearchFilter] = useState<any>(readTrainersInquiry(router.query.input, initialInput));
-	const [trainers, setTrainers] = useState<Member[]>([]);
-	const [total, setTotal] = useState<number>(0);
-	const [currentPage, setCurrentPage] = useState<number>(1);
+	const searchFilter = useMemo(
+		() => readTrainersInquiry(router.query.input, initialInput),
+		[router.query.input, initialInput],
+	);
+	const currentPage = searchFilter.page;
 	const [searchText, setSearchText] = useState<string>('');
 
 	/** APOLLO REQUESTS **/
 	const [likeTargetMember] = useMutation(LIKE_TARGET_MEMBER);
 
 	const {
-		loading: getTrainersLoading,
 		data: getTrainersData,
+		previousData: previousTrainersData,
+		loading: getTrainersLoading,
 		error: getTrainersError,
 		refetch: getTrainersRefetch,
 	} = useQuery(GET_TRAINERS, {
+		skip: !router.isReady || !authReady,
 		fetchPolicy: 'network-only',
 		variables: { input: searchFilter },
 		notifyOnNetworkStatusChange: true,
-		onCompleted: (data: T) => {
-			setTrainers(data?.getTrainers?.list ?? []);
-			setTotal(data?.getTrainers?.metaCounter?.[0]?.total ?? 0);
-		},
 	});
+	const trainersResult = getTrainersData?.getTrainers ?? previousTrainersData?.getTrainers;
+	const trainers: Member[] = trainersResult?.list ?? [];
+	const total = trainersResult?.metaCounter?.[0]?.total ?? 0;
 
 	/** LIFECYCLES **/
 	useEffect(() => {
 		if (!router.isReady) return;
-		const input = readTrainersInquiry(router.query.input, initialInput);
-		setSearchFilter(input);
-		setCurrentPage(input.page);
-		setSearchText(input.search.text ?? '');
-		setFilterSortName(
-			input.sort === 'memberLikes'
-				? 'Likes'
-				: input.sort === 'memberViews'
-				? 'Views'
-				: input.direction === 'ASC'
-				? 'Oldest order'
-				: 'Recent',
-		);
-	}, [router.isReady, router.query.input, initialInput]);
+		setSearchText(searchFilter.search.text ?? '');
+	}, [router.isReady, searchFilter]);
 
 	/** HANDLERS **/
 	const pushSearchFilter = (input: any) => {
@@ -91,23 +85,18 @@ const TrainerList: NextPage = ({ initialInput, ...props }: any) => {
 		switch (e.currentTarget.id) {
 			case 'recent':
 				pushSearchFilter({ ...searchFilter, sort: 'createdAt', direction: 'DESC' });
-				setFilterSortName('Recent');
 				break;
 			case 'old':
 				pushSearchFilter({ ...searchFilter, sort: 'createdAt', direction: 'ASC' });
-				setFilterSortName('Oldest order');
 				break;
 			case 'likes':
 				pushSearchFilter({ ...searchFilter, sort: 'memberLikes', direction: 'DESC' });
-				setFilterSortName('Likes');
 				break;
 			case 'views':
 				pushSearchFilter({ ...searchFilter, sort: 'memberViews', direction: 'DESC' });
-				setFilterSortName('Views');
 				break;
 		}
-		setSortingOpen(false);
-		setAnchorEl2(null);
+		sortingCloseHandler();
 	};
 
 	const paginationChangeHandler = async (event: ChangeEvent<unknown>, value: number) => {
@@ -116,7 +105,6 @@ const TrainerList: NextPage = ({ initialInput, ...props }: any) => {
 			undefined,
 			{ scroll: false },
 		);
-		setCurrentPage(value);
 	};
 
 	const likeMemberHandler = async (user: any, id: string) => {
@@ -138,91 +126,172 @@ const TrainerList: NextPage = ({ initialInput, ...props }: any) => {
 		}
 	};
 
-	if (device === 'mobile') {
-		return <h1>TRAINERS PAGE MOBILE</h1>;
-	} else {
-		return (
-			<Stack className={'trainer-list-page'}>
-				<Stack className={'container'}>
-					<Stack className={'filter'}>
-						<Box component={'div'} className={'left'}>
-							<input
-								type="text"
-								placeholder={'Search for a trainer'}
-								value={searchText}
-								onChange={(e: any) => setSearchText(e.target.value)}
-								onKeyDown={(event: any) => {
-									if (event.key == 'Enter') {
-										pushSearchFilter({
-											...searchFilter,
-											search: { ...searchFilter.search, text: searchText },
-										});
-									}
-								}}
-							/>
-						</Box>
-						<Box component={'div'} className={'right'}>
-							<span>Sort by</span>
-							<div>
-								<Button onClick={sortingClickHandler} endIcon={<KeyboardArrowDownRoundedIcon />}>
-									{filterSortName}
-								</Button>
-								<Menu anchorEl={anchorEl} open={sortingOpen} onClose={sortingCloseHandler} sx={{ paddingTop: '5px' }}>
-									<MenuItem onClick={sortingHandler} id={'recent'} disableRipple>
-										Recent
-									</MenuItem>
-									<MenuItem onClick={sortingHandler} id={'old'} disableRipple>
-										Oldest
-									</MenuItem>
-									<MenuItem onClick={sortingHandler} id={'likes'} disableRipple>
-										Likes
-									</MenuItem>
-									<MenuItem onClick={sortingHandler} id={'views'} disableRipple>
-										Views
-									</MenuItem>
-								</Menu>
-							</div>
-						</Box>
-					</Stack>
-					{getTrainersLoading && <p>Loading trainers...</p>}
-					{getTrainersError && <p role="alert">Could not load trainers.</p>}
-					<Stack className={'card-wrap'}>
-						{trainers?.length === 0 ? (
-							<div className={'no-data'}>
-								<img src="/img/icons/icoAlert.svg" alt="" />
-								<p>No Trainers found!</p>
-							</div>
-						) : (
-							trainers.map((trainer: Member) => {
-								return <TrainerCard trainer={trainer} likeMemberHandler={likeMemberHandler} key={trainer._id} />;
-							})
-						)}
-					</Stack>
-					<Stack className={'pagination'}>
-						<Stack className="pagination-box">
-							{trainers.length !== 0 && Math.ceil(total / searchFilter.limit) > 1 && (
-								<Stack className="pagination-box">
-									<Pagination
-										page={currentPage}
-										count={Math.ceil(total / searchFilter.limit)}
-										onChange={paginationChangeHandler}
-										shape="circular"
-										color="primary"
-									/>
-								</Stack>
-							)}
-						</Stack>
+	const sortOptions = [
+		{ id: 'recent', sort: 'createdAt', direction: 'DESC', label: 'Newest' },
+		{ id: 'old', sort: 'createdAt', direction: 'ASC', label: 'Oldest' },
+		{ id: 'likes', sort: 'memberLikes', direction: 'DESC', label: 'Most liked' },
+		{ id: 'views', sort: 'memberViews', direction: 'DESC', label: 'Most viewed' },
+	];
+	const selectedSort = sortOptions.find(
+		(option) => option.sort === searchFilter.sort && option.direction === searchFilter.direction,
+	);
+	const sortLabel = selectedSort
+		? t(`Trainer discovery.${selectedSort.label}`)
+		: t('Trainer discovery.URL sort', { sort: searchFilter.sort, direction: searchFilter.direction });
+	const initialLoading =
+		!trainersResult && !getTrainersError && (!router.isReady || !authReady || getTrainersLoading);
+	const pages = Math.ceil(total / searchFilter.limit);
 
-						{trainers.length !== 0 && (
-							<span>
-								Total {total} trainer{total > 1 ? 's' : ''} available
-							</span>
-						)}
-					</Stack>
-				</Stack>
+	return (
+		<Stack className={'trainer-list-page'} component={'section'} aria-labelledby={'trainer-discovery-title'}>
+			<Head>
+				<link
+					rel="stylesheet"
+					href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap"
+				/>
+			</Head>
+			<Stack className={'trainer-discovery-container'}>
+				<header className={'trainer-discovery-intro'}>
+					<h1 id={'trainer-discovery-title'}>{t('Trainer discovery.Title')}</h1>
+					<p>{t('Trainer discovery.Intro')}</p>
+				</header>
+				<div className={'trainer-discovery-controls'}>
+					<form
+						className={'trainer-search'}
+						role={'search'}
+						onSubmit={(event) => {
+							event.preventDefault();
+							pushSearchFilter({ ...searchFilter, search: { ...searchFilter.search, text: searchText } });
+						}}
+					>
+						<div className={'trainer-search-input'}>
+							<SearchRoundedIcon aria-hidden={'true'} />
+							<input
+								type={'search'}
+								aria-label={t('Trainer discovery.Search placeholder')}
+								placeholder={t('Trainer discovery.Search placeholder')}
+								value={searchText}
+								onChange={(event) => setSearchText(event.target.value)}
+							/>
+						</div>
+						<Button
+							type={'submit'}
+							className={'trainer-search-submit'}
+							aria-label={t('Trainer discovery.Search')}
+							disableElevation
+						>
+							<span className={'trainer-search-submit-label'}>{t('Trainer discovery.Search')}</span>
+							<SearchRoundedIcon className={'trainer-search-submit-icon'} aria-hidden={'true'} />
+						</Button>
+					</form>
+					<div className={'trainer-results-toolbar'}>
+						<p className={'trainer-results-count'}>
+							{initialLoading
+								? t('Trainer discovery.Loading')
+								: t(getTrainersError ? 'Trainer discovery.Previous results' : 'Trainer discovery.Count', { total })}
+						</p>
+						<div className={'trainer-sort'}>
+							<span id={'trainer-sort-label'}>{t('Trainer discovery.Sort by')}</span>
+							<Button
+								id={'trainer-sort-button'}
+								onClick={sortingClickHandler}
+								endIcon={<KeyboardArrowDownRoundedIcon />}
+								aria-haspopup={'menu'}
+								aria-expanded={sortingOpen}
+								aria-controls={sortingOpen ? 'trainer-sort-menu' : undefined}
+								aria-labelledby={'trainer-sort-label trainer-sort-button'}
+							>
+								{sortLabel}
+							</Button>
+							<Menu
+								id={'trainer-sort-menu'}
+								anchorEl={anchorEl}
+								open={sortingOpen}
+								onClose={sortingCloseHandler}
+								disableScrollLock
+								transitionDuration={reducedMotion ? 0 : { enter: 140, exit: 100 }}
+								MenuListProps={{ 'aria-labelledby': 'trainer-sort-button' }}
+								PaperProps={{ className: 'trainer-sort-paper' }}
+							>
+								{sortOptions.map((option) => (
+									<MenuItem
+										key={option.id}
+										id={option.id}
+										onClick={sortingHandler}
+										selected={selectedSort?.id === option.id}
+										disableRipple
+									>
+										{t(`Trainer discovery.${option.label}`)}
+									</MenuItem>
+								))}
+							</Menu>
+						</div>
+					</div>
+				</div>
+				<div className={'trainer-results-status'} role={'status'} aria-live={'polite'}>
+					{getTrainersLoading && !getTrainersError && trainersResult && t('Trainer discovery.Updating')}
+				</div>
+				{getTrainersError && (
+					<div className={'trainer-discovery-state trainer-discovery-error'} role={'alert'}>
+						<h2>{t('Trainer discovery.Error title')}</h2>
+						<p>{t(trainers.length ? 'Trainer discovery.Update error' : 'Trainer discovery.Error description')}</p>
+						<Button
+							onClick={() => {
+								void getTrainersRefetch({ input: searchFilter }).catch(() => undefined);
+							}}
+						>
+							{t('Trainer discovery.Retry')}
+						</Button>
+					</div>
+				)}
+				<div className={'trainer-discovery-grid'} aria-busy={initialLoading || getTrainersLoading}>
+					{initialLoading
+						? Array.from({ length: 6 }, (_, index) => (
+								<div className={'trainer-discovery-skeleton'} key={index} aria-hidden={'true'}>
+									<Skeleton
+										variant={'rectangular'}
+										className={'trainer-skeleton-image'}
+										animation={reducedMotion ? false : 'wave'}
+									/>
+									<div>
+										<Skeleton width={'65%'} animation={reducedMotion ? false : 'wave'} />
+										<Skeleton animation={reducedMotion ? false : 'wave'} />
+										<Skeleton height={88} animation={reducedMotion ? false : 'wave'} />
+									</div>
+								</div>
+						  ))
+						: trainers.map((trainer: Member) => (
+								<TrainerCard trainer={trainer} likeMemberHandler={likeMemberHandler} key={trainer._id} />
+						  ))}
+				</div>
+				{!initialLoading && !getTrainersLoading && !getTrainersError && trainers.length === 0 && (
+					<div className={'trainer-discovery-state'}>
+						<PeopleOutlineRoundedIcon aria-hidden={'true'} />
+						<h2>{t('Trainer discovery.Empty title')}</h2>
+						<p>
+							{t(searchFilter.search.text ? 'Trainer discovery.Empty search' : 'Trainer discovery.Empty description')}
+						</p>
+					</div>
+				)}
+				{trainers.length > 0 && pages > 1 && (
+					<Pagination
+						className={'trainer-discovery-pagination'}
+						aria-label={t('Trainer discovery.Pagination')}
+						page={currentPage}
+						count={pages}
+						onChange={paginationChangeHandler}
+						siblingCount={compact ? 0 : 1}
+						boundaryCount={1}
+						getItemAriaLabel={(type, page, selected) =>
+							type === 'page'
+								? t(selected ? 'Trainer discovery.Current page' : 'Trainer discovery.Go to page', { page })
+								: t(type === 'previous' ? 'Trainer discovery.Previous' : 'Trainer discovery.Next')
+						}
+					/>
+				)}
 			</Stack>
-		);
-	}
+		</Stack>
+	);
 };
 
 TrainerList.defaultProps = {

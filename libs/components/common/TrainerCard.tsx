@@ -1,83 +1,97 @@
 import React from 'react';
-import useDeviceDetect from '../../hooks/useDeviceDetect';
-import { Stack, Box, Typography } from '@mui/material';
+import { Stack, Button } from '@mui/material';
 import Link from 'next/link';
+import { useTranslation } from 'next-i18next';
 import { REACT_APP_API_URL } from '../../config';
-import IconButton from '@mui/material/IconButton';
-import RemoveRedEyeIcon from '@mui/icons-material/RemoveRedEye';
+import LocationOnOutlinedIcon from '@mui/icons-material/LocationOnOutlined';
+import ArrowForwardRoundedIcon from '@mui/icons-material/ArrowForwardRounded';
 import FavoriteIcon from '@mui/icons-material/Favorite';
 import FavoriteBorderIcon from '@mui/icons-material/FavoriteBorder';
 import { useReactiveVar } from '@apollo/client';
 import { userVar } from '../../../apollo/store';
+import { Member } from '../../types/member/member';
 
 interface TrainerCardProps {
-	trainer: any;
-	likeMemberHandler: any;
+	trainer: Member;
+	likeMemberHandler: (user: any, id: string) => Promise<void>;
 }
 
 const TrainerCard = (props: TrainerCardProps) => {
 	const { trainer, likeMemberHandler } = props;
-	const device = useDeviceDetect();
+	const { t } = useTranslation('common');
 	const user = useReactiveVar(userVar);
-	const imagePath: string = trainer?.memberImage
-		? `${REACT_APP_API_URL}/${trainer?.memberImage}`
-		: '/img/profile/defaultUser.svg';
+	const name = trainer.memberFullName?.trim() || trainer.memberNick;
+	const nickname = trainer.memberNick?.trim();
+	const fallback = '/img/profile/defaultUser.svg';
+	const imagePath = trainer.memberImage?.trim() ? `${REACT_APP_API_URL}/${trainer.memberImage}` : fallback;
+	const liked = Boolean(trainer.meLiked?.[0]?.myFavorite);
+	const profileHref = { pathname: '/trainer/detail', query: { trainerId: trainer._id } };
 
-	if (device === 'mobile') {
-		return <div>TRAINER CARD</div>;
-	} else {
-		return (
-			<Stack className="trainer-general-card">
-				<Link
-					href={{
-						pathname: '/trainer/detail',
-						query: { trainerId: trainer?._id },
+	return (
+		<Stack component={'article'} className={'trainer-discovery-card'}>
+			<Link
+				passHref
+				href={profileHref}
+				className={'trainer-card-photo'}
+				aria-label={t('Trainer discovery.View named profile', { name })}
+			>
+				<img
+					src={imagePath}
+					alt={name}
+					loading={'lazy'}
+					onError={(event) => {
+						if (event.currentTarget.getAttribute('src') !== fallback) event.currentTarget.src = fallback;
 					}}
-				>
-					<Box
-						component={'div'}
-						className={'trainer-img'}
-						style={{
-							backgroundImage: `url(${imagePath})`,
-							backgroundSize: 'cover',
-							backgroundPosition: 'center',
-							backgroundRepeat: 'no-repeat',
+				/>
+			</Link>
+			<div className={'trainer-card-body'}>
+				<div className={'trainer-card-copy'}>
+					<div className={'trainer-card-heading'}>
+						<h2>
+							<Link href={profileHref}>{name}</Link>
+						</h2>
+						{nickname && nickname !== name && <span className={'trainer-card-nickname'}>{nickname}</span>}
+					</div>
+					{trainer.memberAddress?.trim() && (
+						<p className={'trainer-card-address'}>
+							<LocationOnOutlinedIcon aria-hidden={'true'} />
+							<span>{trainer.memberAddress}</span>
+						</p>
+					)}
+					{trainer.memberDesc?.trim() && <p className={'trainer-card-description'}>{trainer.memberDesc}</p>}
+				</div>
+				<dl className={'trainer-card-stats'}>
+					<div>
+						<dt>{t('Trainer discovery.Programs')}</dt>
+						<dd>{trainer.memberPrograms ?? 0}</dd>
+					</div>
+					<div>
+						<dt>{t('Trainer discovery.Views')}</dt>
+						<dd>{trainer.memberViews ?? 0}</dd>
+					</div>
+				</dl>
+				<div className={'trainer-card-actions'}>
+					<Link href={profileHref} passHref className={'trainer-card-profile'}>
+						{t('Trainer discovery.View Profile')}
+						<ArrowForwardRoundedIcon aria-hidden={'true'} />
+					</Link>
+					<Button
+						className={'trainer-card-like'}
+						aria-pressed={liked}
+						aria-label={t(liked ? 'Trainer discovery.Unlike trainer' : 'Trainer discovery.Like trainer', { name })}
+						onClick={(event) => {
+							event.preventDefault();
+							event.stopPropagation();
+							void likeMemberHandler(user, trainer._id);
 						}}
 					>
-						<div>{trainer?.memberPrograms} programs</div>
-					</Box>
-				</Link>
-
-				<Stack className={'trainer-desc'}>
-					<Box component={'div'} className={'trainer-info'}>
-						<Link
-							href={{
-								pathname: '/trainer/detail',
-								query: { trainerId: trainer?._id },
-							}}
-						>
-							<strong>{trainer?.memberFullName ?? trainer?.memberNick}</strong>
-						</Link>
-						<span>Trainer</span>
-					</Box>
-					<Box component={'div'} className={'buttons'}>
-						<IconButton color={'default'}>
-							<RemoveRedEyeIcon />
-						</IconButton>
-						<Typography className="view-cnt">{trainer?.memberViews}</Typography>
-						<IconButton color={'default'} onClick={() => likeMemberHandler(user, trainer?._id)}>
-							{trainer?.meLiked && trainer?.meLiked[0]?.myFavorite ? (
-								<FavoriteIcon color={'primary'} />
-							) : (
-								<FavoriteBorderIcon />
-							)}
-						</IconButton>
-						<Typography className="view-cnt">{trainer?.memberLikes}</Typography>
-					</Box>
-				</Stack>
-			</Stack>
-		);
-	}
+						{liked ? <FavoriteIcon aria-hidden={'true'} /> : <FavoriteBorderIcon aria-hidden={'true'} />}
+						<span>{trainer.memberLikes ?? 0}</span>
+					</Button>
+				</div>
+			</div>
+		</Stack>
+	);
 };
 
 export default TrainerCard;

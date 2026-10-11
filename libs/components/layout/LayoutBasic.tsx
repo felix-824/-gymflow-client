@@ -1,11 +1,11 @@
-import React, { useMemo } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import { useRouter } from 'next/router';
 import useDeviceDetect from '../../hooks/useDeviceDetect';
 import Head from 'next/head';
 import Top from '../Top';
 import Footer from '../Footer';
 import { ProgramsBottomNavigation } from '../program/ProgramsNavigation';
-import { Stack } from '@mui/material';
+import { Stack, useMediaQuery } from '@mui/material';
 import { createTheme, ThemeProvider, useTheme } from '@mui/material/styles';
 
 import Chat from '../Chat';
@@ -20,6 +20,7 @@ const withLayoutBasic = (Component: any) => {
 		const router = useRouter();
 		const { t, i18n } = useTranslation('common');
 		const device = useDeviceDetect();
+		const compactTrainer = useMediaQuery('(max-width:767px)') && router.pathname === '/trainer';
 		const authHeader = router.pathname === '/account/join';
 		const theme = useTheme();
 		const programTheme = useMemo(() => {
@@ -103,10 +104,49 @@ const withLayoutBasic = (Component: any) => {
 		}, [router.pathname]);
 
 		/** LIFECYCLES **/
+		useEffect(() => {
+			if (!compactTrainer) return;
+			const layout = document.querySelector<HTMLElement>('.trainer-discovery-layout');
+			if (!layout) return;
+			let frame = 0;
+			const positionChat = () => {
+				const navigation = layout.querySelector('.programs-bottom-navigation')?.getBoundingClientRect();
+				const button = layout.querySelector('.chat-button')?.getBoundingClientRect();
+				const height = button?.height || 50;
+				const left = button?.left ?? window.innerWidth - 66;
+				const right = button?.right ?? window.innerWidth - 16;
+				let top = (navigation?.top ?? window.innerHeight - 88) - 16 - height;
+				const obstacles = Array.from(layout.querySelectorAll('.trainer-card-actions, #footer'))
+					.map((element) => element.getBoundingClientRect())
+					.sort((a, b) => b.top - a.top);
+				obstacles.forEach((rect) => {
+					if (rect.left < right && rect.right > left && rect.top < top + height + 8 && rect.bottom > top - 8) {
+						top = rect.top - height - 8;
+					}
+				});
+				layout.style.setProperty('--trainer-chat-bottom', `${window.innerHeight - top - height}px`);
+			};
+			const schedulePosition = () => {
+				cancelAnimationFrame(frame);
+				frame = requestAnimationFrame(positionChat);
+			};
+			const observer = new ResizeObserver(schedulePosition);
+			layout.querySelectorAll('#main, #footer, .programs-bottom-navigation').forEach((element) => observer.observe(element));
+			window.addEventListener('scroll', schedulePosition, { passive: true });
+			window.addEventListener('resize', schedulePosition);
+			schedulePosition();
+			return () => {
+				cancelAnimationFrame(frame);
+				observer.disconnect();
+				window.removeEventListener('scroll', schedulePosition);
+				window.removeEventListener('resize', schedulePosition);
+				layout.style.removeProperty('--trainer-chat-bottom');
+			};
+		}, [compactTrainer]);
 
 		/** HANDLERS **/
 
-		if (router.pathname === '/program') {
+		if (router.pathname === '/program' || compactTrainer) {
 			return (
 				<ThemeProvider theme={programTheme}>
 					<Head>
@@ -117,7 +157,10 @@ const withLayoutBasic = (Component: any) => {
 							href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap"
 						/>
 					</Head>
-					<Stack id="pc-wrap" className={`program-discovery-layout${device === 'mobile' ? ' is-mobile' : ''}`}>
+					<Stack
+						id="pc-wrap"
+						className={`program-discovery-layout${compactTrainer ? ' trainer-discovery-layout' : ''}${device === 'mobile' || compactTrainer ? ' is-mobile' : ''}`}
+					>
 						<Stack id={'top'}>
 							<Top variant={'programs'} />
 						</Stack>
@@ -126,7 +169,7 @@ const withLayoutBasic = (Component: any) => {
 						</Stack>
 						{device !== 'mobile' && <Chat />}
 						<Stack id={'footer'} component={'footer'}>
-							<Footer variant={'programs'} />
+							<Footer variant={compactTrainer ? 'default' : 'programs'} />
 						</Stack>
 						<ProgramsBottomNavigation />
 					</Stack>
@@ -141,7 +184,7 @@ const withLayoutBasic = (Component: any) => {
 						<title>GymFlow</title>
 						<meta name={'title'} content={`GymFlow`} />
 					</Head>
-					<Stack id="mobile-wrap">
+					<Stack id="mobile-wrap" className={router.pathname === '/trainer' ? 'trainer-discovery-layout' : undefined}>
 						<Stack id={'top'}>
 							<Top />
 						</Stack>
@@ -163,24 +206,26 @@ const withLayoutBasic = (Component: any) => {
 						<title>GymFlow</title>
 						<meta name={'title'} content={`GymFlow`} />
 					</Head>
-					<Stack id="pc-wrap">
+					<Stack id="pc-wrap" className={router.pathname === '/trainer' ? 'trainer-discovery-layout' : undefined}>
 						<Stack id={'top'}>
 							<Top />
 						</Stack>
 
-						<Stack
-							className={`header-basic ${authHeader && 'auth'}`}
-							style={{
-								backgroundImage: `url(${memoizedValues.bgImage})`,
-								backgroundSize: 'cover',
-								boxShadow: 'inset 10px 40px 150px 40px rgb(24 22 36)',
-							}}
-						>
-							<Stack className={'container'}>
-								<strong>{t(memoizedValues.title)}</strong>
-								<span>{t(memoizedValues.desc)}</span>
+						{router.pathname !== '/trainer' && (
+							<Stack
+								className={`header-basic ${authHeader && 'auth'}`}
+								style={{
+									backgroundImage: `url(${memoizedValues.bgImage})`,
+									backgroundSize: 'cover',
+									boxShadow: 'inset 10px 40px 150px 40px rgb(24 22 36)',
+								}}
+							>
+								<Stack className={'container'}>
+									<strong>{t(memoizedValues.title)}</strong>
+									<span>{t(memoizedValues.desc)}</span>
+								</Stack>
 							</Stack>
-						</Stack>
+						)}
 
 						<Stack id={'main'}>
 							<Component {...props} />
