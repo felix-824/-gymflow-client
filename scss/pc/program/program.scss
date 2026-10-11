@@ -1182,3 +1182,234 @@
 		}
 	}
 }
+
+#pc-wrap.program-discovery-layout #program-list-page {
+	.discovery-results-toolbar {
+		display: flex;
+		flex-direction: column;
+		gap: 16px;
+		min-width: 0;
+		width: 100%;
+		scroll-margin-top: 104px;
+	}
+	.discovery-results-row,
+	.discovery-results-controls {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 12px;
+		min-width: 0;
+	}
+	.discovery-results-row {
+		justify-content: space-between;
+		h2 {
+			margin: 0;
+			font-size: 18px;
+			font-weight: 600;
+			line-height: 28px;
+			color: var(--program-dark);
+			font-variant-numeric: tabular-nums;
+			overflow-wrap: anywhere;
+		}
+	}
+	.discovery-results-controls {
+		.MuiButton-root {
+			min-height: 44px;
+			max-width: 100%;
+			border: 1px solid var(--program-border);
+			border-radius: 8px;
+			background: var(--program-surface);
+			color: var(--program-dark);
+			font-size: 13px;
+			line-height: 20px;
+			text-align: start;
+			text-transform: none;
+			overflow-wrap: anywhere;
+			&:hover {
+				border-color: var(--program-dark);
+			}
+		}
+	}
+	.discovery-applied-filters {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 8px;
+		min-width: 0;
+		.MuiChip-root {
+			max-width: 100%;
+			height: auto;
+			min-height: 40px;
+			padding-block: 6px;
+			background: #fceeea;
+			color: var(--program-dark);
+			font-size: 12px;
+			line-height: 20px;
+		}
+		.MuiChip-label {
+			white-space: normal;
+			overflow-wrap: anywhere;
+		}
+		.MuiChip-deleteIcon {
+			flex-shrink: 0;
+			color: var(--program-dark);
+		}
+		.MuiButton-root {
+			min-height: 44px;
+			color: var(--program-dark);
+			font-size: 13px;
+			text-transform: none;
+		}
+	}
+	.discovery-results {
+		min-width: 0;
+		width: 100%;
+	}
+	.discovery-updating {
+		display: flex;
+		flex-direction: column;
+		gap: 8px;
+		margin-bottom: 20px;
+		p {
+			margin: 0;
+			color: #5b5e68;
+			font-size: 13px;
+		}
+		.MuiLinearProgress-root {
+			height: 3px;
+			border-radius: 4px;
+			background: #fceeea;
+		}
+	}
+	.discovery-results-error {
+		margin-bottom: 24px;
+		border-radius: 12px;
+		.MuiAlert-message {
+			min-width: 0;
+			overflow-wrap: anywhere;
+		}
+		p {
+			font-size: 14px;
+			line-height: 24px;
+		}
+		.MuiButton-root {
+			min-height: 44px;
+			margin-top: 8px;
+			color: inherit;
+			text-transform: none;
+		}
+	}
+	.discovery-program-skeleton .discovery-skeleton-media {
+		width: 100%;
+		height: auto;
+		aspect-ratio: 16 / 10;
+	}
+	.discovery-empty-state {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		gap: 16px;
+		padding: 56px 24px;
+		border: 1px solid var(--program-border);
+		border-radius: 12px;
+		background: var(--program-surface);
+		text-align: center;
+		> svg {
+			font-size: 40px;
+			color: #5b5e68;
+		}
+		h3 {
+			margin: 0;
+			color: var(--program-dark);
+			font-size: 20px;
+			font-weight: 600;
+			line-height: 28px;
+		}
+		p {
+			max-width: 48ch;
+			margin: 0;
+			color: #5b5e68;
+			font-size: 14px;
+			line-height: 24px;
+		}
+		.MuiButton-root {
+			min-height: 44px;
+			max-width: 100%;
+			border-radius: 8px;
+			text-transform: none;
+		}
+	}
+	.discovery-pagination {
+		.MuiPagination-ul {
+			justify-content: center;
+			flex-wrap: wrap;
+			gap: 4px;
+		}
+		.MuiPaginationItem-root {
+			min-width: 40px;
+			height: 40px;
+			font-variant-numeric: tabular-nums;
+		}
+		.discovery-pagination-mobile {
+			display: none;
+			width: 100%;
+			grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+			align-items: center;
+			gap: 8px;
+			.MuiButton-root {
+				min-width: 0;
+				min-height: 44px;
+				padding: 8px;
+				color: var(--program-dark);
+				text-transform: none;
+				overflow-wrap: anywhere;
+				&.Mui-disabled {
+					color: #767983;
+				}
+			}
+			p {
+				margin: 0;
+				font-size: 13px;
+				font-variant-numeric: tabular-nums;
+				text-align: center;
+			}
+		}
+	}
+	.discovery-results-toolbar :focus-visible,
+	.discovery-pagination :focus-visible,
+	.discovery-empty-state :focus-visible,
+	.discovery-results-error :focus-visible {
+		outline: 2px solid var(--program-dark);
+		outline-offset: 3px;
+	}
+	@media (max-width: 1023px) {
+		.discovery-results-toolbar {
+			scroll-margin-top: 148px;
+		}
+	}
+	@media (max-width: 767px) {
+		.discovery-results-controls {
+			width: 100%;
+			> .MuiButton-root {
+				flex: 1 1 140px;
+			}
+		}
+		.discovery-applied-filters .MuiChip-root {
+			min-height: 44px;
+		}
+		.discovery-pagination {
+			.discovery-pagination-desktop {
+				display: none;
+			}
+			.discovery-pagination-mobile {
+				display: grid;
+			}
+		}
+	}
+	@media (prefers-reduced-motion: reduce) {
+		.discovery-program-skeleton .MuiSkeleton-root,
+		.discovery-updating .MuiLinearProgress-bar {
+			animation: none;
+		}
+	}
+}
