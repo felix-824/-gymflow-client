@@ -404,7 +404,8 @@
 	}
 }
 
-#pc-wrap.program-discovery-layout {
+#pc-wrap.program-discovery-layout,
+.program-discovery-filter-modal {
 	--program-primary: #eb6753;
 	--program-primary-pressed: #a53425;
 	--program-dark: #12151d;
@@ -415,6 +416,9 @@
 	--program-border: #e7e9ee;
 	--program-font: 'Plus Jakarta Sans', sans-serif;
 	--program-gutter: 32px;
+}
+
+#pc-wrap.program-discovery-layout {
 	min-height: 100vh;
 	background: var(--program-canvas);
 	color: var(--program-text);
@@ -932,6 +936,249 @@
 			svg {
 				font-size: 16px;
 			}
+		}
+	}
+}
+
+#pc-wrap.program-discovery-layout #program-list-page,
+.program-discovery-filter-modal {
+	padding-top: 0;
+
+	.discovery-search-section {
+		margin-bottom: 32px;
+		border-bottom: 1px solid var(--program-border);
+		background: var(--program-surface);
+		> .container {
+			display: flex;
+			flex-direction: column;
+			align-items: flex-start;
+			gap: 16px;
+			padding: 40px 0;
+		}
+		h1 {
+			margin: 0;
+			font-family: var(--program-font);
+			font-size: clamp(28px, 3vw, 36px);
+			font-weight: 700;
+			line-height: 1.25;
+			letter-spacing: -0.02em;
+			color: var(--program-dark);
+		}
+		.discovery-search-description {
+			max-width: 65ch;
+			margin: 0;
+			color: #5b5e68;
+			font-size: 16px;
+			line-height: 26px;
+		}
+	}
+
+	.discovery-name-search {
+		display: flex;
+		align-items: stretch;
+		gap: 8px;
+		width: 100%;
+		max-width: 760px;
+		margin-top: 8px;
+		.MuiTextField-root {
+			flex: 1;
+			min-width: 0;
+		}
+		.MuiButton-root {
+			min-width: 112px;
+			min-height: 56px;
+			border-radius: 8px;
+		}
+	}
+
+	.discovery-quick-filters {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 8px;
+		> span {
+			color: #5b5e68;
+			font-size: 12px;
+			font-weight: 600;
+		}
+		.MuiChip-root {
+			min-height: 36px;
+			max-width: 100%;
+			font-size: 12px;
+			cursor: pointer;
+			&[aria-pressed='true'] {
+				border-color: var(--program-primary);
+				background: var(--program-primary);
+				color: var(--program-dark);
+			}
+		}
+	}
+
+	.discovery-draft-note {
+		margin: 0;
+		color: #5b5e68;
+		font-size: 12px;
+		line-height: 20px;
+	}
+
+	.discovery-filters-button {
+		display: none;
+	}
+
+	.discovery-filter-form {
+		display: flex;
+		flex-direction: column;
+		min-height: 0;
+		min-width: 0;
+		border: 1px solid var(--program-border);
+		border-radius: 12px;
+		background: var(--program-surface);
+		color: var(--program-dark);
+		font-family: var(--program-font);
+		:focus-visible {
+			outline: 2px solid var(--program-dark);
+			outline-offset: 2px;
+		}
+	}
+
+	.discovery-filter-header {
+		display: flex;
+		flex-shrink: 0;
+		align-items: center;
+		justify-content: space-between;
+		gap: 16px;
+		padding: 20px;
+		h2 {
+			margin: 0;
+			font-family: var(--program-font);
+			font-size: 18px;
+			font-weight: 600;
+			line-height: 26px;
+		}
+		.MuiIconButton-root {
+			width: 44px;
+			height: 44px;
+			color: var(--program-dark);
+		}
+	}
+
+	.discovery-filter-content {
+		display: flex;
+		flex-direction: column;
+		gap: 24px;
+		padding: 0 20px 24px;
+	}
+
+	.discovery-filter-group {
+		display: flex;
+		flex-direction: column;
+		gap: 2px;
+		min-width: 0;
+		margin: 0;
+		padding: 0;
+		border: 0;
+		legend {
+			margin-bottom: 8px;
+			padding: 0;
+			font-family: var(--program-font);
+			font-size: 14px;
+			font-weight: 600;
+			line-height: 22px;
+		}
+		.MuiFormControlLabel-root {
+			min-height: 40px;
+			margin: 0 -8px;
+			border-radius: 6px;
+			&:hover {
+				background: var(--program-canvas);
+			}
+		}
+		.MuiFormControlLabel-label {
+			padding: 4px 0;
+			font-size: 13px;
+			line-height: 20px;
+		}
+	}
+
+	.discovery-price-fields {
+		gap: 16px;
+		legend {
+			margin-bottom: 16px;
+		}
+		input {
+			font-variant-numeric: tabular-nums;
+		}
+	}
+
+	.discovery-filter-actions {
+		display: flex;
+		flex-shrink: 0;
+		flex-wrap: wrap;
+		justify-content: space-between;
+		gap: 8px;
+		padding: 16px 20px;
+		border-top: 1px solid var(--program-border);
+		.MuiButton-root {
+			min-height: 44px;
+			border-radius: 8px;
+			font-size: 13px;
+			text-transform: none;
+		}
+		.MuiButton-text {
+			color: var(--program-dark);
+		}
+	}
+
+	.discovery-filter-drawer {
+		max-height: 90vh;
+		max-height: 90dvh;
+		border-radius: 16px 16px 0 0;
+		background: var(--program-surface);
+		.discovery-filter-form {
+			max-height: inherit;
+			overflow: hidden;
+			border: 0;
+			border-radius: 0;
+		}
+		.discovery-filter-content {
+			flex: 1;
+			min-height: 0;
+			overflow-y: auto;
+			overscroll-behavior: contain;
+		}
+		.discovery-filter-actions {
+			padding-bottom: max(16px, env(safe-area-inset-bottom));
+		}
+	}
+
+	@media (max-width: 1023px) {
+		.discovery-filter-sidebar {
+			display: none;
+		}
+		.discovery-filters-button {
+			display: inline-flex;
+			align-self: flex-start;
+			min-height: 44px;
+			color: var(--program-dark);
+			border-color: var(--program-border);
+		}
+	}
+
+	@media (max-width: 767px) {
+		.discovery-search-section {
+			margin-bottom: 24px;
+			> .container {
+				padding: 28px 0;
+			}
+		}
+		.discovery-name-search {
+			flex-direction: column;
+			.MuiButton-root {
+				min-height: 44px;
+			}
+		}
+		.discovery-quick-filters .MuiChip-root {
+			min-height: 44px;
 		}
 	}
 }

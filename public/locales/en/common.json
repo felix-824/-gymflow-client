@@ -71,5 +71,17 @@
 		"CARDIO": "Cardio",
 		"REHAB": "Rehab",
 		"View Program": "View Program"
+	},
+	"Program discovery": {
+		"Heading": "Find Your Perfect Program",
+		"Description": "Explore programs for your goals, location, and training style.",
+		"Search placeholder": "Search programs by name",
+		"Quick filters": "Quick filters",
+		"Draft note": "Selections apply when you Search or Apply filters.",
+		"Filters": "Filters",
+		"Close filters": "Close filters",
+		"Price": "Price (KRW/session)",
+		"Apply filters": "Apply filters",
+		"Invalid price": "Enter a valid price range in KRW."
 	}
 }

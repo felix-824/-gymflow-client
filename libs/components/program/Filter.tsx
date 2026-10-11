@@ -1,5 +1,16 @@
 import React, { useEffect, useState } from 'react';
-import { Button, MenuItem, Stack, TextField, Typography } from '@mui/material';
+import {
+	Box,
+	Button,
+	Checkbox,
+	FormControlLabel,
+	IconButton,
+	MenuItem,
+	Stack,
+	TextField,
+	Typography,
+} from '@mui/material';
+import CloseRoundedIcon from '@mui/icons-material/CloseRounded';
 import useDeviceDetect from '../../hooks/useDeviceDetect';
 import { ProgramCategory, ProgramLocation, ProgramType } from '../../enums/program.enum';
 import { ProgramsInquiry } from '../../types/program/program.input';
@@ -194,3 +205,142 @@ const Filter = ({ searchFilter, setSearchFilter, initialInput, compact = false }
 };
 
 export default Filter;
+
+interface DiscoveryFilterType {
+	draft: ProgramsInquiry;
+	setDraft: React.Dispatch<React.SetStateAction<ProgramsInquiry>>;
+	onApply: () => void;
+	onReset: () => void;
+	error: string;
+	idPrefix: string;
+	onClose?: () => void;
+}
+
+export const DiscoveryFilter = ({
+	draft,
+	setDraft,
+	onApply,
+	onReset,
+	error,
+	idPrefix,
+	onClose,
+}: DiscoveryFilterType) => {
+	const { t } = useTranslation('common');
+	const rangeHandler = (key: 'start' | 'end', value: string) => {
+		setDraft((current) => ({
+			...current,
+			search: {
+				...current.search,
+				pricesRange: {
+					...(current.search.pricesRange ?? { start: 0, end: 2147483647 }),
+					[key]: value === '' ? (key === 'start' ? 0 : 2147483647) : Number(value),
+				},
+			},
+		}));
+	};
+
+	return (
+		<form
+			className={'discovery-filter-form'}
+			noValidate
+			onSubmit={(event) => {
+				event.preventDefault();
+				onApply();
+			}}
+		>
+			<Box component={'div'} className={'discovery-filter-header'}>
+				<Typography component={'h2'} id={`${idPrefix}-title`}>
+					{t('Program discovery.Filters')}
+				</Typography>
+				{onClose && (
+					<IconButton type={'button'} onClick={onClose} aria-label={t('Program discovery.Close filters')} autoFocus>
+						<CloseRoundedIcon />
+					</IconButton>
+				)}
+			</Box>
+			<Box component={'div'} className={'discovery-filter-content'}>
+				{(
+					[
+						['locationList', 'Location', Object.values(ProgramLocation)],
+						['typeList', 'Program type', Object.values(ProgramType)],
+						['categoryList', 'Category', Object.values(ProgramCategory)],
+					] as const
+				).map(([key, label, values]) => (
+					<Box component={'fieldset'} className={'discovery-filter-group'} key={key}>
+						<Typography component={'legend'}>{t(label)}</Typography>
+						{values.map((value) => (
+							<FormControlLabel
+								key={value}
+								label={t(key === 'locationList' ? value : `Program discovery card.${value}`)}
+								control={
+									<Checkbox
+										size={'small'}
+										checked={(draft.search[key] as string[] | undefined)?.includes(value) ?? false}
+										onChange={(_, checked) => {
+											setDraft((current) => {
+												const selected = (current.search[key] ?? []) as string[];
+												return {
+													...current,
+													search: {
+														...current.search,
+														[key]: checked ? [...selected, value] : selected.filter((item) => item !== value),
+													},
+												};
+											});
+										}}
+									/>
+								}
+							/>
+						))}
+					</Box>
+				))}
+				<Box component={'fieldset'} className={'discovery-filter-group discovery-price-fields'}>
+					<Typography component={'legend'}>{t('Program discovery.Price')}</Typography>
+					<TextField
+						id={`${idPrefix}-min-price`}
+						size={'small'}
+						type={'number'}
+						label={t('Min price (KRW/session)')}
+						value={draft.search.pricesRange?.start ?? ''}
+						onChange={(event) => rangeHandler('start', event.target.value)}
+						error={Boolean(error)}
+						inputProps={{
+							min: 0,
+							max: 2147483647,
+							step: 1,
+							'aria-describedby': error ? `${idPrefix}-error` : undefined,
+						}}
+					/>
+					<TextField
+						id={`${idPrefix}-max-price`}
+						size={'small'}
+						type={'number'}
+						label={t('Max price (KRW/session)')}
+						value={draft.search.pricesRange?.end === 2147483647 ? '' : draft.search.pricesRange?.end ?? ''}
+						onChange={(event) => rangeHandler('end', event.target.value)}
+						error={Boolean(error)}
+						inputProps={{
+							min: 0,
+							max: 2147483647,
+							step: 1,
+							'aria-describedby': error ? `${idPrefix}-error` : undefined,
+						}}
+					/>
+					{error && (
+						<Typography id={`${idPrefix}-error`} color={'error'} role={'alert'}>
+							{error}
+						</Typography>
+					)}
+				</Box>
+			</Box>
+			<Box component={'div'} className={'discovery-filter-actions'}>
+				<Button type={'button'} onClick={onReset}>
+					{t('Reset')}
+				</Button>
+				<Button type={'submit'} variant={'contained'} disableElevation>
+					{t('Program discovery.Apply filters')}
+				</Button>
+			</Box>
+		</form>
+	);
+};

@@ -71,5 +71,17 @@
 		"CARDIO": "유산소",
 		"REHAB": "재활",
 		"View Program": "프로그램 보기"
+	},
+	"Program discovery": {
+		"Heading": "나에게 맞는 프로그램 찾기",
+		"Description": "목표, 지역, 운동 스타일에 맞는 프로그램을 둘러보세요.",
+		"Search placeholder": "프로그램 이름으로 검색",
+		"Quick filters": "빠른 필터",
+		"Draft note": "선택한 조건은 검색 또는 필터 적용 시 반영됩니다.",
+		"Filters": "필터",
+		"Close filters": "필터 닫기",
+		"Price": "가격 (원/회)",
+		"Apply filters": "필터 적용",
+		"Invalid price": "올바른 원화 가격 범위를 입력해 주세요."
 	}
 }
