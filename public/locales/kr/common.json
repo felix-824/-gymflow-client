@@ -84,6 +84,18 @@
 		"Apply filters": "필터 적용",
 		"Invalid price": "올바른 원화 가격 범위를 입력해 주세요."
 	},
+	"Program navigation": {
+		"GymFlow home": "GymFlow 홈",
+		"Main navigation": "주 메뉴",
+		"Mobile navigation": "모바일 메뉴",
+		"Main menu": "메뉴 열기",
+		"Account menu": "계정 메뉴",
+		"Language": "언어 변경, 현재 언어 {{locale}}",
+		"en": "English (EN)",
+		"kr": "한국어 (KR)",
+		"ru": "Русский (RU)",
+		"Logout": "로그아웃"
+	},
 	"Program results": {
 		"Toolbar": "프로그램 검색 결과 설정",
 		"Count": "프로그램: {{total}}개",

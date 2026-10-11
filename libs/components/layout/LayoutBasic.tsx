@@ -4,6 +4,7 @@ import useDeviceDetect from '../../hooks/useDeviceDetect';
 import Head from 'next/head';
 import Top from '../Top';
 import Footer from '../Footer';
+import { ProgramsBottomNavigation } from '../program/ProgramsNavigation';
 import { Stack } from '@mui/material';
 import { createTheme, ThemeProvider, useTheme } from '@mui/material/styles';
 
@@ -118,15 +119,16 @@ const withLayoutBasic = (Component: any) => {
 					</Head>
 					<Stack id="pc-wrap" className={`program-discovery-layout${device === 'mobile' ? ' is-mobile' : ''}`}>
 						<Stack id={'top'}>
-							<Top />
+							<Top variant={'programs'} />
 						</Stack>
 						<Stack id={'main'} component="main">
 							<Component {...props} />
 						</Stack>
 						{device !== 'mobile' && <Chat />}
-						<Stack id={'footer'}>
-							<Footer />
+						<Stack id={'footer'} component={'footer'}>
+							<Footer variant={'programs'} />
 						</Stack>
+						<ProgramsBottomNavigation />
 					</Stack>
 				</ThemeProvider>
 			);

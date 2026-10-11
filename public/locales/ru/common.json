@@ -84,6 +84,18 @@
 		"Apply filters": "Применить фильтры",
 		"Invalid price": "Введите допустимый диапазон цен в KRW."
 	},
+	"Program navigation": {
+		"GymFlow home": "Главная GymFlow",
+		"Main navigation": "Основная навигация",
+		"Mobile navigation": "Мобильная навигация",
+		"Main menu": "Открыть меню",
+		"Account menu": "Меню аккаунта",
+		"Language": "Сменить язык, текущий язык {{locale}}",
+		"en": "English (EN)",
+		"kr": "한국어 (KR)",
+		"ru": "Русский (RU)",
+		"Logout": "Выйти"
+	},
 	"Program results": {
 		"Toolbar": "Управление результатами поиска программ",
 		"Count": "Программы: {{total}}",

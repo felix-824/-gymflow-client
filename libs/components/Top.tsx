@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useRef } from 'react';
 import { useState } from 'react';
-import { useRouter, withRouter } from 'next/router';
+import { useRouter, withRouter, NextRouter } from 'next/router';
 import { useTranslation } from 'next-i18next';
 import { logOut } from '../auth';
 import { Stack, Box } from '@mui/material';
@@ -18,10 +18,11 @@ import { userVar } from '../../apollo/store';
 import { Logout } from '@mui/icons-material';
 import { REACT_APP_API_URL } from '../config';
 import { motion, useReducedMotion } from 'framer-motion';
+import { ProgramsHeader } from './program/ProgramsNavigation';
 
 const MotionStack = motion.create(Stack);
 
-const Top = () => {
+const DefaultTop = () => {
 	const device = useDeviceDetect();
 	const user = useReactiveVar(userVar);
 	const { t, i18n } = useTranslation('common');
@@ -294,5 +295,8 @@ const Top = () => {
 		);
 	}
 };
+
+const Top = ({ variant = 'default' }: { router: NextRouter; variant?: 'default' | 'programs' }) =>
+	variant === 'programs' ? <ProgramsHeader /> : <DefaultTop />;
 
 export default withRouter(Top);

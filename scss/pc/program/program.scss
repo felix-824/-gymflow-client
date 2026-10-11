@@ -405,7 +405,8 @@
 }
 
 #pc-wrap.program-discovery-layout,
-.program-discovery-filter-modal {
+.program-discovery-filter-modal,
+.programs-navigation-menu {
 	--program-primary: #eb6753;
 	--program-primary-pressed: #a53425;
 	--program-dark: #12151d;
@@ -1411,5 +1412,327 @@
 		.discovery-updating .MuiLinearProgress-bar {
 			animation: none;
 		}
+	}
+}
+
+#pc-wrap.program-discovery-layout {
+	#main,
+	&.is-mobile #main {
+		padding-top: calc(64px + env(safe-area-inset-top, 0px));
+	}
+	.programs-brand {
+		display: inline-flex;
+		flex-shrink: 0;
+		align-items: center;
+		gap: 8px;
+		min-height: 44px;
+		color: inherit;
+		font-size: 20px;
+		font-weight: 700;
+		letter-spacing: -0.02em;
+		text-decoration: none;
+		img {
+			display: block;
+		}
+	}
+	.programs-header {
+		position: fixed;
+		inset: 0 0 auto;
+		z-index: 120;
+		padding-top: env(safe-area-inset-top, 0px);
+		border-bottom: 1px solid #282c36;
+		background: var(--program-dark);
+		color: var(--program-surface);
+		font-family: var(--program-font);
+		.programs-header-inner {
+			display: flex;
+			align-items: center;
+			justify-content: space-between;
+			gap: 24px;
+			width: calc(100% - var(--program-gutter) * 2);
+			max-width: 1280px;
+			min-height: 64px;
+			margin: 0 auto;
+		}
+		.programs-desktop-links {
+			display: flex;
+			flex: 1;
+			align-items: center;
+			justify-content: center;
+			gap: 4px;
+			a {
+				display: inline-flex;
+				align-items: center;
+				min-height: 44px;
+				padding: 8px 12px;
+				border-radius: 24px;
+				color: #c4c8d2;
+				font-size: 13px;
+				font-weight: 600;
+				text-decoration: none;
+				&:hover {
+					background: #282c36;
+					color: #fff;
+				}
+				&[aria-current='page'] {
+					background: var(--program-primary);
+					color: var(--program-dark);
+				}
+			}
+		}
+		.programs-header-actions {
+			display: flex;
+			flex-shrink: 0;
+			align-items: center;
+			gap: 8px;
+		}
+		.programs-language-button,
+		.programs-account-button,
+		.programs-navigation-button,
+		.programs-auth-link {
+			min-width: 44px;
+			min-height: 44px;
+			border-radius: 8px;
+			color: inherit;
+			font-family: inherit;
+			font-size: 13px;
+			font-weight: 600;
+			text-transform: none;
+			&:hover {
+				background: #282c36;
+			}
+		}
+		.programs-language-button {
+			padding-inline: 8px;
+			.MuiButton-endIcon {
+				margin-left: 2px;
+				margin-right: 0;
+			}
+		}
+		.programs-auth-link {
+			display: inline-flex;
+			align-items: center;
+			justify-content: center;
+			gap: 8px;
+			padding: 8px 12px;
+			border: 1px solid #4e5360;
+			text-decoration: none;
+		}
+		.programs-account-button .MuiAvatar-root {
+			width: 32px;
+			height: 32px;
+			background: #282c36;
+			color: #fff;
+			font-family: inherit;
+			font-size: 14px;
+		}
+		.programs-navigation-button {
+			display: none;
+		}
+		:focus-visible {
+			outline: 2px solid var(--program-primary);
+			outline-offset: 3px;
+		}
+	}
+	#footer {
+		padding: 0;
+	}
+	.programs-footer {
+		width: 100%;
+		background: var(--program-dark);
+		color: #b8bcc7;
+		font-family: var(--program-font);
+		font-size: 13px;
+		line-height: 22px;
+		.programs-footer-inner {
+			display: grid;
+			grid-template-columns: minmax(0, 1.5fr) repeat(3, minmax(0, 1fr));
+			gap: 32px;
+			width: calc(100% - var(--program-gutter) * 2);
+			max-width: 1280px;
+			margin: 0 auto;
+			padding: 40px 0 24px;
+		}
+		.programs-footer-brand {
+			min-width: 0;
+			.programs-brand,
+			p {
+				color: #fff;
+			}
+			p {
+				margin: 16px 0 4px;
+				font-weight: 600;
+			}
+		}
+		.programs-footer-links {
+			display: flex;
+			flex-direction: column;
+			align-items: flex-start;
+			min-width: 0;
+			strong {
+				margin-bottom: 8px;
+				color: #fff;
+				font-size: 14px;
+			}
+			a {
+				display: inline-flex;
+				align-items: center;
+				min-height: 44px;
+				color: inherit;
+				text-decoration: none;
+				overflow-wrap: anywhere;
+				&:hover {
+					color: #fff;
+					text-decoration: underline;
+					text-underline-offset: 4px;
+				}
+			}
+		}
+		.programs-footer-bottom {
+			grid-column: 1 / -1;
+			padding-top: 24px;
+			border-top: 1px solid #353944;
+		}
+		:focus-visible {
+			outline: 2px solid var(--program-primary);
+			outline-offset: 3px;
+		}
+	}
+	.programs-bottom-navigation {
+		display: none;
+	}
+	#program-list-page .discovery-results-toolbar {
+		scroll-margin-top: calc(80px + env(safe-area-inset-top, 0px));
+	}
+	@media (max-width: 1199px) {
+		.programs-header {
+			.programs-desktop-links {
+				display: none;
+			}
+			.programs-navigation-button {
+				display: inline-flex;
+			}
+		}
+	}
+	@media (max-width: 767px) {
+		padding-bottom: calc(88px + env(safe-area-inset-bottom, 0px));
+		.programs-header {
+			border-bottom-color: var(--program-border);
+			background: var(--program-surface);
+			color: var(--program-dark);
+			.programs-header-inner {
+				gap: 8px;
+			}
+			.programs-brand {
+				gap: 4px;
+				font-size: 18px;
+			}
+			.programs-header-actions {
+				gap: 4px;
+			}
+			.programs-auth-link {
+				padding: 8px;
+				border: 0;
+				span {
+					display: none;
+				}
+			}
+			.MuiButton-root:hover,
+			.MuiIconButton-root:hover,
+			.programs-auth-link:hover {
+				background: #edeef0;
+			}
+		}
+		.programs-footer .programs-footer-inner {
+			grid-template-columns: repeat(2, minmax(0, 1fr));
+			gap: 24px;
+			.programs-footer-brand {
+				grid-column: 1 / -1;
+			}
+		}
+		.programs-bottom-navigation {
+			position: fixed;
+			inset: auto 0 0;
+			z-index: 120;
+			display: grid;
+			grid-template-columns: repeat(5, minmax(0, 1fr));
+			padding: 4px max(4px, env(safe-area-inset-right, 0px)) max(4px, env(safe-area-inset-bottom, 0px))
+				max(4px, env(safe-area-inset-left, 0px));
+			border-top: 1px solid var(--program-border);
+			background: var(--program-surface);
+			font-family: var(--program-font);
+			a {
+				display: flex;
+				flex-direction: column;
+				align-items: center;
+				justify-content: center;
+				gap: 4px;
+				min-width: 0;
+				min-height: 68px;
+				padding: 6px 2px;
+				border-radius: 8px;
+				color: #5b5e68;
+				font-size: 11px;
+				line-height: 14px;
+				text-align: center;
+				white-space: normal;
+				text-decoration: none;
+				overflow-wrap: anywhere;
+				svg {
+					box-sizing: content-box;
+					padding: 4px 12px;
+					border-radius: 16px;
+					font-size: 22px;
+				}
+				&:hover {
+					background: #fceeea;
+					color: var(--program-dark);
+				}
+				&[aria-current='page'] {
+					color: var(--program-dark);
+					font-weight: 700;
+					svg {
+						background: var(--program-primary);
+					}
+				}
+				&:focus-visible {
+					outline: 2px solid var(--program-dark);
+					outline-offset: -2px;
+				}
+			}
+		}
+		#main a,
+		#main button {
+			scroll-margin-bottom: calc(96px + env(safe-area-inset-bottom, 0px));
+		}
+	}
+}
+
+.programs-navigation-menu {
+	.MuiPaper-root {
+		max-width: calc(100vw - 32px);
+		border: 1px solid var(--program-border);
+		border-radius: 12px;
+		color: var(--program-dark);
+		font-family: var(--program-font);
+	}
+	.MuiMenuItem-root {
+		min-height: 44px;
+		gap: 8px;
+		white-space: normal;
+		overflow-wrap: anywhere;
+		font-size: 14px;
+		&.Mui-selected {
+			background: #fceeea;
+		}
+		&:focus-visible {
+			outline: 2px solid var(--program-dark);
+			outline-offset: -3px;
+		}
+	}
+	.programs-account-name.Mui-disabled {
+		max-width: 280px;
+		opacity: 1;
+		color: #5b5e68;
 	}
 }
