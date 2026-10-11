@@ -96,6 +96,18 @@
 		"ru": "Русский (RU)",
 		"Logout": "Logout"
 	},
+	"Program detail": {
+		"Breadcrumb": "Program navigation",
+		"Program images": "Program images",
+		"View image": "View program image {{index}}",
+		"Program summary": "Program summary",
+		"Session rate": "Price per session",
+		"Duration": "Duration",
+		"Capacity": "Participants per session",
+		"Session capacity": "Capacity: {{capacity}} per session",
+		"Save program": "Save program",
+		"Saved": "Saved"
+	},
 	"Program results": {
 		"Toolbar": "Program results controls",
 		"Count": "Programs: {{total}}",

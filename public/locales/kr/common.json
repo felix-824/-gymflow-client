@@ -96,6 +96,18 @@
 		"ru": "Русский (RU)",
 		"Logout": "로그아웃"
 	},
+	"Program detail": {
+		"Breadcrumb": "프로그램 탐색",
+		"Program images": "프로그램 이미지",
+		"View image": "프로그램 이미지 {{index}} 보기",
+		"Program summary": "프로그램 요약",
+		"Session rate": "회당 가격",
+		"Duration": "운동 시간",
+		"Capacity": "회당 참여 인원",
+		"Session capacity": "회당 정원: {{capacity}}명",
+		"Save program": "프로그램 저장",
+		"Saved": "저장됨"
+	},
 	"Program results": {
 		"Toolbar": "프로그램 검색 결과 설정",
 		"Count": "프로그램: {{total}}개",

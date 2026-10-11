@@ -1,19 +1,23 @@
 import React, { useEffect, useState } from 'react';
-import { Box, Button, CircularProgress, IconButton, Stack, Typography } from '@mui/material';
+import { Box, Button, CircularProgress, Stack, Typography } from '@mui/material';
 import { NextPage } from 'next';
 import { useRouter } from 'next/router';
 import Link from 'next/link';
+import Head from 'next/head';
 import { useMutation, useQuery, useReactiveVar } from '@apollo/client';
 import FavoriteIcon from '@mui/icons-material/Favorite';
 import FavoriteBorderIcon from '@mui/icons-material/FavoriteBorder';
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
 import GroupsIcon from '@mui/icons-material/Groups';
-import FitnessCenterIcon from '@mui/icons-material/FitnessCenter';
+import FitnessCenterOutlinedIcon from '@mui/icons-material/FitnessCenterOutlined';
+import LocationOnOutlinedIcon from '@mui/icons-material/LocationOnOutlined';
+import RemoveRedEyeOutlinedIcon from '@mui/icons-material/RemoveRedEyeOutlined';
+import ChevronRightRoundedIcon from '@mui/icons-material/ChevronRightRounded';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import SwiperCore, { Navigation, Pagination } from 'swiper';
 import { serverSideTranslations } from 'next-i18next/serverSideTranslations';
+import { useTranslation } from 'next-i18next';
 import withLayoutFull from '../../libs/components/layout/LayoutFull';
-import useDeviceDetect from '../../libs/hooks/useDeviceDetect';
 import ProgramBigCard from '../../libs/components/common/ProgramBigCard';
 import { Program } from '../../libs/types/program/program';
 import { ProgramType } from '../../libs/enums/program.enum';
@@ -34,7 +38,7 @@ export const getStaticProps = async ({ locale }: any) => ({
 });
 
 const ProgramDetail: NextPage = () => {
-	const device = useDeviceDetect();
+	const { t } = useTranslation('common');
 	const router = useRouter();
 	const user = useReactiveVar(userVar);
 	const programId = typeof router.query.id === 'string' ? router.query.id : '';
@@ -89,7 +93,6 @@ const ProgramDetail: NextPage = () => {
 			await sweetMixinErrorAlert(err.message);
 		}
 	};
-	if (device === 'mobile') return <div>PROGRAM DETAIL MOBILE</div>;
 	if (!router.isReady || loading)
 		return (
 			<Stack alignItems="center" p={8}>
@@ -106,61 +109,119 @@ const ProgramDetail: NextPage = () => {
 			</Stack>
 		);
 
+	const isLiked = !!program.meLiked?.[0]?.myFavorite;
+	const location = program.programType === ProgramType.ONLINE ? t('ONLINE') : t(program.programLocation);
+	const address = program.programType !== ProgramType.ONLINE ? program.programAddress : '';
+
 	return (
 		<div id="program-detail-page">
+			<Head>
+				<link
+					rel="stylesheet"
+					href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap"
+				/>
+			</Head>
 			<div className="container">
 				<Stack className="program-detail-config">
-					<Stack className="program-info-config">
-						<Stack className="info">
-							<Stack className="left-box">
-								<Typography className="title-main">{program.programName}</Typography>
-								<Stack className="top-box" direction="row" spacing={2}>
-									<Typography>{program.programLocation}</Typography>
-									<Typography>{program.programType.replace(/_/g, ' ')}</Typography>
-								</Stack>
-								<Stack className="bottom-box" direction="row" spacing={3}>
-									<Stack className="option" direction="row">
-										<FitnessCenterIcon />
-										<Typography>{program.programCategory.replace(/_/g, ' ')}</Typography>
-									</Stack>
-									<Stack className="option" direction="row">
-										<AccessTimeIcon />
-										<Typography>{program.programDuration} min/session</Typography>
-									</Stack>
-									<Stack className="option" direction="row">
-										<GroupsIcon />
-										<Typography>{program.programCapacity} participants/session</Typography>
-									</Stack>
-								</Stack>
-							</Stack>
-							<Stack className="right-box">
-								<Stack direction="row" alignItems="center">
-									<Typography>{program.programViews} views</Typography>
-									<IconButton
-										aria-label="Like program"
-										disabled={liking}
-										onClick={() => likeProgramHandler(user, program._id)}
-									>
-										{program.meLiked?.[0]?.myFavorite ? <FavoriteIcon color="primary" /> : <FavoriteBorderIcon />}
-									</IconButton>
-									<Typography>{program.programLikes}</Typography>
-								</Stack>
-								<Typography>₩{formatterStr(program.programPrice)} /session</Typography>
-							</Stack>
-						</Stack>
-						<Stack className="images">
-							<Stack className="main-image">
-								<img src={REACT_APP_API_URL + '/' + slideImage} alt={program.programName} />
-							</Stack>
-							<Stack className="sub-images">
-								{program.programImages.map((image, index) => (
-									<Stack key={image} className="sub-img-box" onClick={() => setSlideImage(image)}>
-										<img src={REACT_APP_API_URL + '/' + image} alt={'Program image ' + (index + 1)} />
-									</Stack>
-								))}
-							</Stack>
-						</Stack>
-					</Stack>
+					<section className="program-detail-hero" aria-labelledby="program-detail-title">
+						<nav className="detail-breadcrumb" aria-label={t('Program detail.Breadcrumb')}>
+							<Link href="/program">{t('Programs')}</Link>
+							<ChevronRightRoundedIcon aria-hidden="true" />
+							<span aria-current="page">{program.programName}</span>
+						</nav>
+						<div className="detail-identity">
+							<div className="detail-badges">
+								<span className="detail-category">{t(`Program discovery card.${program.programCategory}`)}</span>
+								<span className="detail-type">{t(`Program discovery card.${program.programType}`)}</span>
+							</div>
+							<Typography component="h1" id="program-detail-title">
+								{program.programName}
+							</Typography>
+							<div className="detail-metadata">
+								<span>
+									<LocationOnOutlinedIcon />
+									{[location, address].filter(Boolean).join(' · ')}
+								</span>
+								<span>
+									<AccessTimeIcon />
+									{t('Session duration', { duration: program.programDuration })}
+								</span>
+								<span>
+									<GroupsIcon />
+									{t('Program detail.Session capacity', { capacity: program.programCapacity })}
+								</span>
+							</div>
+						</div>
+						<div className="detail-gallery" role="group" aria-label={t('Program detail.Program images')}>
+							<div className="detail-main-image">
+								<ProgramDetailImage image={slideImage} alt={program.programName} />
+							</div>
+							{program.programImages.length > 0 && (
+								<div className="detail-thumbnails">
+									<div className="detail-thumbnail-list">
+										{program.programImages.map((image, index) => (
+											<button
+												type="button"
+												key={image}
+												aria-label={t('Program detail.View image', { index: index + 1 })}
+												aria-pressed={slideImage === image}
+												onClick={() => setSlideImage(image)}
+											>
+												<ProgramDetailImage image={image} alt="" />
+											</button>
+										))}
+									</div>
+								</div>
+							)}
+						</div>
+						<aside className="detail-summary" aria-label={t('Program detail.Program summary')}>
+							<div className="detail-rate">
+								<span>{t('Program detail.Session rate')}</span>
+								<p>
+									<strong>₩{formatterStr(program.programPrice)}</strong>
+									<span>{t('Per session')}</span>
+								</p>
+							</div>
+							<dl>
+								<div>
+									<dt>{t('Program type')}</dt>
+									<dd>{t(`Program discovery card.${program.programType}`)}</dd>
+								</div>
+								<div>
+									<dt>{t('Program detail.Duration')}</dt>
+									<dd>{t('Session duration', { duration: program.programDuration })}</dd>
+								</div>
+								<div>
+									<dt>{t('Program detail.Capacity')}</dt>
+									<dd>{program.programCapacity}</dd>
+								</div>
+								<div>
+									<dt>{t('Location')}</dt>
+									<dd>{location}</dd>
+								</div>
+							</dl>
+							<div className="detail-stats">
+								<span>
+									<RemoveRedEyeOutlinedIcon />
+									{t('Program views', { views: formatterStr(program.programViews) })}
+								</span>
+								<span>
+									<FavoriteBorderIcon />
+									{t('Program likes', { likes: formatterStr(program.programLikes) })}
+								</span>
+							</div>
+							<Button
+								className="detail-save"
+								aria-label={t(isLiked ? 'Unlike program' : 'Like program', { name: program.programName })}
+								aria-pressed={isLiked}
+								disabled={liking}
+								startIcon={isLiked ? <FavoriteIcon /> : <FavoriteBorderIcon />}
+								onClick={() => likeProgramHandler(user, program._id)}
+							>
+								{t(isLiked ? 'Program detail.Saved' : 'Program detail.Save program')}
+							</Button>
+						</aside>
+					</section>
 					<Stack className="program-desc-config">
 						<Stack className="left-config">
 							<Stack className="prop-desc-config">
@@ -254,3 +315,16 @@ const ProgramDetail: NextPage = () => {
 };
 
 export default withLayoutFull(ProgramDetail);
+
+const ProgramDetailImage = ({ image, alt }: { image: string; alt: string }) => {
+	const [failedImage, setFailedImage] = useState('');
+	const imageSrc = image ? `${REACT_APP_API_URL}/${image}` : '';
+
+	return imageSrc && failedImage !== imageSrc ? (
+		<img src={imageSrc} alt={alt} onError={() => setFailedImage(imageSrc)} />
+	) : (
+		<span className="detail-image-fallback" role={alt ? 'img' : undefined} aria-label={alt || undefined} aria-hidden={!alt}>
+			<FitnessCenterOutlinedIcon aria-hidden="true" />
+		</span>
+	);
+};

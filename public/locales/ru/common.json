@@ -96,6 +96,18 @@
 		"ru": "Русский (RU)",
 		"Logout": "Выйти"
 	},
+	"Program detail": {
+		"Breadcrumb": "Навигация по программам",
+		"Program images": "Изображения программы",
+		"View image": "Посмотреть изображение программы {{index}}",
+		"Program summary": "Сведения о программе",
+		"Session rate": "Цена за занятие",
+		"Duration": "Длительность",
+		"Capacity": "Участников на занятие",
+		"Session capacity": "Вместимость: {{capacity}} на занятие",
+		"Save program": "Сохранить программу",
+		"Saved": "Сохранено"
+	},
 	"Program results": {
 		"Toolbar": "Управление результатами поиска программ",
 		"Count": "Программы: {{total}}",
