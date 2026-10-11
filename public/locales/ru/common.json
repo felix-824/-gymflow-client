@@ -121,7 +121,9 @@
 		"Unavailable title": "Программа недоступна",
 		"Unavailable description": "Программа не найдена или сейчас не опубликована.",
 		"Browse programs": "Посмотреть программы",
-		"Retry": "Повторить"
+		"Retry": "Повторить",
+		"Similar programs": "Похожие программы",
+		"Demo image": "Пример изображения"
 	},
 	"Program results": {
 		"Toolbar": "Управление результатами поиска программ",

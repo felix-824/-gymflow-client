@@ -121,7 +121,9 @@
 		"Unavailable title": "Program unavailable",
 		"Unavailable description": "This program could not be found or is not currently public.",
 		"Browse programs": "Browse programs",
-		"Retry": "Try again"
+		"Retry": "Try again",
+		"Similar programs": "Similar programs",
+		"Demo image": "Demo image"
 	},
 	"Program results": {
 		"Toolbar": "Program results controls",

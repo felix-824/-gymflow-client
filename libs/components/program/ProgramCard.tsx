@@ -24,7 +24,7 @@ interface ProgramCardType {
 	likeProgramHandler?: any;
 	myFavorites?: boolean;
 	recentlyVisited?: boolean;
-	variant?: 'default' | 'discovery';
+	variant?: 'default' | 'discovery' | 'related';
 }
 
 const ProgramCard = (props: ProgramCardType) => {
@@ -32,8 +32,8 @@ const ProgramCard = (props: ProgramCardType) => {
 	const device = useDeviceDetect();
 	const user = useReactiveVar(userVar);
 
-	if (variant === 'discovery') {
-		return <DiscoveryProgramCard program={program} likeProgramHandler={likeProgramHandler} />;
+	if (variant === 'discovery' || variant === 'related') {
+		return <DiscoveryProgramCard program={program} likeProgramHandler={likeProgramHandler} variant={variant} />;
 	}
 
 	const imagePath: string = program?.programImages[0]
@@ -127,7 +127,7 @@ const ProgramCard = (props: ProgramCardType) => {
 	}
 };
 
-const DiscoveryProgramCard = ({ program, likeProgramHandler }: ProgramCardType) => {
+const DiscoveryProgramCard = ({ program, likeProgramHandler, variant }: ProgramCardType) => {
 	const { t } = useTranslation('common');
 	const user = useReactiveVar(userVar);
 	const [failedImage, setFailedImage] = useState('');
@@ -141,6 +141,7 @@ const DiscoveryProgramCard = ({ program, likeProgramHandler }: ProgramCardType) 
 		.join('')
 		.toUpperCase();
 	const isLiked = Boolean(program.meLiked?.[0]?.myFavorite);
+	const isRelated = variant === 'related';
 	const detailHref = { pathname: '/program/detail', query: { id: program._id } };
 	const location =
 		program.programType === ProgramType.ONLINE
@@ -155,7 +156,9 @@ const DiscoveryProgramCard = ({ program, likeProgramHandler }: ProgramCardType) 
 					className={'discovery-card-image'}
 					aria-label={t('View program', { name: program.programName })}
 				>
-					{imageSrc && imageSrc !== failedImage ? (
+					{isRelated ? (
+						<RelatedProgramImage key={program._id} program={program} />
+					) : imageSrc && imageSrc !== failedImage ? (
 						<Box
 							component={'img'}
 							src={imageSrc}
@@ -189,11 +192,13 @@ const DiscoveryProgramCard = ({ program, likeProgramHandler }: ProgramCardType) 
 				>
 					{isLiked ? <FavoriteIcon /> : <FavoriteBorderIcon />}
 				</IconButton>
-				{program.programRank > topProgramRank && <span className={'discovery-top-badge'}>TOP</span>}
-				<span className={'discovery-views'} aria-label={t('Program views', { views: program.programViews })}>
-					<RemoveRedEyeIcon />
-					{formatterStr(program.programViews)}
-				</span>
+				{!isRelated && program.programRank > topProgramRank && <span className={'discovery-top-badge'}>TOP</span>}
+				{!isRelated && (
+					<span className={'discovery-views'} aria-label={t('Program views', { views: program.programViews })}>
+						<RemoveRedEyeIcon />
+						{formatterStr(program.programViews)}
+					</span>
+				)}
 			</Box>
 			<Box component={'div'} className={'discovery-card-body'}>
 				<Typography component={'h3'} className={'discovery-card-title'}>
@@ -201,7 +206,7 @@ const DiscoveryProgramCard = ({ program, likeProgramHandler }: ProgramCardType) 
 						{program.programName}
 					</Link>
 				</Typography>
-				{trainerName && (
+				{!isRelated && trainerName && (
 					<Box component={'div'} className={'discovery-trainer'}>
 						<Avatar src={trainerImage ? `${REACT_APP_API_URL}/${trainerImage}` : undefined} alt="">
 							{trainerInitials}
@@ -244,6 +249,45 @@ const DiscoveryProgramCard = ({ program, likeProgramHandler }: ProgramCardType) 
 				</Box>
 			</Box>
 		</Stack>
+	);
+};
+
+const relatedDemoImages = [
+	'/img/fiber/strength-dumbbells.webp',
+	'/img/fiber/yoga-mat-practice.webp',
+	'/img/fiber/cardio-running.webp',
+	'/img/fiber/pilates-training.webp',
+];
+
+const RelatedProgramImage = ({ program }: { program: Program }) => {
+	const { t } = useTranslation('common');
+	const [failedImages, setFailedImages] = useState<string[]>([]);
+	const image = program.programImages?.find((path) => path?.trim() && !failedImages.includes(path));
+	const imageIndex = Array.from(program._id).reduce((index, character) => (index * 31 + character.charCodeAt(0)) >>> 0, 0);
+	const demoImage = relatedDemoImages[imageIndex % relatedDemoImages.length];
+	const imageSrc = image ? `${REACT_APP_API_URL}/${image}` : demoImage;
+
+	if (!image && failedImages.includes(demoImage)) {
+		return (
+			<Box component={'span'} className={'discovery-image-fallback'} aria-hidden={true}>
+				<FitnessCenterOutlinedIcon />
+			</Box>
+		);
+	}
+
+	return (
+		<>
+			<Box
+				component={'img'}
+				src={imageSrc}
+				alt=""
+				loading="lazy"
+				width={400}
+				height={250}
+				onError={() => setFailedImages((previous) => [...previous, image || demoImage])}
+			/>
+			{!image && <span className={'detail-demo-image-label'}>{t('Program detail.Demo image')}</span>}
+		</>
 	);
 };
 

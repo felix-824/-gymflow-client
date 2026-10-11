@@ -121,7 +121,9 @@
 		"Unavailable title": "프로그램을 확인할 수 없습니다",
 		"Unavailable description": "프로그램이 없거나 현재 공개되어 있지 않습니다.",
 		"Browse programs": "프로그램 둘러보기",
-		"Retry": "다시 시도"
+		"Retry": "다시 시도",
+		"Similar programs": "비슷한 프로그램",
+		"Demo image": "예시 이미지"
 	},
 	"Program results": {
 		"Toolbar": "프로그램 검색 결과 설정",

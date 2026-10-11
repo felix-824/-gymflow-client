@@ -16,12 +16,10 @@ import ChevronRightRoundedIcon from '@mui/icons-material/ChevronRightRounded';
 import ArrowForwardRoundedIcon from '@mui/icons-material/ArrowForwardRounded';
 import ErrorOutlineRoundedIcon from '@mui/icons-material/ErrorOutlineRounded';
 import PersonOutlineRoundedIcon from '@mui/icons-material/PersonOutlineRounded';
-import { Swiper, SwiperSlide } from 'swiper/react';
-import SwiperCore, { Navigation, Pagination } from 'swiper';
 import { serverSideTranslations } from 'next-i18next/serverSideTranslations';
 import { useTranslation } from 'next-i18next';
 import withLayoutFull from '../../libs/components/layout/LayoutFull';
-import ProgramBigCard from '../../libs/components/common/ProgramBigCard';
+import ProgramCard from '../../libs/components/program/ProgramCard';
 import { Program } from '../../libs/types/program/program';
 import { ProgramType } from '../../libs/enums/program.enum';
 import { Direction } from '../../libs/enums/common.enum';
@@ -31,11 +29,7 @@ import { userVar } from '../../apollo/store';
 import { REACT_APP_API_URL } from '../../libs/config';
 import { formatterStr } from '../../libs/utils';
 import { sweetMixinErrorAlert } from '../../libs/sweetAlert';
-import 'swiper/css';
-import 'swiper/css/navigation';
-import 'swiper/css/pagination';
 
-SwiperCore.use([Navigation, Pagination]);
 export const getStaticProps = async ({ locale }: any) => ({
 	props: { ...(await serverSideTranslations(locale, ['common'])) },
 });
@@ -319,16 +313,21 @@ const ProgramDetail: NextPage = () => {
 						</section>
 					</div>
 					{destinationPrograms.length > 0 && (
-						<Stack className="similar-programs-config">
-							<Typography className="title">Similar Programs</Typography>
-							<Swiper slidesPerView={3} spaceBetween={20} navigation pagination={{ clickable: true }}>
+						<section className="detail-related-programs" aria-labelledby="detail-related-title">
+							<Typography component="h2" id="detail-related-title">
+								{t('Program detail.Similar programs')}
+							</Typography>
+							<div className="detail-related-grid">
 								{destinationPrograms.map((item) => (
-									<SwiperSlide key={item._id}>
-										<ProgramBigCard program={item} likeProgramHandler={likeProgramHandler} />
-									</SwiperSlide>
+									<ProgramCard
+										key={item._id}
+										program={item}
+										variant="related"
+										likeProgramHandler={likeProgramHandler}
+									/>
 								))}
-							</Swiper>
-						</Stack>
+							</div>
+						</section>
 					)}
 				</Stack>
 			</div>
