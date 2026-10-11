@@ -58,5 +58,18 @@
 	"Program views": "Просмотров: {{views}}",
 	"Program likes": "Отметок «Нравится»: {{likes}}",
 	"Previous programs": "Предыдущие программы",
-	"Next programs": "Следующие программы"
+	"Next programs": "Следующие программы",
+	"Program discovery card": {
+		"PT_1ON1": "Персональная тренировка 1:1",
+		"GROUP_CLASS": "Групповое занятие",
+		"ONLINE": "Онлайн",
+		"WEIGHT_LOSS": "Снижение веса",
+		"MUSCLE_GAIN": "Набор мышечной массы",
+		"YOGA": "Йога",
+		"PILATES": "Пилатес",
+		"CROSSFIT": "Кроссфит",
+		"CARDIO": "Кардио",
+		"REHAB": "Реабилитация",
+		"View Program": "Открыть программу"
+	}
 }

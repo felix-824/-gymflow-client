@@ -1,8 +1,8 @@
 import GroupsOutlinedIcon from '@mui/icons-material/GroupsOutlined';
 import FitnessCenterOutlinedIcon from '@mui/icons-material/FitnessCenterOutlined';
 import ScheduleOutlinedIcon from '@mui/icons-material/ScheduleOutlined';
-import React from 'react';
-import { Stack, Typography, Box } from '@mui/material';
+import React, { useState } from 'react';
+import { Avatar, Stack, Typography, Box } from '@mui/material';
 import useDeviceDetect from '../../hooks/useDeviceDetect';
 import FavoriteIcon from '@mui/icons-material/Favorite';
 import FavoriteBorderIcon from '@mui/icons-material/FavoriteBorder';
@@ -14,18 +14,28 @@ import { useReactiveVar } from '@apollo/client';
 import { userVar } from '../../../apollo/store';
 import IconButton from '@mui/material/IconButton';
 import RemoveRedEyeIcon from '@mui/icons-material/RemoveRedEye';
+import LocationOnOutlinedIcon from '@mui/icons-material/LocationOnOutlined';
+import ArrowForwardRoundedIcon from '@mui/icons-material/ArrowForwardRounded';
+import { useTranslation } from 'next-i18next';
+import { ProgramType } from '../../enums/program.enum';
 
 interface ProgramCardType {
 	program: Program;
 	likeProgramHandler?: any;
 	myFavorites?: boolean;
 	recentlyVisited?: boolean;
+	variant?: 'default' | 'discovery';
 }
 
 const ProgramCard = (props: ProgramCardType) => {
-	const { program, likeProgramHandler, myFavorites, recentlyVisited } = props;
+	const { program, likeProgramHandler, myFavorites, recentlyVisited, variant = 'default' } = props;
 	const device = useDeviceDetect();
 	const user = useReactiveVar(userVar);
+
+	if (variant === 'discovery') {
+		return <DiscoveryProgramCard program={program} likeProgramHandler={likeProgramHandler} />;
+	}
+
 	const imagePath: string = program?.programImages[0]
 		? `${REACT_APP_API_URL}/${program?.programImages[0]}`
 		: '/img/banner/header1.svg';
@@ -115,6 +125,126 @@ const ProgramCard = (props: ProgramCardType) => {
 			</Stack>
 		);
 	}
+};
+
+const DiscoveryProgramCard = ({ program, likeProgramHandler }: ProgramCardType) => {
+	const { t } = useTranslation('common');
+	const user = useReactiveVar(userVar);
+	const [failedImage, setFailedImage] = useState('');
+	const imageSrc = program.programImages?.[0] ? `${REACT_APP_API_URL}/${program.programImages[0]}` : '';
+	const trainerName = program.memberData?.memberFullName?.trim() || program.memberData?.memberNick?.trim();
+	const trainerImage = program.memberData?.memberImage;
+	const trainerInitials = trainerName
+		?.split(/\s+/)
+		.slice(0, 2)
+		.map((name) => Array.from(name)[0])
+		.join('')
+		.toUpperCase();
+	const isLiked = Boolean(program.meLiked?.[0]?.myFavorite);
+	const detailHref = { pathname: '/program/detail', query: { id: program._id } };
+	const location =
+		program.programType === ProgramType.ONLINE
+			? t('ONLINE')
+			: [t(program.programLocation), program.programAddress?.trim()].filter(Boolean).join(' · ');
+
+	return (
+		<Stack component={'article'} className={'discovery-program-card'}>
+			<Box component={'div'} className={'discovery-card-media'}>
+				<Link
+					href={detailHref}
+					className={'discovery-card-image'}
+					aria-label={t('View program', { name: program.programName })}
+				>
+					{imageSrc && imageSrc !== failedImage ? (
+						<Box
+							component={'img'}
+							src={imageSrc}
+							alt=""
+							loading="lazy"
+							width={400}
+							height={250}
+							onError={() => setFailedImage(imageSrc)}
+						/>
+					) : (
+						<Box component={'span'} className={'discovery-image-fallback'} aria-hidden={true}>
+							<FitnessCenterOutlinedIcon />
+						</Box>
+					)}
+				</Link>
+				<Box component={'div'} className={'discovery-card-badges'}>
+					<span className={'discovery-category'}>{t(`Program discovery card.${program.programCategory}`)}</span>
+					<span className={'discovery-type'}>{t(`Program discovery card.${program.programType}`)}</span>
+				</Box>
+				<IconButton
+					type={'button'}
+					className={`discovery-like-button${isLiked ? ' is-liked' : ''}`}
+					aria-label={t(isLiked ? 'Unlike program' : 'Like program', { name: program.programName })}
+					aria-pressed={isLiked}
+					disabled={!likeProgramHandler}
+					onClick={(event) => {
+						event.preventDefault();
+						event.stopPropagation();
+						likeProgramHandler(user, program._id);
+					}}
+				>
+					{isLiked ? <FavoriteIcon /> : <FavoriteBorderIcon />}
+				</IconButton>
+				{program.programRank > topProgramRank && <span className={'discovery-top-badge'}>TOP</span>}
+				<span className={'discovery-views'} aria-label={t('Program views', { views: program.programViews })}>
+					<RemoveRedEyeIcon />
+					{formatterStr(program.programViews)}
+				</span>
+			</Box>
+			<Box component={'div'} className={'discovery-card-body'}>
+				<Typography component={'h3'} className={'discovery-card-title'}>
+					<Link href={detailHref} title={program.programName}>
+						{program.programName}
+					</Link>
+				</Typography>
+				{trainerName && (
+					<Box component={'div'} className={'discovery-trainer'}>
+						<Avatar src={trainerImage ? `${REACT_APP_API_URL}/${trainerImage}` : undefined} alt="">
+							{trainerInitials}
+						</Avatar>
+						<span>{trainerName}</span>
+					</Box>
+				)}
+				<Typography component={'p'} className={'discovery-location'}>
+					<LocationOnOutlinedIcon />
+					<span>{location}</span>
+				</Typography>
+				<Box component={'div'} className={'discovery-session-details'}>
+					<span>
+						<ScheduleOutlinedIcon />
+						{t('Session duration', { duration: program.programDuration })}
+					</span>
+					<span>
+						<GroupsOutlinedIcon />
+						{t('Session capacity', { capacity: program.programCapacity })}
+					</span>
+				</Box>
+				<Box component={'div'} className={'discovery-card-footer'}>
+					<Typography component={'p'} className={'discovery-price'}>
+						<strong>₩{formatterStr(program.programPrice)}</strong>
+						<span>{t('Per session')}</span>
+					</Typography>
+					<span className={'discovery-likes'} aria-label={t('Program likes', { likes: program.programLikes })}>
+						<FavoriteBorderIcon />
+						{formatterStr(program.programLikes)}
+					</span>
+					<Link
+						href={detailHref}
+						passHref
+						className={'discovery-detail-link'}
+						aria-label={t('View program', { name: program.programName })}
+					>
+						{t('Program discovery card.View Program')}
+						<ArrowForwardRoundedIcon />
+					</Link>
+				</Box>
+			</Box>
+		</Stack>
+	);
 };
 
 export default ProgramCard;

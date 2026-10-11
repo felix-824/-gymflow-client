@@ -58,5 +58,18 @@
 	"Program views": "조회 {{views}}회",
 	"Program likes": "좋아요 {{likes}}개",
 	"Previous programs": "이전 프로그램",
-	"Next programs": "다음 프로그램"
+	"Next programs": "다음 프로그램",
+	"Program discovery card": {
+		"PT_1ON1": "1:1 개인 트레이닝",
+		"GROUP_CLASS": "그룹 수업",
+		"ONLINE": "온라인",
+		"WEIGHT_LOSS": "체중 감량",
+		"MUSCLE_GAIN": "근육 증가",
+		"YOGA": "요가",
+		"PILATES": "필라테스",
+		"CROSSFIT": "크로스핏",
+		"CARDIO": "유산소",
+		"REHAB": "재활",
+		"View Program": "프로그램 보기"
+	}
 }

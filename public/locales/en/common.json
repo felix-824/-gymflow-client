@@ -58,5 +58,18 @@
 	"Program views": "{{views}} views",
 	"Program likes": "{{likes}} likes",
 	"Previous programs": "Previous programs",
-	"Next programs": "Next programs"
+	"Next programs": "Next programs",
+	"Program discovery card": {
+		"PT_1ON1": "1-on-1 PT",
+		"GROUP_CLASS": "Group Class",
+		"ONLINE": "Online",
+		"WEIGHT_LOSS": "Weight Loss",
+		"MUSCLE_GAIN": "Muscle Gain",
+		"YOGA": "Yoga",
+		"PILATES": "Pilates",
+		"CROSSFIT": "CrossFit",
+		"CARDIO": "Cardio",
+		"REHAB": "Rehab",
+		"View Program": "View Program"
+	}
 }

@@ -213,7 +213,14 @@ const ProgramList: NextPage = ({ initialInput, ...props }: any) => {
 									</div>
 								) : (
 									programs.map((program: Program) => {
-										return <ProgramCard program={program} likeProgramHandler={likeProgramHandler} key={program?._id} />;
+										return (
+											<ProgramCard
+												program={program}
+												likeProgramHandler={likeProgramHandler}
+												variant={'discovery'}
+												key={program?._id}
+											/>
+										);
 									})
 								)}
 							</Stack>
