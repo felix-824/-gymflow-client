@@ -106,7 +106,22 @@
 		"Capacity": "회당 참여 인원",
 		"Session capacity": "회당 정원: {{capacity}}명",
 		"Save program": "프로그램 저장",
-		"Saved": "저장됨"
+		"Saved": "저장됨",
+		"About": "프로그램 소개",
+		"No description": "등록된 설명이 없습니다.",
+		"Details": "프로그램 상세 정보",
+		"Address": "운동 장소 주소",
+		"Trainer": "담당 트레이너",
+		"Trainer unavailable": "트레이너 정보를 확인할 수 없습니다.",
+		"View trainer": "트레이너 보기",
+		"Loading title": "프로그램을 불러오는 중",
+		"Loading description": "프로그램 상세 정보를 불러오고 있습니다.",
+		"Error title": "프로그램을 불러올 수 없습니다",
+		"Error description": "다시 시도하거나 다른 프로그램을 살펴보세요.",
+		"Unavailable title": "프로그램을 확인할 수 없습니다",
+		"Unavailable description": "프로그램이 없거나 현재 공개되어 있지 않습니다.",
+		"Browse programs": "프로그램 둘러보기",
+		"Retry": "다시 시도"
 	},
 	"Program results": {
 		"Toolbar": "프로그램 검색 결과 설정",

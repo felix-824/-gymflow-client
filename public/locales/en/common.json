@@ -106,7 +106,22 @@
 		"Capacity": "Participants per session",
 		"Session capacity": "Capacity: {{capacity}} per session",
 		"Save program": "Save program",
-		"Saved": "Saved"
+		"Saved": "Saved",
+		"About": "About this program",
+		"No description": "No description provided.",
+		"Details": "Program details",
+		"Address": "Physical address",
+		"Trainer": "Your trainer",
+		"Trainer unavailable": "Trainer information is unavailable.",
+		"View trainer": "View trainer",
+		"Loading title": "Loading program",
+		"Loading description": "Fetching the program details.",
+		"Error title": "Could not load this program",
+		"Error description": "Please try again or browse other programs.",
+		"Unavailable title": "Program unavailable",
+		"Unavailable description": "This program could not be found or is not currently public.",
+		"Browse programs": "Browse programs",
+		"Retry": "Try again"
 	},
 	"Program results": {
 		"Toolbar": "Program results controls",

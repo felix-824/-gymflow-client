@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Box, Button, CircularProgress, Stack, Typography } from '@mui/material';
+import { Avatar, Button, CircularProgress, Stack, Typography } from '@mui/material';
 import { NextPage } from 'next';
 import { useRouter } from 'next/router';
 import Link from 'next/link';
@@ -13,6 +13,9 @@ import FitnessCenterOutlinedIcon from '@mui/icons-material/FitnessCenterOutlined
 import LocationOnOutlinedIcon from '@mui/icons-material/LocationOnOutlined';
 import RemoveRedEyeOutlinedIcon from '@mui/icons-material/RemoveRedEyeOutlined';
 import ChevronRightRoundedIcon from '@mui/icons-material/ChevronRightRounded';
+import ArrowForwardRoundedIcon from '@mui/icons-material/ArrowForwardRounded';
+import ErrorOutlineRoundedIcon from '@mui/icons-material/ErrorOutlineRounded';
+import PersonOutlineRoundedIcon from '@mui/icons-material/PersonOutlineRounded';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import SwiperCore, { Navigation, Pagination } from 'swiper';
 import { serverSideTranslations } from 'next-i18next/serverSideTranslations';
@@ -93,25 +96,19 @@ const ProgramDetail: NextPage = () => {
 			await sweetMixinErrorAlert(err.message);
 		}
 	};
-	if (!router.isReady || loading)
-		return (
-			<Stack alignItems="center" p={8}>
-				<CircularProgress />
-			</Stack>
-		);
+	if (!router.isReady || loading) return <ProgramDetailState state="loading" />;
 	if (error || !program)
 		return (
-			<Stack alignItems="center" p={8}>
-				<Typography role="alert">
-					{error?.networkError ? 'Could not load the program. Please retry.' : 'This program is unavailable.'}
-				</Typography>
-				<Link href="/program">Browse Programs</Link>
-			</Stack>
+			<ProgramDetailState
+				state={error?.networkError ? 'error' : 'unavailable'}
+				onRetry={() => getProgramRefetch()}
+			/>
 		);
 
 	const isLiked = !!program.meLiked?.[0]?.myFavorite;
 	const location = program.programType === ProgramType.ONLINE ? t('ONLINE') : t(program.programLocation);
 	const address = program.programType !== ProgramType.ONLINE ? program.programAddress : '';
+	const trainerName = program.memberData?.memberFullName?.trim() || program.memberData?.memberNick?.trim();
 
 	return (
 		<div id="program-detail-page">
@@ -222,80 +219,105 @@ const ProgramDetail: NextPage = () => {
 							</Button>
 						</aside>
 					</section>
-					<Stack className="program-desc-config">
-						<Stack className="left-config">
-							<Stack className="prop-desc-config">
-								<Stack className="top">
-									<Typography className="title">Program Description</Typography>
-									<Typography className="desc">{program.programDesc || 'No description provided.'}</Typography>
-								</Stack>
-								<Stack className="bottom">
-									<Typography className="title">Program Details</Typography>
-									<Stack className="info-box">
-										<Stack className="left">
-											<Box className="info">
-												<Typography className="title">Category</Typography>
-												<Typography className="data">{program.programCategory.replace(/_/g, ' ')}</Typography>
-											</Box>
-											<Box className="info">
-												<Typography className="title">Duration</Typography>
-												<Typography className="data">{program.programDuration} minutes/session</Typography>
-											</Box>
-											<Box className="info">
-												<Typography className="title">Capacity</Typography>
-												<Typography className="data">{program.programCapacity} participants/session</Typography>
-											</Box>
-										</Stack>
-										<Stack className="right">
-											<Box className="info">
-												<Typography className="title">Price</Typography>
-												<Typography className="data">₩{formatterStr(program.programPrice)} /session</Typography>
-											</Box>
-											<Box className="info">
-												<Typography className="title">Type</Typography>
-												<Typography className="data">{program.programType.replace(/_/g, ' ')}</Typography>
-											</Box>
-											<Box className="info">
-												<Typography className="title">Location</Typography>
-												<Typography className="data">{program.programLocation}</Typography>
-											</Box>
-										</Stack>
-									</Stack>
-								</Stack>
-							</Stack>
-							{program.programType !== ProgramType.ONLINE && (
-								<Stack className="address-config">
-									<Typography className="title">Physical Address</Typography>
-									<Typography>{program.programAddress}</Typography>
-								</Stack>
+					<div className="program-detail-content">
+						<div className="detail-content-main">
+							<section className="detail-content-section" aria-labelledby="detail-about-title">
+								<Typography component="h2" id="detail-about-title">
+									{t('Program detail.About')}
+								</Typography>
+								<Typography className="detail-description">
+									{program.programDesc?.trim() || t('Program detail.No description')}
+								</Typography>
+							</section>
+							<section className="detail-content-section" aria-labelledby="detail-attributes-title">
+								<Typography component="h2" id="detail-attributes-title">
+									{t('Program detail.Details')}
+								</Typography>
+								<dl className="detail-attributes">
+									<div>
+										<dt>
+											<FitnessCenterOutlinedIcon aria-hidden="true" />{t('Program type')}
+										</dt>
+										<dd>{t(`Program discovery card.${program.programType}`)}</dd>
+									</div>
+									<div>
+										<dt>
+											<FitnessCenterOutlinedIcon aria-hidden="true" />{t('Category')}
+										</dt>
+										<dd>{t(`Program discovery card.${program.programCategory}`)}</dd>
+									</div>
+									<div>
+										<dt>
+											<AccessTimeIcon aria-hidden="true" />{t('Program detail.Duration')}
+										</dt>
+										<dd>{t('Session duration', { duration: program.programDuration })}</dd>
+									</div>
+									<div>
+										<dt>
+											<GroupsIcon aria-hidden="true" />{t('Program detail.Capacity')}
+										</dt>
+										<dd>{program.programCapacity}</dd>
+									</div>
+									<div className="detail-attribute-location">
+										<dt>
+											<LocationOnOutlinedIcon aria-hidden="true" />{t('Location')}
+										</dt>
+										<dd>{location}</dd>
+									</div>
+								</dl>
+							</section>
+							{address?.trim() && (
+								<section className="detail-content-section" aria-labelledby="detail-address-title">
+									<Typography component="h2" id="detail-address-title">
+										{t('Program detail.Address')}
+									</Typography>
+									<Typography className="detail-address">
+										<LocationOnOutlinedIcon aria-hidden="true" />{address}
+									</Typography>
+								</section>
 							)}
-						</Stack>
-						<Stack className="right-config">
-							<Stack className="info-box">
-								<Typography className="main-title">Your Trainer</Typography>
-								<Stack className="image-info">
-									<img
-										className="member-image"
-										src={
-											program.memberData?.memberImage
-												? REACT_APP_API_URL + '/' + program.memberData.memberImage
-												: '/img/profile/defaultUser.svg'
-										}
-										alt="Trainer"
-									/>
-									<Stack className="name-phone-listings">
-										<Link href={'/trainer/detail?trainerId=' + program.memberId}>
-											<Typography className="name">
-												{program.memberData?.memberFullName || program.memberData?.memberNick}
-											</Typography>
-										</Link>
-										<Typography>{program.memberData?.memberPhone}</Typography>
-										<Link href={'/trainer/detail?trainerId=' + program.memberId}>View Programs</Link>
-									</Stack>
-								</Stack>
-							</Stack>
-						</Stack>
-					</Stack>
+						</div>
+						<section className="detail-content-section detail-trainer" aria-labelledby="detail-trainer-title">
+							<Typography component="h2" id="detail-trainer-title">
+								{t('Program detail.Trainer')}
+							</Typography>
+							{program.memberData ? (
+								<>
+									<div className="detail-trainer-identity">
+										<Avatar
+											className="detail-trainer-avatar"
+											src={
+												program.memberData.memberImage
+													? `${REACT_APP_API_URL}/${program.memberData.memberImage}`
+													: '/img/profile/defaultUser.svg'
+											}
+											alt={trainerName || t('Program detail.Trainer')}
+										>
+											<PersonOutlineRoundedIcon aria-hidden="true" />
+										</Avatar>
+										<div>
+											{trainerName && (
+												<Typography component="h3">
+													<Link href={'/trainer/detail?trainerId=' + program.memberId}>{trainerName}</Link>
+												</Typography>
+											)}
+											{program.memberData.memberPhone && (
+												<Typography className="detail-trainer-phone">{program.memberData.memberPhone}</Typography>
+											)}
+										</div>
+									</div>
+									{program.memberData.memberDesc?.trim() && (
+										<Typography className="detail-description">{program.memberData.memberDesc}</Typography>
+									)}
+								</>
+							) : (
+								<Typography className="detail-description">{t('Program detail.Trainer unavailable')}</Typography>
+							)}
+							<Link passHref className="detail-trainer-link" href={'/trainer/detail?trainerId=' + program.memberId}>
+								{t('Program detail.View trainer')}<ArrowForwardRoundedIcon aria-hidden="true" />
+							</Link>
+						</section>
+					</div>
 					{destinationPrograms.length > 0 && (
 						<Stack className="similar-programs-config">
 							<Typography className="title">Similar Programs</Typography>
@@ -326,5 +348,65 @@ const ProgramDetailImage = ({ image, alt }: { image: string; alt: string }) => {
 		<span className="detail-image-fallback" role={alt ? 'img' : undefined} aria-label={alt || undefined} aria-hidden={!alt}>
 			<FitnessCenterOutlinedIcon aria-hidden="true" />
 		</span>
+	);
+};
+
+interface ProgramDetailStateProps {
+	state: 'loading' | 'error' | 'unavailable';
+	onRetry?: () => Promise<unknown>;
+}
+
+const ProgramDetailState = ({ state, onRetry }: ProgramDetailStateProps) => {
+	const { t } = useTranslation('common');
+	const [retrying, setRetrying] = useState(false);
+	const copy = {
+		loading: ['Loading title', 'Loading description'],
+		error: ['Error title', 'Error description'],
+		unavailable: ['Unavailable title', 'Unavailable description'],
+	}[state];
+	const retryHandler = async () => {
+		if (!onRetry || retrying) return;
+		setRetrying(true);
+		try {
+			await onRetry();
+		} catch {
+			// The existing query owns the error state shown on this page.
+		} finally {
+			setRetrying(false);
+		}
+	};
+
+	return (
+		<div id="program-detail-page" className="detail-state-page">
+			<div className="container">
+				<section
+					className="detail-state"
+					role={state === 'loading' ? 'status' : 'alert'}
+					aria-labelledby="detail-state-title"
+				>
+					<div className="detail-state-icon" aria-hidden="true">
+						{state === 'loading' ? (
+							<CircularProgress className="detail-state-spinner" />
+						) : state === 'error' ? (
+							<ErrorOutlineRoundedIcon />
+						) : (
+							<FitnessCenterOutlinedIcon />
+						)}
+					</div>
+					<Typography component="h1" id="detail-state-title">
+						{t(`Program detail.${copy[0]}`)}
+					</Typography>
+					<Typography>{t(`Program detail.${copy[1]}`)}</Typography>
+					<div className="detail-state-actions">
+						{state === 'error' && onRetry && (
+							<Button onClick={retryHandler} disabled={retrying} aria-busy={retrying}>
+								{t('Program detail.Retry')}
+							</Button>
+						)}
+						<Link href="/program">{t('Program detail.Browse programs')}</Link>
+					</div>
+				</section>
+			</div>
+		</div>
 	);
 };
