@@ -49,6 +49,7 @@ const ProgramList: NextPage = ({ initialInput, ...props }: any) => {
 	const router = useRouter();
 	const { t } = useTranslation('common');
 	const isCompactViewport = useMediaQuery('(max-width:1023px)');
+	const shouldReduceMotion = useMediaQuery('(prefers-reduced-motion: reduce)');
 	const [searchFilter, setSearchFilter] = useState<ProgramsInquiry>(
 		readProgramsInquiry(router.query.input, initialInput),
 	);
@@ -427,6 +428,8 @@ const ProgramList: NextPage = ({ initialInput, ...props }: any) => {
 									</Button>
 									<Menu
 										id={'program-sort-menu'}
+										className={'program-discovery-sort-menu'}
+										transitionDuration={shouldReduceMotion ? 0 : undefined}
 										anchorEl={anchorEl}
 										open={sortingOpen}
 										onClose={sortingCloseHandler}
@@ -569,6 +572,7 @@ const ProgramList: NextPage = ({ initialInput, ...props }: any) => {
 			</div>
 			<Drawer
 				className={'program-discovery-filter-modal'}
+				transitionDuration={shouldReduceMotion ? 0 : undefined}
 				anchor={'bottom'}
 				open={filterDrawerOpen && isCompactViewport}
 				onClose={() => setFilterDrawerOpen(false)}

@@ -30,6 +30,7 @@ export const ProgramsHeader = () => {
 	const { t } = useTranslation('common');
 	const user = useReactiveVar(userVar);
 	const isCompact = useMediaQuery('(max-width:1199px)');
+	const shouldReduceMotion = useMediaQuery('(prefers-reduced-motion: reduce)');
 	const [localeAnchor, setLocaleAnchor] = useState<HTMLElement | null>(null);
 	const [accountAnchor, setAccountAnchor] = useState<HTMLElement | null>(null);
 	const [navigationAnchor, setNavigationAnchor] = useState<HTMLElement | null>(null);
@@ -52,7 +53,7 @@ export const ProgramsHeader = () => {
 	};
 
 	return (
-		<Box component={'header'} className={'programs-header'}>
+		<Box component={'header'} className={'programs-header mui-fixed'}>
 			<Box component={'div'} className={'programs-header-inner'}>
 				<Link href={'/'} passHref className={'programs-brand'} aria-label={t('Program navigation.GymFlow home')}>
 					<Image src={'/img/logo/gymflow-mark.svg'} width={32} height={32} alt={''} />
@@ -124,6 +125,7 @@ export const ProgramsHeader = () => {
 			</Box>
 			<Menu
 				id={'programs-language-menu'}
+				transitionDuration={shouldReduceMotion ? 0 : undefined}
 				className={'programs-navigation-menu'}
 				anchorEl={localeAnchor}
 				open={Boolean(localeAnchor)}
@@ -138,6 +140,7 @@ export const ProgramsHeader = () => {
 			</Menu>
 			<Menu
 				id={'programs-account-menu'}
+				transitionDuration={shouldReduceMotion ? 0 : undefined}
 				className={'programs-navigation-menu'}
 				anchorEl={accountAnchor}
 				open={Boolean(accountAnchor) && Boolean(user._id)}
@@ -166,6 +169,7 @@ export const ProgramsHeader = () => {
 			</Menu>
 			<Menu
 				id={'programs-navigation-menu'}
+				transitionDuration={shouldReduceMotion ? 0 : undefined}
 				className={'programs-navigation-menu'}
 				anchorEl={navigationAnchor}
 				open={Boolean(navigationAnchor) && isCompact}
