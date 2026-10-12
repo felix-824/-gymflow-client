@@ -220,6 +220,11 @@
 		"Empty title": "No programs to discover yet",
 		"Empty description": "New programs will appear here when they become available."
 	},
+	"Home trainers": {
+		"Title": "Meet Trainers",
+		"Description": "Explore trainer profiles and find programs that fit the way you train.",
+		"View all": "View All Trainers"
+	},
 	"Trainer detail": {
 		"Programs by trainer": "Programs by {{name}}",
 		"Following": "Following",

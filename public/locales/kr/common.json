@@ -220,6 +220,11 @@
 		"Empty title": "아직 둘러볼 프로그램이 없습니다",
 		"Empty description": "새 프로그램이 등록되면 여기에 표시됩니다."
 	},
+	"Home trainers": {
+		"Title": "트레이너 만나보기",
+		"Description": "트레이너 프로필을 둘러보고 나에게 맞는 프로그램을 찾아보세요.",
+		"View all": "모든 트레이너 보기"
+	},
 	"Trainer detail": {
 		"Programs by trainer": "{{name}} 트레이너의 프로그램",
 		"Following": "팔로잉",
