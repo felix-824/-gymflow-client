@@ -210,6 +210,16 @@
 		"Description": "Find training that matches the way you want to move, build and recover.",
 		"Browse category": "Explore {{category}} programs"
 	},
+	"Home discover": {
+		"Title": "Discover Programs",
+		"Description": "Explore real training options across goals, formats and locations.",
+		"View all": "View All Programs",
+		"Loading": "Loading programs…",
+		"Error title": "Programs couldn't be loaded",
+		"Error description": "Try again to continue discovering programs.",
+		"Empty title": "No programs to discover yet",
+		"Empty description": "New programs will appear here when they become available."
+	},
 	"Trainer detail": {
 		"Programs by trainer": "Programs by {{name}}",
 		"Following": "Following",

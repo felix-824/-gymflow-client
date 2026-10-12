@@ -96,7 +96,7 @@ export const updateUserInfo = (jwtToken: string, member?: Member): Promise<void>
 		}
 		try {
 			const client = initializeApollo();
-			if (profileToken !== jwtToken) await client.clearStore();
+			if (profileToken && profileToken !== jwtToken) await client.clearStore();
 			await client.query({ query: CHECK_AUTH, fetchPolicy: 'network-only' });
 			if (getJwtToken() !== jwtToken) return;
 			const result = await client.query({
