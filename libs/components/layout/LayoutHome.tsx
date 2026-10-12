@@ -1,11 +1,10 @@
 import React from 'react';
 import useDeviceDetect from '../../hooks/useDeviceDetect';
 import Head from 'next/head';
-import Top from '../Top';
+import { ProgramsHeader } from '../program/ProgramsNavigation';
 import Footer from '../Footer';
 import { Stack } from '@mui/material';
-import FiberContainer from '../common/FiberContainer';
-import HeaderFilter from '../homepage/HeaderFilter';
+import HomeHero from '../homepage/HomeHero';
 
 import Chat from '../Chat';
 import 'swiper/css';
@@ -28,8 +27,9 @@ const withLayoutMain = (Component: any) => {
 						<meta name={'title'} content={`GymFlow`} />
 					</Head>
 					<Stack id="mobile-wrap">
-						<Stack id={'top'}>
-							<Top />
+						<Stack id={'top'} className="home-top-experience">
+							<ProgramsHeader />
+							<HomeHero />
 						</Stack>
 
 						<Stack id={'main'}>
@@ -50,15 +50,9 @@ const withLayoutMain = (Component: any) => {
 						<meta name={'title'} content={`GymFlow`} />
 					</Head>
 					<Stack id="pc-wrap">
-						<Stack id={'top'}>
-							<Top />
-						</Stack>
-
-						<Stack className={'header-main'}>
-							<FiberContainer />
-							<Stack className={'container'}>
-								<HeaderFilter />
-							</Stack>
+						<Stack id={'top'} className="home-top-experience">
+							<ProgramsHeader />
+							<HomeHero />
 						</Stack>
 
 						<Stack id={'main'}>

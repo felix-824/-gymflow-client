@@ -195,6 +195,16 @@
 		"Previous": "이전 페이지",
 		"Next": "다음 페이지"
 	},
+	"Home hero": {
+		"Title": "더 강한 나를 만나세요.",
+		"Description": "목표에 맞는 퍼스널 트레이닝, 그룹 수업, 온라인 프로그램을 찾아보세요.",
+		"Explore Programs": "프로그램 둘러보기",
+		"Find Trainers": "트레이너 찾기",
+		"Search title": "나에게 맞는 프로그램 찾기",
+		"Format": "운동 방식",
+		"Focus": "운동 목표",
+		"Any": "전체"
+	},
 	"Trainer detail": {
 		"Programs by trainer": "{{name}} 트레이너의 프로그램",
 		"Following": "팔로잉",

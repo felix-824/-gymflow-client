@@ -195,6 +195,16 @@
 		"Previous": "Previous page",
 		"Next": "Next page"
 	},
+	"Home hero": {
+		"Title": "Find your stronger self.",
+		"Description": "Discover personal training, group classes and online programs that fit your goals.",
+		"Explore Programs": "Explore Programs",
+		"Find Trainers": "Find Trainers",
+		"Search title": "Find your next program",
+		"Format": "Format",
+		"Focus": "Focus",
+		"Any": "Any"
+	},
 	"Trainer detail": {
 		"Programs by trainer": "Programs by {{name}}",
 		"Following": "Following",

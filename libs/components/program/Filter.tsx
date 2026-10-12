@@ -78,11 +78,13 @@ const Filter = ({ searchFilter, setSearchFilter, initialInput, compact = false }
 			},
 		});
 	};
-	if (device === 'mobile') return <div>PROGRAM FILTER MOBILE</div>;
+	if (device === 'mobile' && !compact) return <div>PROGRAM FILTER MOBILE</div>;
 
 	return (
 		<SearchStack
 			className={compact ? 'search-box gymflow-search' : 'filter-main'}
+			role={compact ? 'search' : undefined}
+			aria-label={compact ? t('Home hero.Search title') : undefined}
 			spacing={compact ? 0 : 2}
 			sx={compact ? undefined : { padding: 2 }}
 			{...(compact
@@ -94,23 +96,22 @@ const Filter = ({ searchFilter, setSearchFilter, initialInput, compact = false }
 				: {})}
 		>
 			{!compact && <Typography className="title-main">{t('Find Your Program')}</Typography>}
-			{!compact && (
-				<TextField
-					size="small"
-					label={t('Program name')}
-					value={draft.search.text ?? ''}
-					onChange={(e) => setDraft({ ...draft, search: { ...draft.search, text: e.target.value } })}
-					onKeyDown={(e) => {
-						if (e.key === 'Enter') searchHandler();
-					}}
-					inputProps={{ maxLength: 100 }}
-				/>
-			)}
+			<TextField
+				className={compact ? 'search-name' : undefined}
+				size="small"
+				label={t('Program name')}
+				value={draft.search.text ?? ''}
+				onChange={(e) => setDraft({ ...draft, search: { ...draft.search, text: e.target.value } })}
+				onKeyDown={(e) => {
+					if (e.key === 'Enter') searchHandler();
+				}}
+				inputProps={{ maxLength: 100 }}
+			/>
 			{(
 				[
 					['locationList', 'Location', Object.values(ProgramLocation)],
-					['typeList', 'Program type', Object.values(ProgramType)],
-					['categoryList', 'Category', Object.values(ProgramCategory)],
+					['typeList', compact ? 'Home hero.Format' : 'Program type', Object.values(ProgramType)],
+					['categoryList', compact ? 'Home hero.Focus' : 'Category', Object.values(ProgramCategory)],
 				] as const
 			).map(([key, label, values]) => (
 				<TextField
@@ -118,7 +119,8 @@ const Filter = ({ searchFilter, setSearchFilter, initialInput, compact = false }
 					className={compact ? 'search-select' : undefined}
 					select
 					size="small"
-					label={compact ? undefined : t(label)}
+					label={t(label)}
+					InputLabelProps={compact ? { shrink: true } : undefined}
 					value={draft.search[key] ?? []}
 					SelectProps={
 						compact
@@ -129,11 +131,13 @@ const Filter = ({ searchFilter, setSearchFilter, initialInput, compact = false }
 									onClose: () => setOpenSelect(null),
 									displayEmpty: true,
 									renderValue: (selected) =>
-										(selected as string[]).length ? (selected as string[]).map((value) => t(value)).join(', ') : t(label),
+										(selected as string[]).length
+											? (selected as string[]).map((value) => t(value)).join(', ')
+											: t('Home hero.Any'),
 									MenuProps: {
 										disableScrollLock: true,
 										transitionDuration: shouldReduceMotion ? 0 : { enter: 140, exit: 100 },
-										PaperProps: { className: 'gymflow-search-menu' },
+										PaperProps: { className: 'gymflow-search-menu home-search-menu' },
 									},
 								}
 							: { multiple: true }
