@@ -20,7 +20,10 @@ const withLayoutBasic = (Component: any) => {
 		const router = useRouter();
 		const { t, i18n } = useTranslation('common');
 		const device = useDeviceDetect();
-		const compactTrainer = useMediaQuery('(max-width:767px)') && router.pathname === '/trainer';
+		const compactViewport = useMediaQuery('(max-width:767px)');
+		const compactTrainer = compactViewport && router.pathname === '/trainer';
+		const trainerDetail = router.pathname === '/trainer/detail';
+		const compactTrainerDetail = compactViewport && trainerDetail;
 		const authHeader = router.pathname === '/account/join';
 		const theme = useTheme();
 		const programTheme = useMemo(() => {
@@ -105,7 +108,7 @@ const withLayoutBasic = (Component: any) => {
 
 		/** LIFECYCLES **/
 		useEffect(() => {
-			if (!compactTrainer) return;
+			if (!compactTrainer && !compactTrainerDetail) return;
 			const layout = document.querySelector<HTMLElement>('.trainer-discovery-layout');
 			if (!layout) return;
 			let frame = 0;
@@ -142,11 +145,11 @@ const withLayoutBasic = (Component: any) => {
 				window.removeEventListener('resize', schedulePosition);
 				layout.style.removeProperty('--trainer-chat-bottom');
 			};
-		}, [compactTrainer]);
+		}, [compactTrainer, compactTrainerDetail]);
 
 		/** HANDLERS **/
 
-		if (router.pathname === '/program' || compactTrainer) {
+		if (router.pathname === '/program' || compactTrainer || trainerDetail) {
 			return (
 				<ThemeProvider theme={programTheme}>
 					<Head>
@@ -159,7 +162,9 @@ const withLayoutBasic = (Component: any) => {
 					</Head>
 					<Stack
 						id="pc-wrap"
-						className={`program-discovery-layout${compactTrainer ? ' trainer-discovery-layout' : ''}${device === 'mobile' || compactTrainer ? ' is-mobile' : ''}`}
+						className={`program-discovery-layout${compactTrainer || trainerDetail ? ' trainer-discovery-layout' : ''}${
+							trainerDetail ? ' trainer-detail-layout' : ''
+						}${device === 'mobile' || compactTrainer ? ' is-mobile' : ''}`}
 					>
 						<Stack id={'top'}>
 							<Top variant={'programs'} />
@@ -169,7 +174,7 @@ const withLayoutBasic = (Component: any) => {
 						</Stack>
 						{device !== 'mobile' && <Chat />}
 						<Stack id={'footer'} component={'footer'}>
-							<Footer variant={compactTrainer ? 'default' : 'programs'} />
+							<Footer variant={compactTrainer || trainerDetail ? 'default' : 'programs'} />
 						</Stack>
 						<ProgramsBottomNavigation />
 					</Stack>

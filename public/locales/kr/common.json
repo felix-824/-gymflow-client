@@ -194,5 +194,15 @@
 		"Go to page": "{{page}}페이지로 이동",
 		"Previous": "이전 페이지",
 		"Next": "다음 페이지"
+	},
+	"Trainer detail": {
+		"Following": "팔로잉",
+		"Back to trainers": "트레이너 목록으로",
+		"Loading": "트레이너를 불러오는 중…",
+		"Error": "트레이너를 불러오지 못했습니다",
+		"Unavailable": "현재 이용할 수 없는 트레이너입니다.",
+		"Profile views": "프로필 조회수",
+		"About": "소개",
+		"Empty about": "아직 등록된 트레이너 소개가 없습니다."
 	}
 }

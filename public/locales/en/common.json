@@ -194,5 +194,15 @@
 		"Go to page": "Go to page {{page}}",
 		"Previous": "Previous page",
 		"Next": "Next page"
+	},
+	"Trainer detail": {
+		"Following": "Following",
+		"Back to trainers": "Back to trainers",
+		"Loading": "Loading trainer…",
+		"Error": "Could not load this trainer",
+		"Unavailable": "This trainer is unavailable.",
+		"Profile views": "Profile Views",
+		"About": "About",
+		"Empty about": "This trainer has not added an introduction yet."
 	}
 }

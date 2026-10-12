@@ -25,6 +25,9 @@ const programDestinations = [
 	{ label: 'My Page', href: '/mypage', icon: AccountCircleOutlinedIcon },
 ];
 
+const isDestinationActive = (pathname: string, href: string) =>
+	pathname === href || (pathname === '/trainer/detail' && href === '/trainer');
+
 export const ProgramsHeader = () => {
 	const router = useRouter();
 	const { t } = useTranslation('common');
@@ -65,7 +68,7 @@ export const ProgramsHeader = () => {
 					aria-label={t('Program navigation.Main navigation')}
 				>
 					{destinations.map(({ href, label }) => (
-						<Link key={href} href={href} aria-current={router.pathname === href ? 'page' : undefined}>
+						<Link key={href} href={href} aria-current={isDestinationActive(router.pathname, href) ? 'page' : undefined}>
 							{t(label)}
 						</Link>
 					))}
@@ -182,8 +185,8 @@ export const ProgramsHeader = () => {
 						component={Link}
 						href={href}
 						onClick={() => setNavigationAnchor(null)}
-						aria-current={router.pathname === href ? 'page' : undefined}
-						selected={router.pathname === href}
+						aria-current={isDestinationActive(router.pathname, href) ? 'page' : undefined}
+						selected={isDestinationActive(router.pathname, href)}
 					>
 						{t(label)}
 					</MenuItem>
@@ -203,7 +206,12 @@ export const ProgramsBottomNavigation = () => {
 			aria-label={t('Program navigation.Mobile navigation')}
 		>
 			{programDestinations.map(({ href, label, icon: Icon }) => (
-				<Link key={href} href={href} passHref aria-current={router.pathname === href ? 'page' : undefined}>
+				<Link
+					key={href}
+					href={href}
+					passHref
+					aria-current={isDestinationActive(router.pathname, href) ? 'page' : undefined}
+				>
 					<Icon aria-hidden={true} />
 					<span>{t(label)}</span>
 				</Link>
