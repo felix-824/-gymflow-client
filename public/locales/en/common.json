@@ -205,6 +205,11 @@
 		"Focus": "Focus",
 		"Any": "Any"
 	},
+	"Home categories": {
+		"Title": "Explore by Category",
+		"Description": "Find training that matches the way you want to move, build and recover.",
+		"Browse category": "Explore {{category}} programs"
+	},
 	"Trainer detail": {
 		"Programs by trainer": "Programs by {{name}}",
 		"Following": "Following",

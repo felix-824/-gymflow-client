@@ -2,7 +2,7 @@ import { NextPage } from 'next';
 import useDeviceDetect from '../libs/hooks/useDeviceDetect';
 import withLayoutMain from '../libs/components/layout/LayoutHome';
 import CommunityBoards from '../libs/components/homepage/CommunityBoards';
-import PopularPrograms from '../libs/components/homepage/PopularPrograms';
+import ExploreCategories from '../libs/components/homepage/ExploreCategories';
 import TopTrainers from '../libs/components/homepage/TopTrainers';
 import Events from '../libs/components/homepage/Events';
 import TrendPrograms from '../libs/components/homepage/TrendPrograms';
@@ -24,7 +24,7 @@ const Home: NextPage = () => {
 		return (
 			<Stack className={'home-page'}>
 				<TrendPrograms />
-				<PopularPrograms />
+				<ExploreCategories />
 				<Advertisement />
 				<TopPrograms />
 				<TopTrainers />
@@ -34,7 +34,7 @@ const Home: NextPage = () => {
 		return (
 			<Stack className={'home-page'}>
 				<TrendPrograms />
-				<PopularPrograms />
+				<ExploreCategories />
 				<Advertisement />
 				<TopPrograms />
 				<TopTrainers />

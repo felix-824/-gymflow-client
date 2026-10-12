@@ -205,6 +205,11 @@
 		"Focus": "Направление",
 		"Any": "Все"
 	},
+	"Home categories": {
+		"Title": "Выберите категорию",
+		"Description": "Найдите тренировки для движения, прогресса и восстановления.",
+		"Browse category": "Смотреть программы: {{category}}"
+	},
 	"Trainer detail": {
 		"Programs by trainer": "Программы тренера {{name}}",
 		"Following": "Подписки",

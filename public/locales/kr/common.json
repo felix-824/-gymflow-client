@@ -205,6 +205,11 @@
 		"Focus": "운동 목표",
 		"Any": "전체"
 	},
+	"Home categories": {
+		"Title": "카테고리별 탐색",
+		"Description": "움직이고, 성장하고, 회복하는 방식에 맞는 트레이닝을 찾아보세요.",
+		"Browse category": "{{category}} 프로그램 둘러보기"
+	},
 	"Trainer detail": {
 		"Programs by trainer": "{{name}} 트레이너의 프로그램",
 		"Following": "팔로잉",
