@@ -196,6 +196,7 @@
 		"Next": "Следующая страница"
 	},
 	"Trainer detail": {
+		"Programs by trainer": "Программы тренера {{name}}",
 		"Following": "Подписки",
 		"Back to trainers": "К списку тренеров",
 		"Loading": "Загрузка тренера…",

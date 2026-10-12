@@ -196,6 +196,7 @@
 		"Next": "Next page"
 	},
 	"Trainer detail": {
+		"Programs by trainer": "Programs by {{name}}",
 		"Following": "Following",
 		"Back to trainers": "Back to trainers",
 		"Loading": "Loading trainer…",

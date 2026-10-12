@@ -196,6 +196,7 @@
 		"Next": "다음 페이지"
 	},
 	"Trainer detail": {
+		"Programs by trainer": "{{name}} 트레이너의 프로그램",
 		"Following": "팔로잉",
 		"Back to trainers": "트레이너 목록으로",
 		"Loading": "트레이너를 불러오는 중…",

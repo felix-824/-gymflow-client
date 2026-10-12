@@ -525,14 +525,28 @@
 				color: #a53425;
 			}
 		}
-		.container .trainer-home-list {
+		.container .trainer-detail-programs {
 			margin-top: 0;
-			.card-wrap .wrap-main {
-				max-width: calc(100% - 5px);
-				min-width: 0;
+			padding: 0;
+			min-width: 0;
+			gap: 24px;
+			background: transparent;
+			box-shadow: none;
+			h2 {
+				overflow-wrap: anywhere;
 			}
-			.program-big-card-box {
-				max-width: calc(100% - 16px);
+		}
+		.trainer-detail-program-grid {
+			display: grid;
+			grid-template-columns: repeat(3, minmax(0, 1fr));
+			gap: 24px;
+			min-width: 0;
+			@media (max-width: 1099px) {
+				grid-template-columns: repeat(2, minmax(0, 1fr));
+			}
+			@media (max-width: 767px) {
+				grid-template-columns: minmax(0, 1fr);
+				gap: 20px;
 			}
 		}
 	}

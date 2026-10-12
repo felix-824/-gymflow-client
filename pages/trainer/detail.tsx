@@ -11,7 +11,7 @@ import { useRouter } from 'next/router';
 import { useMutation, useQuery, useReactiveVar } from '@apollo/client';
 import { serverSideTranslations } from 'next-i18next/serverSideTranslations';
 import withLayoutBasic from '../../libs/components/layout/LayoutBasic';
-import ProgramBigCard from '../../libs/components/common/ProgramBigCard';
+import ProgramCard from '../../libs/components/program/ProgramCard';
 import { Program } from '../../libs/types/program/program';
 import { Member } from '../../libs/types/member/member';
 import { ProgramsInquiry } from '../../libs/types/program/program.input';
@@ -200,14 +200,22 @@ const TrainerDetail: NextPage = () => {
 					<h2 id="trainer-about-title">{t('Trainer detail.About')}</h2>
 					<p>{trainer.memberDesc?.trim() || t('Trainer detail.Empty about')}</p>
 				</section>
-				<Stack className="trainer-home-list">
+				<Stack
+					component="section"
+					className="trainer-home-list trainer-detail-programs"
+					aria-labelledby="trainer-programs-title"
+				>
+					<h2 id="trainer-programs-title">{t('Trainer detail.Programs by trainer', { name })}</h2>
 					{programsLoading && <p>Loading programs...</p>}
 					{programsError && <p role="alert">Could not load programs.</p>}
-					<Stack className="card-wrap">
+					<Stack className="trainer-detail-program-grid">
 						{trainerPrograms.map((program) => (
-							<div className="wrap-main" key={program._id}>
-								<ProgramBigCard program={program} likeProgramHandler={likeProgramHandler} />
-							</div>
+							<ProgramCard
+								program={program}
+								likeProgramHandler={likeProgramHandler}
+								variant="discovery"
+								key={program._id}
+							/>
 						))}
 					</Stack>
 					<Stack className="pagination">
