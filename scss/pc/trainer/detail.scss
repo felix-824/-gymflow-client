@@ -441,6 +441,36 @@
 				flex-shrink: 0;
 			}
 		}
+		.trainer-detail-follow {
+			margin-top: 20px;
+			min-height: 44px;
+			max-width: 100%;
+			gap: 6px;
+			padding: 8px 16px;
+			border-radius: 24px;
+			color: #12151d;
+			background: #f2f4f6;
+			font-size: 14px;
+			font-weight: 600;
+			text-transform: none;
+			span {
+				overflow-wrap: anywhere;
+			}
+			svg {
+				font-size: 19px;
+				flex-shrink: 0;
+			}
+			&:hover {
+				background: #edeef0;
+			}
+			&[aria-pressed='true'] {
+				color: #a53425;
+				background: #fcece8;
+			}
+			&.Mui-disabled {
+				opacity: 0.6;
+			}
+		}
 		.trainer-detail-stats {
 			display: grid;
 			grid-template-columns: repeat(4, minmax(0, 1fr));

@@ -1,10 +1,12 @@
-import React, { ChangeEvent, useState } from 'react';
+import React, { ChangeEvent, useRef, useState } from 'react';
 import { NextPage } from 'next';
 import { Button, CircularProgress, Pagination, Stack } from '@mui/material';
 import Link from 'next/link';
 import { useTranslation } from 'next-i18next';
 import LocationOnOutlinedIcon from '@mui/icons-material/LocationOnOutlined';
 import ArrowBackRoundedIcon from '@mui/icons-material/ArrowBackRounded';
+import PersonAddAltRoundedIcon from '@mui/icons-material/PersonAddAltRounded';
+import CheckRoundedIcon from '@mui/icons-material/CheckRounded';
 import { useRouter } from 'next/router';
 import { useMutation, useQuery, useReactiveVar } from '@apollo/client';
 import { serverSideTranslations } from 'next-i18next/serverSideTranslations';
@@ -13,11 +15,11 @@ import ProgramBigCard from '../../libs/components/common/ProgramBigCard';
 import { Program } from '../../libs/types/program/program';
 import { Member } from '../../libs/types/member/member';
 import { ProgramsInquiry } from '../../libs/types/program/program.input';
-import { authReadyVar } from '../../apollo/store';
+import { authReadyVar, userVar } from '../../apollo/store';
 import { GET_MEMBER, GET_PROGRAMS } from '../../apollo/user/query';
-import { LIKE_TARGET_PROGRAM } from '../../apollo/user/mutation';
-import { REACT_APP_API_URL } from '../../libs/config';
-import { sweetMixinErrorAlert } from '../../libs/sweetAlert';
+import { LIKE_TARGET_PROGRAM, SUBSCRIBE, UNSUBSCRIBE } from '../../apollo/user/mutation';
+import { Messages, REACT_APP_API_URL } from '../../libs/config';
+import { sweetMixinErrorAlert, sweetTopSmallSuccessAlert } from '../../libs/sweetAlert';
 import { formatterStr } from '../../libs/utils';
 
 export const getStaticProps = async ({ locale }: any) => ({
@@ -28,14 +30,19 @@ const TrainerDetail: NextPage = () => {
 	const { t } = useTranslation('common');
 	const router = useRouter();
 	const authReady = useReactiveVar(authReadyVar);
+	const user = useReactiveVar(userVar);
 	const trainerId = typeof router.query.trainerId === 'string' ? router.query.trainerId : '';
 	const validTrainerId = /^[a-f\d]{24}$/i.test(trainerId);
 	const [failedImage, setFailedImage] = useState('');
 	const [trainerPrograms, setTrainerPrograms] = useState<Program[]>([]);
 	const [programTotal, setProgramTotal] = useState(0);
 	const [page, setPage] = useState(1);
+	const pendingFollow = useRef(false);
+	const [followPending, setFollowPending] = useState(false);
 	const searchFilter: ProgramsInquiry = { page, limit: 9, search: { memberId: trainerId } };
 	const [likeTargetProgram] = useMutation(LIKE_TARGET_PROGRAM);
+	const [subscribe] = useMutation(SUBSCRIBE);
+	const [unsubscribe] = useMutation(UNSUBSCRIBE);
 
 	/** APOLLO REQUESTS **/
 	const {
@@ -50,6 +57,7 @@ const TrainerDetail: NextPage = () => {
 		notifyOnNetworkStatusChange: true,
 	});
 	const trainer: Member | null = data?.getMember?._id === trainerId ? data.getMember : null;
+	const following = Boolean(trainer?.meFollowed?.[0]?.myFollowing);
 	const {
 		loading: programsLoading,
 		error: programsError,
@@ -71,6 +79,28 @@ const TrainerDetail: NextPage = () => {
 	}, [trainerId]);
 
 	/** HANDLERS **/
+	const followMemberHandler = async () => {
+		if (!authReady || loading || !trainer || trainerId === user._id || pendingFollow.current) return;
+		let submitted = false;
+		try {
+			if (!user._id) throw new Error(Messages.error2);
+			pendingFollow.current = true;
+			setFollowPending(true);
+			submitted = true;
+			await (following ? unsubscribe : subscribe)({ variables: { input: trainerId } });
+			await getMemberRefetch();
+			await sweetTopSmallSuccessAlert(
+				t(following ? 'Trainer discovery.Unfollowed' : 'Trainer discovery.Followed'),
+				800,
+			);
+		} catch (err: any) {
+			if (submitted) await getMemberRefetch().catch(() => undefined);
+			void sweetMixinErrorAlert(err.message);
+		} finally {
+			pendingFollow.current = false;
+			setFollowPending(false);
+		}
+	};
 	const likeProgramHandler = async (member: { _id: string }, id: string) => {
 		try {
 			if (!member._id) throw new Error('Please login first!');
@@ -140,6 +170,21 @@ const TrainerDetail: NextPage = () => {
 								<LocationOnOutlinedIcon aria-hidden={true} />
 								{trainer.memberAddress}
 							</p>
+						)}
+						{trainerId !== user._id && (
+							<Button
+								className="trainer-detail-follow"
+								aria-pressed={following}
+								aria-busy={followPending}
+								aria-label={t(following ? 'Trainer discovery.Unfollow trainer' : 'Trainer discovery.Follow trainer', {
+									name,
+								})}
+								disabled={followPending || loading || !authReady}
+								onClick={() => void followMemberHandler()}
+							>
+								{following ? <CheckRoundedIcon aria-hidden={true} /> : <PersonAddAltRoundedIcon aria-hidden={true} />}
+								<span>{t(following ? 'Trainer discovery.Following' : 'Trainer discovery.Follow')}</span>
+							</Button>
 						)}
 						<dl className="trainer-detail-stats">
 							{stats.map(({ label, value }) => (
