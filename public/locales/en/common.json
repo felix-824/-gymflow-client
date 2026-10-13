@@ -246,6 +246,11 @@
 		"Title": "Find the training that fits your goals.",
 		"Description": "Explore programs and trainers built around the way you want to train."
 	},
+	"Home footer": {
+		"Description": "Find programs, trainers and a training routine that fits your goals.",
+		"Explore": "Explore",
+		"Support": "Support"
+	},
 	"Trainer detail": {
 		"Programs by trainer": "Programs by {{name}}",
 		"Following": "Following",

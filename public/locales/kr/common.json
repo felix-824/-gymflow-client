@@ -246,6 +246,11 @@
 		"Title": "나의 목표에 맞는 트레이닝을 찾아보세요.",
 		"Description": "원하는 운동 방식에 맞는 프로그램과 트레이너를 만나보세요."
 	},
+	"Home footer": {
+		"Description": "목표에 맞는 프로그램, 트레이너와 나만의 운동 루틴을 찾아보세요.",
+		"Explore": "둘러보기",
+		"Support": "고객 지원"
+	},
 	"Trainer detail": {
 		"Programs by trainer": "{{name}} 트레이너의 프로그램",
 		"Following": "팔로잉",

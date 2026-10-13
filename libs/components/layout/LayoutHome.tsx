@@ -36,8 +36,8 @@ const withLayoutMain = (Component: any) => {
 							<Component {...props} />
 						</Stack>
 
-						<Stack id={'footer'}>
-							<Footer />
+						<Stack id={'footer'} className="home-footer-shell">
+							<Footer variant="home" />
 						</Stack>
 					</Stack>
 				</>
@@ -61,8 +61,8 @@ const withLayoutMain = (Component: any) => {
 
 						<Chat />
 
-						<Stack id={'footer'}>
-							<Footer />
+						<Stack id={'footer'} className="home-footer-shell">
+							<Footer variant="home" />
 						</Stack>
 					</Stack>
 				</>
