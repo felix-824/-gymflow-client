@@ -10,8 +10,10 @@ import IconButton from '@mui/material/IconButton';
 import { REACT_APP_API_URL } from '../../config';
 import { logOut } from '../../auth';
 import { sweetConfirmAlert, sweetMixinErrorAlert } from '../../sweetAlert';
+import { useTranslation } from 'next-i18next';
 
 const MyMenu = () => {
+	const { t } = useTranslation('common');
 	const device = useDeviceDetect();
 	const router = useRouter();
 	const pathname = router.query.category ?? 'myProfile';
@@ -55,13 +57,18 @@ const MyMenu = () => {
 					</Stack>
 				</Stack>
 				<Stack className={'sections'}>
-					<Stack className={'section'} style={{ height: user.memberType === 'TRAINER' ? '228px' : '153px' }}>
+					<Stack className={'section'} style={{ height: user.memberType === 'TRAINER' ? '278px' : '153px' }}>
 						<Typography className="title" variant={'h5'}>
 							MY ACTIVITY
 						</Typography>
 						<List className={'sub-section'}>
 							{user.memberType === 'TRAINER' && (
 								<>
+									<ListItem className={pathname === 'trainerSchedule' ? 'focus' : ''}>
+										<Link passHref href={{ pathname: '/mypage', query: { category: 'trainerSchedule' } }} scroll={false}>
+											<div className="flex-box"><Typography className="sub-title" variant="subtitle1" component="p">{t('Trainer schedule.Schedule')}</Typography></div>
+										</Link>
+									</ListItem>
 									<ListItem className={pathname === 'addProgram' ? 'focus' : ''}>
 										<Link
 											href={{

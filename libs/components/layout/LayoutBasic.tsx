@@ -27,6 +27,7 @@ const withLayoutBasic = (Component: any) => {
 		const authHeader = router.pathname === '/account/join';
 		const communityDiscovery = router.pathname === '/community';
 		const communityArticle = router.pathname === '/community/detail';
+		const trainerSchedule = router.pathname === '/mypage' && router.query.category === 'trainerSchedule';
 		const theme = useTheme();
 		const programTheme = useMemo(() => {
 			if (router.pathname !== '/program' && !communityDiscovery && !communityArticle) return theme;
@@ -150,6 +151,21 @@ const withLayoutBasic = (Component: any) => {
 		}, [compactTrainer, compactTrainerDetail]);
 
 		/** HANDLERS **/
+		if (trainerSchedule) {
+			return (
+				<>
+					<Head>
+						<title>GymFlow</title>
+						<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" />
+					</Head>
+					<Stack id="pc-wrap" className="trainer-schedule-layout">
+						<Stack id="main" component="main"><Component {...props} /></Stack>
+						{device !== 'mobile' && <Chat />}
+						<Stack id="footer" component="footer"><Footer variant="programs" /></Stack>
+					</Stack>
+				</>
+			);
+		}
 
 		if (router.pathname === '/program' || compactTrainer || trainerDetail || communityDiscovery || communityArticle) {
 			return (

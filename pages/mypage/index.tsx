@@ -14,6 +14,9 @@ import { useMutation, useReactiveVar } from '@apollo/client';
 import { userVar, authReadyVar, authErrorVar } from '../../apollo/store';
 import MyMenu from '../../libs/components/mypage/MyMenu';
 import WriteArticle from '../../libs/components/mypage/WriteArticle';
+import TrainerSchedule from '../../libs/components/mypage/TrainerSchedule';
+import { useTranslation } from 'next-i18next';
+import Link from 'next/link';
 import MemberFollowers from '../../libs/components/member/MemberFollowers';
 import MemberFollowings from '../../libs/components/member/MemberFollowings';
 import { serverSideTranslations } from 'next-i18next/serverSideTranslations';
@@ -28,6 +31,7 @@ export const getStaticProps = async ({ locale }: any) => ({
 });
 
 const MyPage: NextPage = () => {
+	const { t } = useTranslation('common');
 	const device = useDeviceDetect();
 	const user = useReactiveVar(userVar);
 const authReady = useReactiveVar(authReadyVar);
@@ -114,8 +118,18 @@ const likeMemberHandler = async (id: string, refetch: any, query: any) => {
 
 	if (authError) return <p role='alert'>{authError}</p>;
 if (!authReady || !user._id) return <p>Loading profile...</p>;
+if (category === 'trainerSchedule') {
+	return user.memberType === 'TRAINER' ? <TrainerSchedule key={user._id} /> : (
+		<div className="schedule-content" role="alert">
+			<p>{t('Trainer schedule.Trainer only')}</p>
+			<Link passHref href="/mypage">{t('Trainer schedule.Back to my page')}</Link>
+		</div>
+	);
+}
 if (device === 'mobile') {
-		return <div>MY PAGE</div>;
+		return <div>MY PAGE{user.memberType === 'TRAINER' && (
+			<p><Link passHref href="/mypage?category=trainerSchedule" style={{ display: 'inline-flex', minHeight: 44, padding: '12px 20px' }}>{t('Trainer schedule.Schedule')}</Link></p>
+		)}</div>;
 	} else {
 		return (
 			<div id="my-page" style={{ position: 'relative' }}>

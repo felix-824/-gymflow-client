@@ -6,6 +6,21 @@ export const CHECK_AUTH = gql`
 	}
 `;
 
+export const GET_MY_TRAINER_SCHEDULE = gql`
+	query GetMyTrainerSchedule {
+		getMyTrainerSchedule {
+			_id
+			memberId
+			dayOfWeek
+			isAvailable
+			startTime
+			endTime
+			createdAt
+			updatedAt
+		}
+	}
+`;
+
 /**************************
  *         MEMBER         *
  *************************/
