@@ -280,19 +280,19 @@ const {
 									className={`tab-button ${articleCategory === 'FREE' ? 'active' : ''}`}
 								/>
 								<Tab
-									value={'RECOMMEND'}
-									label={'Recommendation'}
-									className={`tab-button ${articleCategory === 'RECOMMEND' ? 'active' : ''}`}
+									value={'TIP'}
+									label={'Tips'}
+									className={`tab-button ${articleCategory === 'TIP' ? 'active' : ''}`}
+								/>
+								<Tab
+									value={'SUCCESS_STORY'}
+									label={'Success Stories'}
+									className={`tab-button ${articleCategory === 'SUCCESS_STORY' ? 'active' : ''}`}
 								/>
 								<Tab
 									value={'NEWS'}
 									label={'News'}
 									className={`tab-button ${articleCategory === 'NEWS' ? 'active' : ''}`}
-								/>
-								<Tab
-									value={'HUMOR'}
-									label={'Humor'}
-									className={`tab-button ${articleCategory === 'HUMOR' ? 'active' : ''}`}
 								/>
 							</Tabs>
 						</Stack>

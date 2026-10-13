@@ -137,9 +137,9 @@ const TuiEditor = () => {
 							<MenuItem value={BoardArticleCategory.FREE}>
 								<span>Free</span>
 							</MenuItem>
-							<MenuItem value={BoardArticleCategory.HUMOR}>Humor</MenuItem>
+							<MenuItem value={BoardArticleCategory.TIP}>Tips</MenuItem>
+							<MenuItem value={BoardArticleCategory.SUCCESS_STORY}>Success Stories</MenuItem>
 							<MenuItem value={BoardArticleCategory.NEWS}>News</MenuItem>
-							<MenuItem value={BoardArticleCategory.RECOMMEND}>Recommendation</MenuItem>
 						</Select>
 					</FormControl>
 				</Box>
