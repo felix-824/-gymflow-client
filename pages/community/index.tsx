@@ -1,9 +1,10 @@
-import React, { useMemo } from 'react';
+import React, { useEffect, useMemo, useRef } from 'react';
 import { NextPage } from 'next';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { Button, CircularProgress, Pagination } from '@mui/material';
 import EditOutlinedIcon from '@mui/icons-material/EditOutlined';
+import ArticleOutlinedIcon from '@mui/icons-material/ArticleOutlined';
 import { useTranslation } from 'next-i18next';
 import { serverSideTranslations } from 'next-i18next/serverSideTranslations';
 import { useMutation, useQuery } from '@apollo/client';
@@ -25,7 +26,8 @@ export const getStaticProps = async ({ locale }: any) => ({
 
 const Community: NextPage = () => {
 	const router = useRouter();
-	const { t } = useTranslation('common');
+	const { t, i18n } = useTranslation('common');
+	const categoryNavigation = useRef<HTMLElement>(null);
 	const categoryValue = router.query.articleCategory;
 	const category = Object.values(BoardArticleCategory).find((value) => value === categoryValue);
 	const pageValue = Number(router.query.page);
@@ -63,6 +65,18 @@ const Community: NextPage = () => {
 	const boardArticles: BoardArticle[] = data?.getBoardArticles?.list ?? [];
 	const totalCount: number = data?.getBoardArticles?.metaCounter?.[0]?.total ?? 0;
 	const busy = loading || !router.isReady;
+	const emptyPage = totalCount > 0 && boardArticles.length === 0;
+
+	/** LIFECYCLES **/
+	useEffect(() => {
+		const navigation = categoryNavigation.current;
+		const activeLink = navigation?.querySelector<HTMLElement>('[aria-current="page"]');
+		if (!navigation || !activeLink) return;
+		const bounds = navigation.getBoundingClientRect();
+		const activeBounds = activeLink.getBoundingClientRect();
+		if (activeBounds.left < bounds.left) navigation.scrollLeft -= bounds.left - activeBounds.left;
+		else if (activeBounds.right > bounds.right) navigation.scrollLeft += activeBounds.right - bounds.right;
+	}, [category, i18n.language]);
 
 	/** HANDLERS **/
 	const paginationHandler = async (event: React.ChangeEvent<unknown>, value: number) => {
@@ -107,7 +121,7 @@ const Community: NextPage = () => {
 						{t('Community discovery.Write article')}
 					</Link>
 				</header>
-				<nav className="community-categories" aria-label={t('Community discovery.Categories')}>
+				<nav ref={categoryNavigation} className="community-categories" aria-label={t('Community discovery.Categories')}>
 					{categories.map((value) => (
 						<Link
 							key={value ?? 'all'}
@@ -150,9 +164,19 @@ const Community: NextPage = () => {
 							))}
 						</div>
 					) : (
-						<div className="community-result-state" role="status">
-							<h3>{t('Community discovery.Empty title')}</h3>
-							<p>{t('Community discovery.Empty description')}</p>
+						<div className="community-result-state community-empty-state">
+							<ArticleOutlinedIcon className="community-state-mark" aria-hidden={true} />
+							<h3 role="status">{t(`Community discovery.Empty ${emptyPage ? 'page' : category ?? 'All'}`)}</h3>
+							{emptyPage ? (
+								<Link href={categoryHref(category)} shallow scroll={false} className="community-empty-action">
+									{t('Community discovery.First page')}
+								</Link>
+							) : (
+								<Link href="/mypage?category=writeArticle" passHref className="community-empty-action">
+									<EditOutlinedIcon aria-hidden={true} />
+									{t('Community discovery.Write article')}
+								</Link>
+							)}
 						</div>
 					)}
 					{!busy && !error && totalCount > searchCommunity.limit && (

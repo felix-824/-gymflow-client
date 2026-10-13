@@ -88,6 +88,7 @@
 			font-size: 14px;
 			font-weight: 600;
 			white-space: nowrap !important;
+			scroll-margin-inline: 4px;
 			&:hover {
 				color: #17191f;
 			}
@@ -161,6 +162,11 @@
 		aspect-ratio: 16 / 10;
 		overflow: hidden;
 		background: #e7e9ee;
+		&:hover,
+		&:focus-visible {
+			outline: 2px solid #eb6753;
+			outline-offset: 3px;
+		}
 		img {
 			display: block;
 			width: 100%;
@@ -265,6 +271,41 @@
 			padding: 8px 16px;
 			color: #a53425;
 			border: 1px solid #e7e9ee;
+		}
+	}
+	.community-empty-state {
+		min-height: 0;
+		padding: 40px 0 56px;
+		gap: 16px;
+		h3 {
+			max-width: 32ch;
+			line-height: 1.4;
+			overflow-wrap: anywhere;
+		}
+		.community-state-mark {
+			width: 28px;
+			height: 28px;
+			color: #737985;
+		}
+	}
+	.community-empty-action {
+		display: inline-flex;
+		align-items: center;
+		gap: 8px;
+		min-height: 44px;
+		max-width: 100%;
+		color: #17191f;
+		font-size: 14px;
+		font-weight: 600;
+		text-decoration: underline;
+		text-underline-offset: 4px;
+		svg {
+			width: 18px;
+			height: 18px;
+			flex-shrink: 0;
+		}
+		&:hover {
+			color: #a53425;
 		}
 	}
 	.community-pagination {
