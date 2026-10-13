@@ -78,9 +78,9 @@ export const updateUserInfo = (jwtToken: string, member?: Member): Promise<void>
 	if (restoring && restoringToken === jwtToken) return restoring;
 	if (profileToken !== jwtToken) {
 		userVar({ ...emptyUser });
+		authReadyVar(false);
 	}
 	restoringToken = jwtToken;
-	authReadyVar(false);
 	authErrorVar('');
 	const request = (async () => {
 		let claims: CustomJwtPayload;
