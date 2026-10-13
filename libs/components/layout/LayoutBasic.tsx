@@ -26,9 +26,10 @@ const withLayoutBasic = (Component: any) => {
 		const compactTrainerDetail = compactViewport && trainerDetail;
 		const authHeader = router.pathname === '/account/join';
 		const communityDiscovery = router.pathname === '/community';
+		const communityArticle = router.pathname === '/community/detail';
 		const theme = useTheme();
 		const programTheme = useMemo(() => {
-			if (router.pathname !== '/program' && !communityDiscovery) return theme;
+			if (router.pathname !== '/program' && !communityDiscovery && !communityArticle) return theme;
 			const fontFamily = "'Plus Jakarta Sans', sans-serif";
 			const typography = Object.fromEntries(
 				Object.entries(theme.typography).map(([variant, value]) => [
@@ -42,7 +43,7 @@ const withLayoutBasic = (Component: any) => {
 				},
 				typography: { ...typography, fontFamily },
 			});
-		}, [theme, router.pathname, communityDiscovery]);
+		}, [theme, router.pathname, communityDiscovery, communityArticle]);
 
 		const memoizedValues = useMemo(() => {
 			let title = '',
@@ -150,7 +151,7 @@ const withLayoutBasic = (Component: any) => {
 
 		/** HANDLERS **/
 
-		if (router.pathname === '/program' || compactTrainer || trainerDetail || communityDiscovery) {
+		if (router.pathname === '/program' || compactTrainer || trainerDetail || communityDiscovery || communityArticle) {
 			return (
 				<ThemeProvider theme={programTheme}>
 					<Head>
@@ -165,7 +166,7 @@ const withLayoutBasic = (Component: any) => {
 						id="pc-wrap"
 						className={`program-discovery-layout${compactTrainer || trainerDetail ? ' trainer-discovery-layout' : ''}${
 							trainerDetail ? ' trainer-detail-layout' : ''
-						}${device === 'mobile' || compactTrainer ? ' is-mobile' : ''}${communityDiscovery ? ' community-discovery-layout' : ''}`}
+						}${device === 'mobile' || compactTrainer ? ' is-mobile' : ''}${communityDiscovery ? ' community-discovery-layout' : ''}${communityArticle ? ' community-article-layout' : ''}`}
 					>
 						<Stack id={'top'}>
 							<Top variant={'programs'} />
@@ -177,7 +178,7 @@ const withLayoutBasic = (Component: any) => {
 						<Stack id={'footer'} component={'footer'}>
 							<Footer variant={compactTrainer || trainerDetail ? 'default' : 'programs'} />
 						</Stack>
-						{!communityDiscovery && <ProgramsBottomNavigation />}
+						{!communityDiscovery && !communityArticle && <ProgramsBottomNavigation />}
 					</Stack>
 				</ThemeProvider>
 			);

@@ -295,5 +295,31 @@
 		"Likes": "Отметки «Нравится»",
 		"Like article": "Нравится статья: {{title}}",
 		"Unlike article": "Убрать отметку «Нравится»: {{title}}"
+	},
+	"Article detail": {
+		"Breadcrumb": "Расположение статьи",
+		"Back to community": "Вернуться в сообщество",
+		"Author profile": "Посмотреть профиль автора",
+		"Engagement": "Активность статьи",
+		"Like": "Нравится",
+		"Unlike": "Убрать отметку",
+		"Views": "Просмотры: {{count}}",
+		"Comment count": "Комментарии: {{count}}",
+		"Comments": "Комментарии",
+		"Leave comment": "Оставить комментарий",
+		"Post comment": "Отправить",
+		"Edit comment": "Изменить комментарий",
+		"Delete comment": "Удалить комментарий",
+		"Cancel": "Отмена",
+		"Save": "Сохранить",
+		"No comments": "Комментариев пока нет.",
+		"Comments loading": "Загрузка комментариев…",
+		"Comments error": "Не удалось загрузить комментарии.",
+		"Retry": "Попробовать снова",
+		"Comment pages": "Страницы комментариев",
+		"Article navigation": "Навигация по статье",
+		"Loading": "Загрузка статьи…",
+		"Unavailable": "Эта статья недоступна.",
+		"Unavailable description": "Вернитесь в сообщество, чтобы прочитать другие истории."
 	}
 }

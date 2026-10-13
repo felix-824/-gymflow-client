@@ -295,5 +295,31 @@
 		"Likes": "Likes",
 		"Like article": "Like article: {{title}}",
 		"Unlike article": "Unlike article: {{title}}"
+	},
+	"Article detail": {
+		"Breadcrumb": "Article location",
+		"Back to community": "Back to Community",
+		"Author profile": "View author profile",
+		"Engagement": "Article engagement",
+		"Like": "Like",
+		"Unlike": "Unlike",
+		"Views": "Views: {{count}}",
+		"Comment count": "Comments: {{count}}",
+		"Comments": "Comments",
+		"Leave comment": "Leave a comment",
+		"Post comment": "Post comment",
+		"Edit comment": "Edit comment",
+		"Delete comment": "Delete comment",
+		"Cancel": "Cancel",
+		"Save": "Save changes",
+		"No comments": "No comments yet.",
+		"Comments loading": "Loading comments…",
+		"Comments error": "Comments could not be loaded.",
+		"Retry": "Try again",
+		"Comment pages": "Comment pages",
+		"Article navigation": "Article navigation",
+		"Loading": "Loading article…",
+		"Unavailable": "This article is unavailable.",
+		"Unavailable description": "Return to Community to explore other stories."
 	}
 }
