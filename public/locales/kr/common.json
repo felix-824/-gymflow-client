@@ -241,6 +241,11 @@
 		"Retry": "다시 시도",
 		"Empty": "새로운 이야기가 공유되면 이곳에서 만나볼 수 있어요."
 	},
+	"Home final CTA": {
+		"Eyebrow": "시작할 준비가 되셨나요?",
+		"Title": "나의 목표에 맞는 트레이닝을 찾아보세요.",
+		"Description": "원하는 운동 방식에 맞는 프로그램과 트레이너를 만나보세요."
+	},
 	"Trainer detail": {
 		"Programs by trainer": "{{name}} 트레이너의 프로그램",
 		"Following": "팔로잉",

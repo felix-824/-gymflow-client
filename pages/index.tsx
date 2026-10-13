@@ -4,11 +4,9 @@ import withLayoutMain from '../libs/components/layout/LayoutHome';
 import CommunityBoards from '../libs/components/homepage/CommunityBoards';
 import ExploreCategories from '../libs/components/homepage/ExploreCategories';
 import TopTrainers from '../libs/components/homepage/TopTrainers';
-import Events from '../libs/components/homepage/Events';
 import TrendPrograms from '../libs/components/homepage/TrendPrograms';
-import TopPrograms from '../libs/components/homepage/TopPrograms';
+import FinalCta from '../libs/components/homepage/FinalCta';
 import { Stack } from '@mui/material';
-import Advertisement from '../libs/components/homepage/Advertisement';
 import { serverSideTranslations } from 'next-i18next/serverSideTranslations';
 
 export const getStaticProps = async ({ locale }: any) => ({
@@ -25,10 +23,9 @@ const Home: NextPage = () => {
 			<Stack className={'home-page'}>
 				<TrendPrograms />
 				<ExploreCategories />
-				<Advertisement />
-				<TopPrograms />
 				<TopTrainers />
 				<CommunityBoards />
+				<FinalCta />
 			</Stack>
 		);
 	} else {
@@ -36,11 +33,9 @@ const Home: NextPage = () => {
 			<Stack className={'home-page'}>
 				<TrendPrograms />
 				<ExploreCategories />
-				<Advertisement />
-				<TopPrograms />
 				<TopTrainers />
-				<Events />
 				<CommunityBoards />
+				<FinalCta />
 			</Stack>
 		);
 	}

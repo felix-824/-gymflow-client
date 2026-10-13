@@ -241,6 +241,11 @@
 		"Retry": "Try again",
 		"Empty": "Community stories will appear here when they are shared."
 	},
+	"Home final CTA": {
+		"Eyebrow": "READY TO START?",
+		"Title": "Find the training that fits your goals.",
+		"Description": "Explore programs and trainers built around the way you want to train."
+	},
 	"Trainer detail": {
 		"Programs by trainer": "Programs by {{name}}",
 		"Following": "Following",
