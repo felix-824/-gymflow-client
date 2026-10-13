@@ -25,9 +25,10 @@ const withLayoutBasic = (Component: any) => {
 		const trainerDetail = router.pathname === '/trainer/detail';
 		const compactTrainerDetail = compactViewport && trainerDetail;
 		const authHeader = router.pathname === '/account/join';
+		const communityDiscovery = router.pathname === '/community';
 		const theme = useTheme();
 		const programTheme = useMemo(() => {
-			if (router.pathname !== '/program') return theme;
+			if (router.pathname !== '/program' && !communityDiscovery) return theme;
 			const fontFamily = "'Plus Jakarta Sans', sans-serif";
 			const typography = Object.fromEntries(
 				Object.entries(theme.typography).map(([variant, value]) => [
@@ -41,7 +42,7 @@ const withLayoutBasic = (Component: any) => {
 				},
 				typography: { ...typography, fontFamily },
 			});
-		}, [theme, router.pathname]);
+		}, [theme, router.pathname, communityDiscovery]);
 
 		const memoizedValues = useMemo(() => {
 			let title = '',
@@ -149,7 +150,7 @@ const withLayoutBasic = (Component: any) => {
 
 		/** HANDLERS **/
 
-		if (router.pathname === '/program' || compactTrainer || trainerDetail) {
+		if (router.pathname === '/program' || compactTrainer || trainerDetail || communityDiscovery) {
 			return (
 				<ThemeProvider theme={programTheme}>
 					<Head>
@@ -164,7 +165,7 @@ const withLayoutBasic = (Component: any) => {
 						id="pc-wrap"
 						className={`program-discovery-layout${compactTrainer || trainerDetail ? ' trainer-discovery-layout' : ''}${
 							trainerDetail ? ' trainer-detail-layout' : ''
-						}${device === 'mobile' || compactTrainer ? ' is-mobile' : ''}`}
+						}${device === 'mobile' || compactTrainer ? ' is-mobile' : ''}${communityDiscovery ? ' community-discovery-layout' : ''}`}
 					>
 						<Stack id={'top'}>
 							<Top variant={'programs'} />
@@ -176,7 +177,7 @@ const withLayoutBasic = (Component: any) => {
 						<Stack id={'footer'} component={'footer'}>
 							<Footer variant={compactTrainer || trainerDetail ? 'default' : 'programs'} />
 						</Stack>
-						<ProgramsBottomNavigation />
+						{!communityDiscovery && <ProgramsBottomNavigation />}
 					</Stack>
 				</ThemeProvider>
 			);
