@@ -225,6 +225,22 @@
 		"Description": "트레이너 프로필을 둘러보고 나에게 맞는 프로그램을 찾아보세요.",
 		"View all": "모든 트레이너 보기"
 	},
+	"Home community": {
+		"Title": "커뮤니티 하이라이트",
+		"Description": "짐플로우 커뮤니티가 함께 나누는 이야기, 운동 팁과 경험을 만나보세요.",
+		"View all": "커뮤니티 보기",
+		"FREE": "자유 이야기",
+		"TIP": "운동 팁",
+		"SUCCESS_STORY": "성공 이야기",
+		"NEWS": "소식",
+		"Views": "조회수",
+		"Likes": "좋아요",
+		"Comments": "댓글",
+		"Loading": "커뮤니티 이야기를 불러오는 중…",
+		"Error": "일부 커뮤니티 이야기를 불러오지 못했습니다. 다시 시도해 주세요.",
+		"Retry": "다시 시도",
+		"Empty": "새로운 이야기가 공유되면 이곳에서 만나볼 수 있어요."
+	},
 	"Trainer detail": {
 		"Programs by trainer": "{{name}} 트레이너의 프로그램",
 		"Following": "팔로잉",

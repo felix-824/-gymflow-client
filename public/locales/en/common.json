@@ -225,6 +225,22 @@
 		"Description": "Explore trainer profiles and find programs that fit the way you train.",
 		"View all": "View All Trainers"
 	},
+	"Home community": {
+		"Title": "Community Highlights",
+		"Description": "Stories, tips and experiences shared by the GymFlow community.",
+		"View all": "View Community",
+		"FREE": "Community stories",
+		"TIP": "Training tips",
+		"SUCCESS_STORY": "Success stories",
+		"NEWS": "News",
+		"Views": "Views",
+		"Likes": "Likes",
+		"Comments": "Comments",
+		"Loading": "Loading community stories…",
+		"Error": "Some community stories couldn't be loaded. Please try again.",
+		"Retry": "Try again",
+		"Empty": "Community stories will appear here when they are shared."
+	},
 	"Trainer detail": {
 		"Programs by trainer": "Programs by {{name}}",
 		"Following": "Following",

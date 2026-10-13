@@ -1,56 +1,87 @@
-import React from 'react';
+import React, { useState } from 'react';
 import Link from 'next/link';
-import useDeviceDetect from '../../hooks/useDeviceDetect';
 import { Box } from '@mui/material';
-import Moment from 'react-moment';
+import RemoveRedEyeOutlinedIcon from '@mui/icons-material/RemoveRedEyeOutlined';
+import FavoriteBorderRoundedIcon from '@mui/icons-material/FavoriteBorderRounded';
+import ChatBubbleOutlineRoundedIcon from '@mui/icons-material/ChatBubbleOutlineRounded';
+import ArticleOutlinedIcon from '@mui/icons-material/ArticleOutlined';
+import { useTranslation } from 'next-i18next';
 import { BoardArticle } from '../../types/board-article/board-article';
+import { REACT_APP_API_URL } from '../../config';
 
 interface CommunityCardProps {
-	vertical: boolean;
 	article: BoardArticle;
-	index: number;
+	featured: boolean;
 }
 
-const CommunityCard = (props: CommunityCardProps) => {
-	const { vertical, article, index } = props;
-	const device = useDeviceDetect();
-	const articleImage = article?.articleImage
-		? `${process.env.REACT_APP_API_URL}/${article?.articleImage}`
-		: '/img/event.svg';
+const CommunityCard = ({ article, featured }: CommunityCardProps) => {
+	const { t, i18n } = useTranslation('common');
+	const [failedImage, setFailedImage] = useState('');
+	const imageSrc = article.articleImage ? `${REACT_APP_API_URL}/${article.articleImage}` : '';
+	const date = article.createdAt ? new Date(article.createdAt) : null;
+	const validDate = date && !Number.isNaN(date.getTime()) ? date : null;
+	const locale = i18n.language === 'kr' ? 'ko' : i18n.language || 'en';
+	const author = article.memberData?.memberNick?.trim();
+	const stats = [
+		{ label: 'Views', value: article.articleViews, Icon: RemoveRedEyeOutlinedIcon },
+		{ label: 'Likes', value: article.articleLikes, Icon: FavoriteBorderRoundedIcon },
+		{ label: 'Comments', value: article.articleComments, Icon: ChatBubbleOutlineRoundedIcon },
+	];
 
-	if (device === 'mobile') {
-		return <div>COMMUNITY CARD (MOBILE)</div>;
-	} else {
-		if (vertical) {
-			return (
-				<Link href={`/community/detail?articleCategory=${article?.articleCategory}&id=${article?._id}`}>
-					<Box component={'div'} className={'vertical-card'}>
-						<div className={'community-img'} style={{ backgroundImage: `url(${articleImage})` }}>
-							<div>{index + 1}</div>
+	return (
+		<article className={`home-community-article${featured ? ' is-featured' : ''}`}>
+			<Link
+				href={`/community/detail?articleCategory=${article.articleCategory}&id=${article._id}`}
+				passHref
+				className="home-community-article-link"
+			>
+				<div className="home-community-media">
+					{imageSrc && imageSrc !== failedImage ? (
+						<Box
+							component="img"
+							src={imageSrc}
+							alt=""
+							loading="lazy"
+							width={640}
+							height={420}
+							onError={() => setFailedImage(imageSrc)}
+						/>
+					) : (
+						<span className="home-community-image-fallback" aria-hidden={true}>
+							<ArticleOutlinedIcon />
+						</span>
+					)}
+				</div>
+				<div className="home-community-story">
+					<span className="home-community-category">{t(`Home community.${article.articleCategory}`)}</span>
+					<h3>{article.articleTitle}</h3>
+					{(author || validDate) && (
+						<div className="home-community-byline">
+							{author && <span>{author}</span>}
+							{validDate && (
+								<time dateTime={validDate.toISOString()}>
+									{new Intl.DateTimeFormat(locale, { year: 'numeric', month: 'short', day: 'numeric' }).format(
+										validDate,
+									)}
+								</time>
+							)}
 						</div>
-						<strong>{article?.articleTitle}</strong>
-						<span>Free Board</span>
-					</Box>
-				</Link>
-			);
-		} else {
-			return (
-				<>
-					<Link href={`/community/detail?articleCategory=${article?.articleCategory}&id=${article?._id}`}>
-						<Box component={'div'} className="horizontal-card">
-							<img src={articleImage} alt="" />
-							<div>
-								<strong>{article.articleTitle}</strong>
-								<span>
-									<Moment format="DD.MM.YY">{article?.createdAt}</Moment>
+					)}
+					<div className="home-community-stats">
+						{stats.map(({ label, value, Icon }) =>
+							typeof value === 'number' && Number.isFinite(value) ? (
+								<span key={label}>
+									<Icon aria-hidden={true} />
+									<span className="home-community-sr-only">{t(`Home community.${label}`)}: </span>
+									{value.toLocaleString(locale)}
 								</span>
-							</div>
-						</Box>
-					</Link>
-				</>
-			);
-		}
-	}
+							) : null,
+						)}
+					</div>
+				</div>
+			</Link>
+		</article>
+	);
 };
 
 export default CommunityCard;
