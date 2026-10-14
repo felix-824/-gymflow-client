@@ -1,5 +1,18 @@
 import { gql } from '@apollo/client';
 
+export const CREATE_RESERVATION = gql`
+	mutation CreateReservation($input: ReservationInput!) {
+		createReservation(input: $input) {
+			_id
+			programId
+			reservationDate
+			startTime
+			endTime
+			reservationStatus
+		}
+	}
+`;
+
 export const SAVE_MY_TRAINER_SCHEDULE = gql`
 	mutation SaveMyTrainerSchedule($input: TrainerScheduleInput!) {
 		saveMyTrainerSchedule(input: $input) {

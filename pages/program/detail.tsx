@@ -25,7 +25,7 @@ import { ProgramType } from '../../libs/enums/program.enum';
 import { Direction } from '../../libs/enums/common.enum';
 import { GET_PROGRAM, GET_PROGRAMS } from '../../apollo/user/query';
 import { LIKE_TARGET_PROGRAM } from '../../apollo/user/mutation';
-import { userVar } from '../../apollo/store';
+import { authReadyVar, authErrorVar, userVar } from '../../apollo/store';
 import { REACT_APP_API_URL } from '../../libs/config';
 import { formatterStr } from '../../libs/utils';
 import { sweetMixinErrorAlert } from '../../libs/sweetAlert';
@@ -38,6 +38,8 @@ const ProgramDetail: NextPage = () => {
 	const { t } = useTranslation('common');
 	const router = useRouter();
 	const user = useReactiveVar(userVar);
+	const authReady = useReactiveVar(authReadyVar);
+	const authError = useReactiveVar(authErrorVar);
 	const programId = typeof router.query.id === 'string' ? router.query.id : '';
 	const [program, setProgram] = useState<Program | null>(null);
 	const [slideImage, setSlideImage] = useState('');
@@ -84,7 +86,10 @@ const ProgramDetail: NextPage = () => {
 		try {
 			if (!member._id) throw new Error('Please login first!');
 			await likeTargetProgram({ variables: { input: id } });
-			if (id === programId) await getProgramRefetch();
+			if (id === programId) {
+				const { data } = await getProgramRefetch();
+				setProgram(data.getProgram);
+			}
 			await getProgramsRefetch();
 		} catch (err: any) {
 			await sweetMixinErrorAlert(err.message);
@@ -211,6 +216,16 @@ const ProgramDetail: NextPage = () => {
 							>
 								{t(isLiked ? 'Program detail.Saved' : 'Program detail.Save program')}
 							</Button>
+							{(program.programType === ProgramType.PT_1ON1 || program.programType === ProgramType.GROUP_CLASS) && (
+								<>
+									<Button className="detail-book-session" disabled={!authReady || Boolean(authError) || Boolean(user._id && (user.memberType !== 'USER' || user.memberStatus !== 'ACTIVE'))}
+										onClick={() => {
+											const href = '/program/booking?id=' + program._id;
+											void router.push(user._id ? href : { pathname: '/account/join', query: { referrer: href } });
+										}}>{t('Booking.Book Session')}</Button>
+									{user._id && user.memberType !== 'USER' && <p className="detail-book-note">{t('Booking.USER only')}</p>}
+								</>
+							)}
 						</aside>
 					</section>
 					<div className="program-detail-content">

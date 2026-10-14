@@ -108,6 +108,15 @@ query GetMember($input: String!) {
  *        PROGRAM        *
  *************************/
 
+export const GET_PROGRAM_AVAILABILITY = gql`
+	query GetProgramAvailability($input: ProgramAvailabilityInquiry!) {
+		getProgramAvailability(input: $input) {
+			startTime
+			endTime
+		}
+	}
+`;
+
 export const GET_PROGRAM = gql`
 	query GetProgram($input: String!) {
 		getProgram(programId: $input) {
