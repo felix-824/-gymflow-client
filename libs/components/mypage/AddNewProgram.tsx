@@ -28,7 +28,7 @@ const initialValues: ProgramInput = {
 	programImages: [],
 };
 
-const AddProgram = () => {
+const AddProgram = ({ allowMobile = false }: { allowMobile?: boolean }) => {
 	const device = useDeviceDetect();
 	const router = useRouter();
 	const user = useReactiveVar(userVar);
@@ -163,7 +163,7 @@ const AddProgram = () => {
 
 	if (!authReady) return <p>Loading profile...</p>;
 	if (user.memberType !== 'TRAINER') return <p>Only trainers can manage programs.</p>;
-	if (device === 'mobile') return <div>ADD PROGRAM MOBILE PAGE</div>;
+	if (device === 'mobile' && !allowMobile) return <div>ADD PROGRAM MOBILE PAGE</div>;
 	if (programId && (loading || loadedId !== programId || loadError))
 		return (
 			<Stack>

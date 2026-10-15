@@ -7,7 +7,7 @@ export interface MemberUpdate {
 	memberPhone?: string;
 	memberNick?: string;
 	memberPassword?: string;
-	memberFullName?: string;
+	memberFullName?: string | null;
 	memberImage?: string;
 	memberAddress?: string;
 	memberDesc?: string;

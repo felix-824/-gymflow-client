@@ -32,11 +32,16 @@ const withLayoutBasic = (Component: any) => {
 		const communityArticle = router.pathname === '/community/detail';
 		const trainerSchedule = router.pathname === '/mypage' && router.query.category === 'trainerSchedule';
 		const trainerReservations = router.pathname === '/mypage' && router.query.category === 'trainerReservations';
+		const trainerDashboard = router.pathname === '/mypage' && router.query.category === 'trainerDashboard';
+		const trainerProfile = router.pathname === '/mypage' && user.memberType === 'TRAINER' &&
+			(router.query.category == null || router.query.category === 'myProfile');
+		const compactTrainerPrograms = compactViewport && router.pathname === '/mypage' && user.memberType === 'TRAINER' &&
+			['myPrograms', 'addProgram'].includes(String(router.query.category));
 		const myBookings = (router.pathname === '/mypage' && (router.query.category === 'myBookings' ||
 			(router.query.category == null && compactViewport && user.memberType === 'USER'))) || router.pathname === '/mypage/review';
 		const theme = useTheme();
 		const programTheme = useMemo(() => {
-			if (router.pathname !== '/program' && !communityDiscovery && !communityArticle && !myBookings && !trainerReservations) return theme;
+			if (router.pathname !== '/program' && !communityDiscovery && !communityArticle && !myBookings && !trainerReservations && !trainerDashboard && !trainerProfile && !compactTrainerPrograms) return theme;
 			const fontFamily = "'Plus Jakarta Sans', sans-serif";
 			const typography = Object.fromEntries(
 				Object.entries(theme.typography).map(([variant, value]) => [
@@ -50,7 +55,7 @@ const withLayoutBasic = (Component: any) => {
 				},
 				typography: { ...typography, fontFamily },
 			});
-		}, [theme, router.pathname, communityDiscovery, communityArticle, myBookings, trainerReservations]);
+		}, [theme, router.pathname, communityDiscovery, communityArticle, myBookings, trainerReservations, trainerDashboard, trainerProfile, compactTrainerPrograms]);
 
 		const memoizedValues = useMemo(() => {
 			let title = '',
@@ -157,16 +162,16 @@ const withLayoutBasic = (Component: any) => {
 		}, [compactTrainer, compactTrainerDetail]);
 
 		/** HANDLERS **/
-		if (trainerSchedule || trainerReservations) {
+		if (trainerSchedule || trainerReservations || trainerDashboard || trainerProfile || compactTrainerPrograms) {
 			return (
-				<ThemeProvider theme={trainerReservations ? programTheme : theme}>
+				<ThemeProvider theme={trainerSchedule ? theme : programTheme}>
 					<Head>
 						<title>GymFlow</title>
 						<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" />
 					</Head>
-					<Stack id="pc-wrap" className={`trainer-schedule-layout${trainerReservations ? ' trainer-reservations-layout' : ''}`}>
+					<Stack id="pc-wrap" className={`trainer-schedule-layout${trainerReservations || trainerDashboard || trainerProfile || compactTrainerPrograms ? ' trainer-reservations-layout' : ''}${trainerDashboard ? ' trainer-dashboard-layout' : ''}${trainerProfile ? ' trainer-profile-layout' : ''}${compactTrainerPrograms ? ' trainer-programs-mobile-layout' : ''}`}>
 						<Stack id="main" component="main"><Component {...props} /></Stack>
-						{device !== 'mobile' && !trainerReservations && <Chat />}
+						{device !== 'mobile' && trainerSchedule && <Chat />}
 						<Stack id="footer" component="footer"><Footer variant="programs" /></Stack>
 					</Stack>
 				</ThemeProvider>

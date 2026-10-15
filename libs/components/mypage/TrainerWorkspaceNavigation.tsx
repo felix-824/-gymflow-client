@@ -14,7 +14,7 @@ import { userVar } from '../../../apollo/store';
 import { REACT_APP_API_URL } from '../../config';
 
 const workspaceDestinations = [
-	{ label: 'Overview', icon: GridViewOutlinedIcon },
+	{ label: 'Dashboard', icon: GridViewOutlinedIcon, category: 'trainerDashboard' },
 	{ label: 'Programs', icon: FitnessCenterOutlinedIcon, category: 'myPrograms' },
 	{ label: 'Schedule', icon: CalendarMonthOutlinedIcon, category: 'trainerSchedule' },
 	{ label: 'Reservations', icon: EventNoteOutlinedIcon, category: 'trainerReservations' },
@@ -25,7 +25,7 @@ export function TrainerWorkspaceNavigation({
 	active,
 	mobile = false,
 }: {
-	active: 'Schedule' | 'Reservations';
+	active: 'Dashboard' | 'Programs' | 'Schedule' | 'Reservations' | 'Profile';
 	mobile?: boolean;
 }) {
 	const { t } = useTranslation('common');
@@ -34,31 +34,33 @@ export function TrainerWorkspaceNavigation({
 			className={mobile ? 'schedule-mobile-navigation' : 'schedule-desktop-navigation'}
 			aria-label={t('Trainer schedule.Navigation')}
 		>
-			{workspaceDestinations
-				.filter(({ label }) => mobile || label !== 'Profile')
-				.map(({ label, icon: Icon, category }) =>
-					category ? (
-						<Link
-							passHref
-							key={label}
-							href={{ pathname: '/mypage', query: { category } }}
-							aria-current={label === active ? 'page' : undefined}
-						>
-							{mobile && <Icon aria-hidden="true" />}
-							<span>{t(`Trainer schedule.${label}`)}</span>
-						</Link>
-					) : (
-						<button key={label} type="button" disabled title={t('Trainer schedule.Not available')}>
-							{mobile && <Icon aria-hidden="true" />}
-							<span>{t(`Trainer schedule.${label}`)}</span>
-						</button>
-					),
-				)}
+			{workspaceDestinations.map(({ label, icon: Icon, category }) =>
+				category ? (
+					<Link
+						passHref
+						key={label}
+						href={{ pathname: '/mypage', query: { category } }}
+						aria-current={label === active ? 'page' : undefined}
+					>
+						{mobile && <Icon aria-hidden="true" />}
+						<span>{t(`Trainer schedule.${label}`)}</span>
+					</Link>
+				) : (
+					<button key={label} type="button" disabled title={t('Trainer schedule.Not available')}>
+						{mobile && <Icon aria-hidden="true" />}
+						<span>{t(`Trainer schedule.${label}`)}</span>
+					</button>
+				),
+			)}
 		</nav>
 	);
 }
 
-export function TrainerWorkspaceHeader({ active }: { active: 'Schedule' | 'Reservations' }) {
+export function TrainerWorkspaceHeader({
+	active,
+}: {
+	active: 'Dashboard' | 'Programs' | 'Schedule' | 'Reservations' | 'Profile';
+}) {
 	const { t } = useTranslation('common');
 	const user = useReactiveVar(userVar);
 	const name = user.memberFullName?.trim() || user.memberNick;

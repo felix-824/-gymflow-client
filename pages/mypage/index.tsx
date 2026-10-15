@@ -17,6 +17,11 @@ import WriteArticle from '../../libs/components/mypage/WriteArticle';
 import TrainerSchedule from '../../libs/components/mypage/TrainerSchedule';
 import MyBookings from '../../libs/components/mypage/MyBookings';
 import TrainerReservations from '../../libs/components/mypage/TrainerReservations';
+import TrainerDashboard from '../../libs/components/mypage/TrainerDashboard';
+import { TrainerWorkspaceHeader, TrainerWorkspaceNavigation } from '../../libs/components/mypage/TrainerWorkspaceNavigation';
+import { trainerReservationsAccess } from '../../libs/trainer-reservations';
+import { getJwtToken, updateUserInfo } from '../../libs/auth';
+import { Button } from '@mui/material';
 import { useTranslation } from 'next-i18next';
 import Link from 'next/link';
 import MemberFollowers from '../../libs/components/member/MemberFollowers';
@@ -49,7 +54,7 @@ const authError = useReactiveVar(authErrorVar);
 
 	/** LIFECYCLES **/
 	useEffect(() => {
-		if (router.isReady && category !== 'myBookings' && category !== 'trainerReservations' && authReady && !authError && !user._id) router.push('/').then();
+		if (router.isReady && category !== 'myBookings' && category !== 'trainerReservations' && category !== 'trainerDashboard' && authReady && !authError && !user._id) router.push('/').then();
 	}, [user, authReady, authError, router, category]);
 
 	/** HANDLERS **/
@@ -121,6 +126,20 @@ const likeMemberHandler = async (id: string, refetch: any, query: any) => {
 
 	if (category === 'myBookings') return <MyBookings />;
 	if (category === 'trainerReservations') return <TrainerReservations />;
+	if (category === 'trainerDashboard') return <TrainerDashboard />;
+	if (category === 'myProfile' && user.memberType === 'TRAINER') {
+		const access = trainerReservationsAccess(authReady && router.isReady, authError, user);
+		return <div className="trainer-profile-workspace">
+			<TrainerWorkspaceHeader active="Profile" />
+			{access === 'ready' ? <MyProfile key={user._id} trainerWorkspace /> : (
+				<div className="trainer-profile-access" role={access === 'error' ? 'alert' : 'status'}>
+					<p>{t(access === 'initializing' || access === 'error' ? `MyBookings.${access}` : `Trainer reservations.${access}`)}</p>
+					{access === 'error' && <Button onClick={() => void updateUserInfo(getJwtToken())}>{t('MyBookings.Retry')}</Button>}
+				</div>
+			)}
+			<TrainerWorkspaceNavigation active="Profile" mobile />
+		</div>;
+	}
 	if (authError) return <p role='alert'>{authError}</p>;
 if (!authReady || !user._id) return <p>Loading profile...</p>;
 if (category === 'trainerSchedule') {
@@ -130,6 +149,15 @@ if (category === 'trainerSchedule') {
 			<Link passHref href="/mypage">{t('Trainer schedule.Back to my page')}</Link>
 		</div>
 	);
+}
+if (compactViewport && user.memberType === 'TRAINER' && ['myPrograms', 'addProgram'].includes(category)) {
+	return <div className="trainer-mobile-program-workspace">
+		<TrainerWorkspaceHeader active="Programs" />
+		<div id="my-page"><div className="container">
+			{category === 'myPrograms' ? <MyPrograms allowMobile /> : <AddProgram allowMobile />}
+		</div></div>
+		<TrainerWorkspaceNavigation active="Programs" mobile />
+	</div>;
 }
 if (device === 'mobile') {
 		return <div>MY PAGE{user.memberType === 'TRAINER' && (

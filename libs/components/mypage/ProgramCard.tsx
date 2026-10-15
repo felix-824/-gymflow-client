@@ -17,10 +17,11 @@ interface ProgramCardProps {
 	updateProgramHandler?: any;
 	managementInput?: any;
 	busy?: boolean;
+	allowMobile?: boolean;
 }
 
 export const ProgramCard = (props: ProgramCardProps) => {
-	const { program, deleteProgramHandler, memberPage, updateProgramHandler, managementInput, busy } = props;
+	const { program, deleteProgramHandler, memberPage, updateProgramHandler, managementInput, busy, allowMobile } = props;
 	const device = useDeviceDetect();
 	const router = useRouter();
 	const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
@@ -53,7 +54,7 @@ export const ProgramCard = (props: ProgramCardProps) => {
 		setAnchorEl(null);
 	};
 
-	if (device === 'mobile') {
+	if (device === 'mobile' && !allowMobile) {
 		return <div>MOBILE PROGRAM CARD</div>;
 	} else
 		return (

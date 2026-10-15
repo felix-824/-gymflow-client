@@ -319,3 +319,437 @@
 		}
 	}
 }
+
+#pc-wrap.trainer-profile-layout {
+	background: #f8f9fb;
+	.trainer-profile-workspace,
+	.trainer-profile-workspace * {
+		font-family: 'Plus Jakarta Sans', sans-serif;
+	}
+	#trainer-profile-page,
+	.trainer-profile-access {
+		width: calc(100% - 48px);
+		max-width: 848px;
+		margin: 0 auto;
+		padding: 32px 0 64px;
+	}
+	.trainer-profile-breadcrumb {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		margin-bottom: 12px;
+		font-size: 12px;
+		font-weight: 600;
+		color: #a53425;
+		a {
+			color: #626978;
+			text-transform: uppercase;
+		}
+	}
+	.trainer-profile-heading {
+		margin-bottom: 24px;
+		h1 {
+			margin: 0;
+			font-size: 36px;
+			font-weight: 700;
+			line-height: 1.22;
+			letter-spacing: -0.025em;
+		}
+		p {
+			margin: 4px 0 0;
+			color: #626978;
+			font-size: 14px;
+			line-height: 1.6;
+		}
+	}
+	.trainer-profile-surface {
+		padding: 32px;
+		border-radius: 12px;
+		background: #fff;
+		box-shadow: 0 2px 6px rgba(18, 21, 29, 0.04);
+		min-width: 0;
+	}
+	.trainer-profile-photo {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 24px;
+		padding: 24px;
+		margin-bottom: 24px;
+		border-radius: 12px;
+		background: #f8f9fb;
+	}
+	.trainer-profile-photo-info {
+		display: flex;
+		align-items: center;
+		gap: 24px;
+		min-width: 0;
+	}
+	.trainer-profile-image {
+		position: relative;
+		width: 112px;
+		height: 112px;
+		flex: 0 0 112px;
+		img {
+			display: block;
+			width: 100%;
+			height: 100%;
+			border-radius: 16px;
+			object-fit: cover;
+			background: #edeef0;
+		}
+	}
+	.trainer-profile-camera {
+		display: none;
+	}
+	.trainer-profile-photo-name {
+		min-width: 0;
+		span {
+			display: block;
+			margin-bottom: 4px;
+			font-size: 11px;
+			font-weight: 600;
+			text-transform: uppercase;
+			letter-spacing: 0.04em;
+			color: #626978;
+		}
+		strong {
+			font-size: 18px;
+			font-weight: 600;
+			line-height: 1.4;
+			overflow-wrap: anywhere;
+		}
+	}
+	.trainer-profile-upload {
+		flex-shrink: 0;
+		gap: 6px;
+		min-height: 44px;
+		padding: 10px 20px;
+		border-radius: 999px;
+		background: #fff;
+		color: #191c1e;
+		font-size: 14px;
+		font-weight: 600;
+		text-transform: none;
+		box-shadow: 0 1px 3px rgba(18, 21, 29, 0.08);
+		svg {
+			display: none;
+		}
+		&:hover {
+			background: #f2f4f6;
+		}
+	}
+	.profile-mobile-copy {
+		display: none;
+	}
+	.trainer-profile-fields {
+		display: grid;
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+		gap: 28px 24px;
+	}
+	.trainer-profile-field {
+		min-width: 0;
+		label {
+			display: block;
+			margin-bottom: 6px;
+			font-size: 11px;
+			line-height: 16px;
+			font-weight: 600;
+			text-transform: uppercase;
+			letter-spacing: 0.04em;
+			color: #626978;
+		}
+		> div {
+			display: flex;
+			align-items: center;
+			min-width: 0;
+			background: #f2f4f6;
+			border-radius: 8px;
+		}
+		> div:focus-within {
+			background: #fff;
+			box-shadow: 0 0 0 3px rgba(199, 76, 59, 0.15);
+		}
+		svg {
+			display: none;
+			flex-shrink: 0;
+			width: 18px;
+			height: 18px;
+			color: #626978;
+			margin-left: 14px;
+		}
+		input {
+			width: 100%;
+			min-width: 0;
+			height: 44px;
+			padding: 0 16px;
+			border: 0;
+			border-radius: inherit;
+			background: transparent;
+			color: #191c1e;
+			font-size: 14px;
+			outline: none;
+		}
+		input:disabled {
+			opacity: 0.65;
+		}
+	}
+	.field-nickname,
+	.field-address {
+		grid-column: 1 / -1;
+	}
+	.field-nickname svg {
+		display: block;
+	}
+	.field-nickname input {
+		padding-left: 8px;
+	}
+	.trainer-profile-save {
+		display: flex;
+		align-items: center;
+		justify-content: flex-end;
+		gap: 16px;
+		margin-top: 32px;
+	}
+	.trainer-profile-feedback {
+		flex: 1;
+		margin: 0;
+		color: #a53425;
+		font-size: 13px;
+		line-height: 1.6;
+		overflow-wrap: anywhere;
+	}
+	.trainer-profile-feedback.is-success {
+		color: #166534;
+	}
+	.trainer-profile-save-button {
+		flex-shrink: 0;
+		gap: 8px;
+		min-height: 44px;
+		padding: 12px 32px;
+		border-radius: 12px;
+		background: #a53425;
+		color: #fff;
+		font-size: 14px;
+		font-weight: 600;
+		text-transform: none;
+		box-shadow: 0 1px 3px rgba(18, 21, 29, 0.08);
+		svg {
+			display: none;
+		}
+		&:hover {
+			background: #881f13;
+		}
+	}
+	.trainer-profile-session {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 16px;
+		margin: 32px -32px -32px;
+		padding: 32px;
+		background: #fbfcfd;
+		border-radius: 0 0 12px 12px;
+		h2 {
+			margin: 0;
+			font-size: 16px;
+			font-weight: 600;
+			line-height: 1.4;
+		}
+		p {
+			margin: 4px 0 0;
+			color: #626978;
+			font-size: 13px;
+			line-height: 1.6;
+		}
+	}
+	.trainer-profile-logout {
+		flex-shrink: 0;
+		gap: 6px;
+		padding: 8px 12px;
+		min-height: 44px;
+		border-radius: 8px;
+		font-size: 14px;
+		font-weight: 600;
+		color: #626978;
+		text-transform: none;
+		svg {
+			width: 18px;
+			height: 18px;
+		}
+		&:hover {
+			background: #edeef0;
+			color: #191c1e;
+		}
+	}
+	.schedule-desktop-navigation a[aria-current='page'] {
+		background: #ffffff20;
+		color: #fff;
+		border-radius: 999px;
+	}
+	@media (max-width: 767px) {
+		padding-bottom: calc(96px + env(safe-area-inset-bottom, 0px));
+		.schedule-workspace-header {
+			background: #f8f9fb;
+			color: #191c1e;
+		}
+		.schedule-workspace-header-inner {
+			min-height: 64px;
+		}
+		.schedule-workspace-label {
+			padding: 3px 6px;
+			border-radius: 999px;
+			background: #fceeea;
+			color: #a53425;
+			font-size: 9px;
+		}
+		.schedule-workspace-label .schedule-desktop-copy {
+			display: inline;
+		}
+		.schedule-workspace-label .schedule-mobile-copy {
+			display: none;
+		}
+		#trainer-profile-page,
+		.trainer-profile-access {
+			width: calc(100% - 32px);
+			padding: 8px 0 24px;
+		}
+		.trainer-profile-breadcrumb {
+			display: none;
+		}
+		.trainer-profile-heading {
+			margin-bottom: 24px;
+			h1 {
+				font-size: 24px;
+				line-height: 32px;
+			}
+			p {
+				font-size: 13px;
+				line-height: 18px;
+			}
+		}
+		.trainer-profile-surface {
+			display: contents;
+		}
+		.trainer-profile-surface form {
+			padding: 16px;
+			min-width: 0;
+			border-radius: 12px;
+			background: #fff;
+			box-shadow: 0 2px 6px rgba(18, 21, 29, 0.04);
+		}
+		.trainer-profile-photo {
+			flex-direction: column;
+			gap: 14px;
+			margin: 0;
+			padding: 8px 0 24px;
+			background: transparent;
+		}
+		.trainer-profile-photo-info {
+			display: block;
+		}
+		.trainer-profile-photo-name {
+			display: none;
+		}
+		.trainer-profile-image {
+			width: 96px;
+			height: 96px;
+		}
+		.trainer-profile-image img {
+			border-radius: 50%;
+		}
+		.trainer-profile-camera {
+			display: flex;
+			position: absolute;
+			bottom: 0;
+			right: 0;
+			width: 32px;
+			min-width: 32px;
+			height: 32px;
+			padding: 0;
+			border-radius: 50%;
+			background: #fff;
+			color: #191c1e;
+			box-shadow: 0 2px 6px rgba(18, 21, 29, 0.12);
+		}
+		.trainer-profile-camera::after {
+			content: '';
+			position: absolute;
+			inset: -6px;
+		}
+		.trainer-profile-camera svg {
+			width: 18px;
+			height: 18px;
+		}
+		.trainer-profile-upload {
+			border-radius: 12px;
+			padding: 8px 16px;
+			background: #f2f4f6;
+			font-size: 14px;
+			box-shadow: none;
+			max-width: 100%;
+		}
+		.trainer-profile-upload svg {
+			display: block;
+			width: 18px;
+			height: 18px;
+		}
+		.profile-desktop-copy {
+			display: none;
+		}
+		.profile-mobile-copy {
+			display: inline;
+		}
+		.trainer-profile-fields {
+			grid-template-columns: minmax(0, 1fr);
+			gap: 16px;
+		}
+		.trainer-profile-field > div {
+			border-radius: 12px;
+		}
+		.trainer-profile-field svg {
+			display: block;
+		}
+		.trainer-profile-field input {
+			padding-left: 8px;
+		}
+		.trainer-profile-save {
+			margin-top: 28px;
+			flex-direction: column;
+			align-items: stretch;
+		}
+		.trainer-profile-save-button {
+			width: 100%;
+			padding: 14px 24px;
+		}
+		.trainer-profile-save-button svg {
+			display: block;
+			width: 18px;
+			height: 18px;
+		}
+		.trainer-profile-session {
+			position: relative;
+			flex-direction: column;
+			margin: 32px 0 0;
+			padding: 48px 0 16px;
+			background: transparent;
+			border-radius: 0;
+		}
+		.trainer-profile-session::before {
+			content: '';
+			position: absolute;
+			top: 24px;
+			left: calc(50% - 24px);
+			width: 48px;
+			height: 3px;
+			border-radius: 999px;
+			background: #e7e8ea;
+		}
+		.trainer-profile-session-copy {
+			display: none;
+		}
+		#footer {
+			display: none;
+		}
+	}
+}

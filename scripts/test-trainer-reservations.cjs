@@ -216,6 +216,7 @@ async function createFixture(options = {}) {
 			.compile();
 		app = module.createNestApplication({ logger: false });
 		app.useGlobalPipes(new ValidationPipe());
+		if (options.multipart) app.use(backRequire('graphql-upload').graphqlUploadExpress({ maxFileSize: 15000000, maxFiles: 1 }));
 		if (options.origin) app.enableCors({ origin: options.origin });
 		await app.listen(options.port ?? 0, '127.0.0.1');
 		const uri = (await app.getUrl()) + '/graphql',

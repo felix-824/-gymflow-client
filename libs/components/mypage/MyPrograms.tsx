@@ -15,7 +15,7 @@ import { UPDATE_PROGRAM } from '../../../apollo/user/mutation';
 import { GET_TRAINER_PROGRAMS } from '../../../apollo/user/query';
 import { sweetConfirmAlert, sweetErrorHandling } from './../../sweetAlert';
 
-const MyPrograms: NextPage = ({ initialInput, ...props }: any) => {
+const MyPrograms: NextPage<{ initialInput?: TrainerProgramsInquiry; allowMobile?: boolean }> = ({ initialInput, allowMobile = false }) => {
 	const device = useDeviceDetect();
 	const router = useRouter();
 	const [searchFilter, setSearchFilter] = useState<TrainerProgramsInquiry>(
@@ -126,7 +126,7 @@ const MyPrograms: NextPage = ({ initialInput, ...props }: any) => {
 	if (!authReady) return <p>Loading profile...</p>;
 	if (user.memberType !== 'TRAINER') return <p>Only trainers can manage programs.</p>;
 
-	if (device === 'mobile') {
+	if (device === 'mobile' && !allowMobile) {
 		return <div>GYMFLOW PROGRAMS MOBILE</div>;
 	} else {
 		return (
@@ -173,6 +173,7 @@ const MyPrograms: NextPage = ({ initialInput, ...props }: any) => {
 								return (
 									<ProgramCard
 										program={program}
+										allowMobile={allowMobile}
 										key={program._id}
 										managementInput={searchFilter}
 										busy={changingStatus}
@@ -212,7 +213,7 @@ MyPrograms.defaultProps = {
 		limit: 5,
 		sort: 'createdAt',
 		search: {
-			programStatus: 'ACTIVE',
+			programStatus: ProgramStatus.ACTIVE,
 		},
 	},
 };
