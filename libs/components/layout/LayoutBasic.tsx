@@ -162,6 +162,16 @@ const withLayoutBasic = (Component: any) => {
 		}, [compactTrainer, compactTrainerDetail]);
 
 		/** HANDLERS **/
+		if (authHeader) {
+			return <ThemeProvider theme={theme}>
+				<Head>
+					<title>GymFlow</title>
+					<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+					<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" />
+				</Head>
+				<main className="auth-layout"><Component {...props} /></main>
+			</ThemeProvider>;
+		}
 		if (trainerSchedule || trainerReservations || trainerDashboard || trainerProfile || compactTrainerPrograms) {
 			return (
 				<ThemeProvider theme={trainerSchedule ? theme : programTheme}>

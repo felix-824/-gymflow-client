@@ -126,11 +126,16 @@ export const updateUserInfo = (jwtToken: string, member?: Member): Promise<void>
 	return request;
 };
 
-export const logIn = async (nick: string, password: string): Promise<void> => {
+export const logIn = async (
+	nick: string,
+	password: string,
+	context: { handleErrorLocally?: boolean } = {},
+): Promise<void> => {
 	const client = initializeApollo();
 	const result = await client.mutate({
 		mutation: LOGIN,
 		variables: { input: { memberNick: nick, memberPassword: password } },
+		context,
 	});
 	const member: Member = result.data?.login;
 	if (!member?.accessToken) throw new Error('Login failed. Please check your credentials.');
@@ -139,12 +144,19 @@ export const logIn = async (nick: string, password: string): Promise<void> => {
 	await updateUserInfo(member.accessToken, member);
 };
 
-export const signUp = async (nick: string, password: string, phone: string, type: string): Promise<void> => {
+export const signUp = async (
+	nick: string,
+	password: string,
+	phone: string,
+	type: string,
+	context: { handleErrorLocally?: boolean } = {},
+): Promise<void> => {
 	if (!['USER', 'TRAINER'].includes(type)) throw new Error('Invalid signup role');
 	const client = initializeApollo();
 	const result = await client.mutate({
 		mutation: SIGN_UP,
 		variables: { input: { memberNick: nick, memberPassword: password, memberPhone: phone, memberType: type } },
+		context,
 	});
 	const member: Member = result.data?.signup;
 	if (!member?.accessToken) throw new Error('Signup failed. Please try again.');
