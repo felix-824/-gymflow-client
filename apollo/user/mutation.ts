@@ -1,5 +1,11 @@
 import { gql } from '@apollo/client';
 
+export const CREATE_REVIEW = gql`
+	mutation CreateReview($input: ReviewInput!) {
+		createReview(input: $input) { _id rating content programId createdAt }
+	}
+`;
+
 export const UPDATE_TRAINER_RESERVATION = gql`
 	mutation UpdateTrainerReservation($input: TrainerReservationUpdate!) {
 		updateTrainerReservation(input: $input) {

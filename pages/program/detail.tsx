@@ -20,6 +20,7 @@ import { serverSideTranslations } from 'next-i18next/serverSideTranslations';
 import { useTranslation } from 'next-i18next';
 import withLayoutFull from '../../libs/components/layout/LayoutFull';
 import ProgramCard from '../../libs/components/program/ProgramCard';
+import ProgramReviews from '../../libs/components/program/ProgramReviews';
 import { Program } from '../../libs/types/program/program';
 import { ProgramType } from '../../libs/enums/program.enum';
 import { Direction } from '../../libs/enums/common.enum';
@@ -327,6 +328,7 @@ const ProgramDetail: NextPage = () => {
 							</Link>
 						</section>
 					</div>
+					<ProgramReviews key={programId} programId={programId} />
 					{destinationPrograms.length > 0 && (
 						<section className="detail-related-programs" aria-labelledby="detail-related-title">
 							<Typography component="h2" id="detail-related-title">

@@ -27,7 +27,8 @@ const programDestinations = [
 
 const isDestinationActive = (pathname: string, href: string) =>
 	pathname === href || (pathname === '/trainer/detail' && href === '/trainer') ||
-	(pathname === '/program/booking' && href === '/program');
+	(pathname === '/program/booking' && href === '/program') ||
+	(pathname === '/mypage/review' && href === '/mypage');
 
 export const ProgramsHeader = () => {
 	const router = useRouter();

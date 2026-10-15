@@ -33,6 +33,7 @@ export interface ReservationTrainerSummary {
 }
 
 export interface MyReservation extends ReservationReceipt {
+	reviewId?: string | null;
 	specialRequest?: string | null;
 	memberId: string;
 	trainerId: string;

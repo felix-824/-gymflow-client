@@ -1,3 +1,17 @@
+@media (max-width: 767px) {
+	#pc-wrap.program-detail-layout,
+	#mobile-wrap.program-detail-layout {
+		padding-bottom: 0;
+		#footer {
+			display: none;
+		}
+		#program-detail-page {
+			padding-top: 0;
+			padding-bottom: calc(112px + env(safe-area-inset-bottom, 0px));
+		}
+	}
+}
+
 #pc-wrap {
 	#program-detail-page {
 		position: relative;

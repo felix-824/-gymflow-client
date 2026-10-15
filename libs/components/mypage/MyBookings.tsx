@@ -39,6 +39,7 @@ import {
 } from '../../my-bookings';
 import { MyReservation, MyReservations } from '../../types/reservation/reservation';
 import { ReservationsInquiry } from '../../types/reservation/reservation.inquiry';
+import { reservationReviewState } from '../../reviews';
 
 interface ReservationQuery {
 	getMyReservations: MyReservations;
@@ -179,6 +180,11 @@ function ReservationCard({
 									: 'MyBookings.Cancel Reservation',
 							)}
 						</Button>
+					</div>
+				)}
+				{reservationReviewState(reservation) !== 'ineligible' && (
+					<div className="my-bookings-review">
+						{reservationReviewState(reservation) === 'submitted' ? <span>{t('Reviews.Review submitted')}</span> : <Link href={{ pathname: '/mypage/review', query: { reservationId: reservation._id, page: readMyBookingsQuery(query).page } }}>{t('Reviews.Leave Review')}</Link>}
 					</div>
 				)}
 			</div>

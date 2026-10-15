@@ -32,6 +32,7 @@ export const GET_MY_RESERVATIONS = gql`
 				startTime
 				endTime
 				reservationStatus
+				reviewId
 				specialRequest
 				memberId
 				trainerId
@@ -54,6 +55,23 @@ export const GET_MY_RESERVATIONS = gql`
 				}
 			}
 			metaCounter { total }
+		}
+	}
+`;
+
+export const GET_REVIEWS = gql`
+	query GetReviews($input: ReviewsInquiry!) {
+		getReviews(input: $input) {
+			list {
+				_id
+				rating
+				content
+				programId
+				createdAt
+				memberData { _id memberNick memberFullName memberImage }
+			}
+			metaCounter { total }
+			averageRating
 		}
 	}
 `;

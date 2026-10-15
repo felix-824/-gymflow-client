@@ -7,6 +7,8 @@ import Footer from '../Footer';
 import { ProgramsBottomNavigation } from '../program/ProgramsNavigation';
 import { Stack, useMediaQuery } from '@mui/material';
 import { createTheme, ThemeProvider, useTheme } from '@mui/material/styles';
+import { useReactiveVar } from '@apollo/client';
+import { userVar } from '../../../apollo/store';
 
 import Chat from '../Chat';
 
@@ -20,6 +22,7 @@ const withLayoutBasic = (Component: any) => {
 		const router = useRouter();
 		const { t, i18n } = useTranslation('common');
 		const device = useDeviceDetect();
+		const user = useReactiveVar(userVar);
 		const compactViewport = useMediaQuery('(max-width:767px)');
 		const compactTrainer = compactViewport && router.pathname === '/trainer';
 		const trainerDetail = router.pathname === '/trainer/detail';
@@ -29,7 +32,8 @@ const withLayoutBasic = (Component: any) => {
 		const communityArticle = router.pathname === '/community/detail';
 		const trainerSchedule = router.pathname === '/mypage' && router.query.category === 'trainerSchedule';
 		const trainerReservations = router.pathname === '/mypage' && router.query.category === 'trainerReservations';
-		const myBookings = router.pathname === '/mypage' && router.query.category === 'myBookings';
+		const myBookings = (router.pathname === '/mypage' && (router.query.category === 'myBookings' ||
+			(router.query.category == null && compactViewport && user.memberType === 'USER'))) || router.pathname === '/mypage/review';
 		const theme = useTheme();
 		const programTheme = useMemo(() => {
 			if (router.pathname !== '/program' && !communityDiscovery && !communityArticle && !myBookings && !trainerReservations) return theme;

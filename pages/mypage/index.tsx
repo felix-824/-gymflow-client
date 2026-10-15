@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import { useRouter } from 'next/router';
 import { NextPage } from 'next';
-import { Stack } from '@mui/material';
+import { Stack, useMediaQuery } from '@mui/material';
 import useDeviceDetect from '../../libs/hooks/useDeviceDetect';
 import withLayoutBasic from '../../libs/components/layout/LayoutBasic';
 import MyPrograms from '../../libs/components/mypage/MyPrograms';
@@ -39,7 +39,8 @@ const MyPage: NextPage = () => {
 const authReady = useReactiveVar(authReadyVar);
 const authError = useReactiveVar(authErrorVar);
 	const router = useRouter();
-	const category: any = router.query?.category ?? 'myProfile';
+	const compactViewport = useMediaQuery('(max-width:767px)');
+	const category: any = router.query?.category ?? (compactViewport && user.memberType === 'USER' ? 'myBookings' : 'myProfile');
 
 	/** APOLLO REQUESTS **/
 	const [subscribe] = useMutation(SUBSCRIBE);
