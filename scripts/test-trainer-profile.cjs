@@ -138,11 +138,13 @@ async function integration() {
 		});
 		let confirmedLogout = false,
 			logoutCalls = 0;
+		const logoutDestinations = [];
 		const authExports = {
 			...auth,
-			logOut: () => {
+			logOut: (...args) => {
 				logoutCalls++;
-				auth.logOut();
+				logoutDestinations.push(args[0]);
+				return auth.logOut(...args);
 			},
 		};
 		const sweet = {
@@ -432,10 +434,11 @@ async function integration() {
 		click('.trainer-profile-logout');
 		await until(() => !document.querySelector('#trainer-profile-page'));
 		assert.equal(logoutCalls, beforeLogout + 1);
+		assert.equal(logoutDestinations.at(-1), undefined);
 		assert.equal(window.localStorage.getItem('accessToken'), null);
 		assert.equal(store.userVar()._id, '');
 		pass('real centralized logout confirmation, token clearing and removal of trainer content');
-		for (const member of [user, admin]) {
+		for (const member of [admin]) {
 			await signIn(member);
 			mobile = false;
 			router.query = { category: 'myProfile' };
@@ -464,6 +467,7 @@ async function integration() {
 			flushSync(() => logoutItem.click());
 			await until(() => store.userVar()._id === '');
 			assert.equal(logoutCalls, beforeLegacyLogout + 1);
+			assert.equal(logoutDestinations.at(-1), undefined);
 			await signIn(member);
 			mobile = true;
 			render();
@@ -473,8 +477,12 @@ async function integration() {
 		await signIn(user);
 		router.query = {};
 		render();
+		await until(() => document.querySelector('#user-profile-page'));
+		assert.ok(!document.querySelector('.trainer-profile-layout'));
+		router.query = { category: 'myBookings' };
+		render();
 		await until(() => document.querySelector('[data-test="my-bookings"]'));
-		pass('USER/ADMIN legacy Profile/sidebar/logout and USER default mobile My Bookings routing remain unchanged');
+		pass('ADMIN legacy Profile/sidebar/logout remain unchanged; USER mobile Profile default and explicit My Bookings route are isolated');
 		await signIn(otherTrainer);
 		mobile = false;
 		router.query = { category: 'myProfile' };

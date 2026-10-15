@@ -28,10 +28,13 @@ import CloudUploadOutlinedIcon from '@mui/icons-material/CloudUploadOutlined';
 import PhotoCameraOutlinedIcon from '@mui/icons-material/PhotoCameraOutlined';
 import CheckCircleOutlineRoundedIcon from '@mui/icons-material/CheckCircleOutlineRounded';
 import LogoutRoundedIcon from '@mui/icons-material/LogoutRounded';
+import DevicesOutlinedIcon from '@mui/icons-material/DevicesOutlined';
+import UserAccountNavigation from './UserAccountNavigation';
 
-const MyProfile: NextPage<{ initialValues?: MemberSelfUpdate; trainerWorkspace?: boolean }> = ({
+const MyProfile: NextPage<{ initialValues?: MemberSelfUpdate; trainerWorkspace?: boolean; userProfile?: boolean }> = ({
 	initialValues,
 	trainerWorkspace = false,
+	userProfile = false,
 }) => {
 	const device = useDeviceDetect();
 	const { t } = useTranslation('common');
@@ -39,8 +42,11 @@ const MyProfile: NextPage<{ initialValues?: MemberSelfUpdate; trainerWorkspace?:
 	const user = useReactiveVar(userVar);
 	const ready = useReactiveVar(authReadyVar);
 	const authError = useReactiveVar(authErrorVar);
+	const managedProfile = trainerWorkspace || userProfile;
+	const expectedRole = userProfile ? 'USER' : 'TRAINER';
+	const profileNamespace = userProfile ? 'User profile' : 'Trainer profile';
 	const [updateData, setUpdateData] = useState<MemberSelfUpdate>(() =>
-		trainerWorkspace
+		managedProfile
 			? {
 					memberNick: user.memberNick,
 					memberFullName: user.memberFullName ?? '',
@@ -59,21 +65,21 @@ const MyProfile: NextPage<{ initialValues?: MemberSelfUpdate; trainerWorkspace?:
 	const logoutLock = useRef(false);
 	const activeAccount = useCallback(
 		() =>
-			!trainerWorkspace ||
+			!managedProfile ||
 			(mounted.current &&
 				authReadyVar() &&
 				!authErrorVar() &&
 				userVar()._id === user._id &&
-				userVar().memberType === 'TRAINER' &&
+				userVar().memberType === expectedRole &&
 				userVar().memberStatus === 'ACTIVE' &&
 				getJwtToken() === token),
-		[trainerWorkspace, user._id, token],
+		[managedProfile, expectedRole, user._id, token],
 	);
 
 	/** APOLLO REQUESTS **/
 	const [updateMember, { loading: saving }] = useMutation<{ updateMember: Member }, { input: MemberSelfUpdate }>(
 		UPDATE_MEMBER,
-		{ context: { handleErrorLocally: trainerWorkspace } },
+		{ context: { handleErrorLocally: managedProfile } },
 	);
 
 	/** LIFECYCLES **/
@@ -90,15 +96,15 @@ const MyProfile: NextPage<{ initialValues?: MemberSelfUpdate; trainerWorkspace?:
 			memberPhone: user.memberPhone,
 			memberAddress: user.memberAddress,
 			memberImage: user.memberImage,
-			...(trainerWorkspace ? { memberFullName: user.memberFullName ?? '' } : {}),
+			...(managedProfile ? { memberFullName: user.memberFullName ?? '' } : {}),
 		}));
-	}, [user, trainerWorkspace]);
+	}, [user, managedProfile]);
 
 	/** HANDLERS **/
 	const uploadImage = async (e: any) => {
-		if (uploading || saving || !e.target.files?.length || !activeAccount() || (trainerWorkspace && writeLock.current))
+		if (uploading || saving || !e.target.files?.length || !activeAccount() || (managedProfile && writeLock.current))
 			return;
-		if (trainerWorkspace) {
+		if (managedProfile) {
 			writeLock.current = true;
 			setFeedback('');
 		}
@@ -149,7 +155,7 @@ const MyProfile: NextPage<{ initialValues?: MemberSelfUpdate; trainerWorkspace?:
 		} catch (err) {
 			if (!activeAccount()) return;
 			if (isAuthenticationError(err)) invalidateSession();
-			if (trainerWorkspace) setFeedback('Upload error');
+			if (managedProfile) setFeedback('Upload error');
 			else await sweetErrorHandling(err);
 		} finally {
 			if (mounted.current) {
@@ -161,8 +167,8 @@ const MyProfile: NextPage<{ initialValues?: MemberSelfUpdate; trainerWorkspace?:
 	};
 
 	const updateProfileHandler = useCallback(async () => {
-		if (saving || uploading || !activeAccount() || (trainerWorkspace && writeLock.current)) return;
-		if (trainerWorkspace) {
+		if (saving || uploading || !activeAccount() || (managedProfile && writeLock.current)) return;
+		if (managedProfile) {
 			writeLock.current = true;
 			setFeedback('');
 		}
@@ -171,7 +177,7 @@ const MyProfile: NextPage<{ initialValues?: MemberSelfUpdate; trainerWorkspace?:
 
 			const result = await updateMember({
 				variables: {
-					input: trainerWorkspace
+					input: managedProfile
 						? {
 								memberNick: updateData.memberNick,
 								memberFullName: updateData.memberFullName || null,
@@ -188,34 +194,34 @@ const MyProfile: NextPage<{ initialValues?: MemberSelfUpdate; trainerWorkspace?:
 			const jwtToken = member?.accessToken;
 			if (!member || !jwtToken) throw new Error('Invalid profile receipt');
 			if (
-				trainerWorkspace &&
-				(member._id !== user._id || member.memberType !== 'TRAINER' || member.memberStatus !== 'ACTIVE')
+				managedProfile &&
+				(member._id !== user._id || member.memberType !== expectedRole || member.memberStatus !== 'ACTIVE')
 			)
 				throw new Error('Invalid profile receipt');
 
 			await updateStorage({ jwtToken });
 			await updateUserInfo(jwtToken, member);
 
-			if (trainerWorkspace) {
+			if (managedProfile) {
 				if (mounted.current && userVar()._id === user._id && getJwtToken() === jwtToken) setFeedback('Saved');
 			} else await sweetMixinSuccessAlert('information updated successfully.');
 		} catch (err: any) {
 			if (!activeAccount()) return;
-			if (trainerWorkspace) {
+			if (managedProfile) {
 				if (isAuthenticationError(err)) invalidateSession();
 				setFeedback('Save error');
 			} else sweetErrorHandling(err).then();
 		} finally {
 			writeLock.current = false;
 		}
-	}, [updateData, saving, uploading, user._id, updateMember, trainerWorkspace, activeAccount]);
+	}, [updateData, saving, uploading, user._id, updateMember, managedProfile, expectedRole, activeAccount]);
 
 	const logoutHandler = async () => {
 		if (saving || uploading || writeLock.current || logoutLock.current || !activeAccount()) return;
 		logoutLock.current = true;
 		try {
-			if (await sweetConfirmAlert(t('Trainer profile.Logout confirmation'))) {
-				if (activeAccount()) logOut();
+			if (await sweetConfirmAlert(t(`${profileNamespace}.Logout confirmation`))) {
+				if (activeAccount()) await logOut();
 			}
 		} catch (err) {
 			if (activeAccount()) await sweetErrorHandling(err);
@@ -229,6 +235,186 @@ const MyProfile: NextPage<{ initialValues?: MemberSelfUpdate; trainerWorkspace?:
 			return true;
 		}
 	};
+
+	if (userProfile) {
+		if (!ready || authError || user.memberType !== 'USER' || user.memberStatus !== 'ACTIVE' || !user._id) return null;
+		const source =
+			updateData.memberImage && brokenImage !== updateData.memberImage
+				? /^https?:\/\//i.test(updateData.memberImage)
+					? updateData.memberImage
+					: `${REACT_APP_API_URL}/${updateData.memberImage.replace(/^\//, '')}`
+				: '/img/profile/defaultUser.svg';
+		return (
+			<div id="user-profile-page">
+				<header className="user-profile-heading">
+					<p className="user-profile-eyebrow">{t('User profile.Account Settings')}</p>
+					<h1>{t('User profile.Title')}</h1>
+					<p>{t('User profile.Intro')}</p>
+				</header>
+				<UserAccountNavigation active="Profile" />
+				<section className="user-profile-surface" aria-labelledby="user-profile-personal-title">
+					<div className="user-profile-section-heading">
+						<h2 id="user-profile-personal-title">{t('User profile.Personal Information')}</h2>
+						<p>{t('User profile.Personal description')}</p>
+					</div>
+					<form
+						name="user-profile"
+						autoComplete="on"
+						aria-label={t('User profile.Personal Information')}
+						aria-busy={saving || uploading}
+						onSubmit={(event) => {
+							event.preventDefault();
+							void updateProfileHandler();
+						}}
+					>
+						<div className="user-profile-photo">
+							<div className="user-profile-image">
+								<img
+									src={source}
+									alt={t('User profile.Profile image')}
+									onError={() => setBrokenImage(updateData.memberImage ?? '')}
+								/>
+								<Button
+									type="button"
+									className="user-profile-camera"
+									disabled={saving || uploading}
+									aria-label={t('User profile.Change Photo')}
+									onClick={() => imageInput.current?.click()}
+								>
+									<PhotoCameraOutlinedIcon />
+								</Button>
+							</div>
+							<input
+								ref={imageInput}
+								id="user-profile-image"
+								type="file"
+								hidden
+								accept="image/jpeg,image/png"
+								onChange={uploadImage}
+								disabled={saving || uploading}
+							/>
+							<Button
+								type="button"
+								className="user-profile-upload"
+								disabled={saving || uploading}
+								onClick={() => imageInput.current?.click()}
+							>
+								<CloudUploadOutlinedIcon aria-hidden="true" />
+								<span className="user-profile-desktop-copy">
+									{t(uploading ? 'User profile.Uploading' : 'User profile.Change Photo')}
+								</span>
+								<span className="user-profile-mobile-copy">
+									{t(uploading ? 'User profile.Uploading' : 'User profile.Upload image')}
+								</span>
+							</Button>
+						</div>
+						<div className="user-profile-fields">
+							<div className="user-profile-field user-profile-wide">
+								<label htmlFor="user-profile-nick">{t('User profile.Nickname')}</label>
+								<div className="user-profile-nick-input">
+									<AlternateEmailRoundedIcon aria-hidden="true" />
+									<input
+										id="user-profile-nick"
+										name="memberNick"
+										type="text"
+										autoComplete="nickname"
+										autoCapitalize="none"
+										spellCheck={false}
+										required
+										minLength={3}
+										maxLength={12}
+										value={updateData.memberNick ?? ''}
+										disabled={saving || uploading}
+										onChange={(event) => setUpdateData({ ...updateData, memberNick: event.target.value })}
+									/>
+								</div>
+							</div>
+							<div className="user-profile-field">
+								<label htmlFor="user-profile-name">{t('User profile.Full Name')}</label>
+								<div>
+									<input
+										id="user-profile-name"
+										name="memberFullName"
+										type="text"
+										autoComplete="name"
+										minLength={3}
+										maxLength={100}
+										value={updateData.memberFullName ?? ''}
+										disabled={saving || uploading}
+										onChange={(event) => setUpdateData({ ...updateData, memberFullName: event.target.value })}
+									/>
+								</div>
+							</div>
+							<div className="user-profile-field">
+								<label htmlFor="user-profile-phone">{t('User profile.Phone')}</label>
+								<div>
+									<input
+										id="user-profile-phone"
+										name="memberPhone"
+										type="tel"
+										autoComplete="tel"
+										required
+										value={updateData.memberPhone ?? ''}
+										disabled={saving || uploading}
+										onChange={(event) => setUpdateData({ ...updateData, memberPhone: event.target.value })}
+									/>
+								</div>
+							</div>
+							<div className="user-profile-field user-profile-wide">
+								<label htmlFor="user-profile-address">{t('User profile.Address')}</label>
+								<div>
+									<input
+										id="user-profile-address"
+										name="memberAddress"
+										type="text"
+										autoComplete="street-address"
+										value={updateData.memberAddress ?? ''}
+										disabled={saving || uploading}
+										onChange={(event) => setUpdateData({ ...updateData, memberAddress: event.target.value })}
+									/>
+								</div>
+							</div>
+						</div>
+						<div className="user-profile-save">
+							{feedback && (
+								<p
+									className={`user-profile-feedback${feedback === 'Saved' ? ' is-success' : ''}`}
+									role={feedback === 'Saved' ? 'status' : 'alert'}
+								>
+									{t(`User profile.${feedback}`)}
+								</p>
+							)}
+							<Button
+								type="submit"
+								variant="contained"
+								className="user-profile-save-button"
+								disabled={saving || uploading || doDisabledCheck()}
+							>
+								<CheckCircleOutlineRoundedIcon aria-hidden="true" />
+								{t(saving ? 'User profile.Saving' : 'User profile.Save Changes')}
+							</Button>
+						</div>
+					</form>
+				</section>
+				<section className="user-profile-session" aria-labelledby="user-profile-session-title">
+					<DevicesOutlinedIcon className="user-profile-session-icon" aria-hidden="true" />
+					<div className="user-profile-session-copy">
+						<h2 id="user-profile-session-title">{t('User profile.Account Session')}</h2>
+						<p>{t('User profile.Session description')}</p>
+					</div>
+					<Button
+						type="button"
+						className="user-profile-logout"
+						disabled={saving || uploading}
+						onClick={() => void logoutHandler()}
+					>
+						<LogoutRoundedIcon aria-hidden="true" />
+						{t('User profile.Log out')}
+					</Button>
+				</section>
+			</div>
+		);
+	}
 
 	if (trainerWorkspace) {
 		if (!ready || authError || user.memberType !== 'TRAINER' || user.memberStatus !== 'ACTIVE' || !user._id)

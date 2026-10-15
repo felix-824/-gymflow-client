@@ -33,7 +33,7 @@ export function invalidateSession() {
 	userVar({ ...emptyUser });
 	authErrorVar('');
 	authReadyVar(true);
-	void initializeApollo().clearStore();
+	return initializeApollo().clearStore();
 }
 
 export function isAuthenticationError(err: any): boolean {
@@ -166,6 +166,17 @@ export const signUp = async (
 };
 
 export const logOut = () => {
-	invalidateSession();
+	const member = userVar();
+	const isUser = Boolean(member._id) && member.memberType === 'USER';
+	const cleanup = invalidateSession();
+	if (isUser) {
+		return cleanup.then(
+			() => {
+				window.location.replace('/');
+				return true;
+			},
+			() => false,
+		);
+	}
 	window.location.reload();
 };

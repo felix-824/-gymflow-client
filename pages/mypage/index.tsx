@@ -20,6 +20,7 @@ import TrainerReservations from '../../libs/components/mypage/TrainerReservation
 import TrainerDashboard from '../../libs/components/mypage/TrainerDashboard';
 import { TrainerWorkspaceHeader, TrainerWorkspaceNavigation } from '../../libs/components/mypage/TrainerWorkspaceNavigation';
 import { trainerReservationsAccess } from '../../libs/trainer-reservations';
+import { myBookingsAccess } from '../../libs/my-bookings';
 import { getJwtToken, updateUserInfo } from '../../libs/auth';
 import { Button } from '@mui/material';
 import { useTranslation } from 'next-i18next';
@@ -45,7 +46,7 @@ const authReady = useReactiveVar(authReadyVar);
 const authError = useReactiveVar(authErrorVar);
 	const router = useRouter();
 	const compactViewport = useMediaQuery('(max-width:767px)');
-	const category: any = router.query?.category ?? (compactViewport && user.memberType === 'USER' ? 'myBookings' : 'myProfile');
+	const category: any = router.query?.category ?? 'myProfile';
 
 	/** APOLLO REQUESTS **/
 	const [subscribe] = useMutation(SUBSCRIBE);
@@ -54,7 +55,7 @@ const authError = useReactiveVar(authErrorVar);
 
 	/** LIFECYCLES **/
 	useEffect(() => {
-		if (router.isReady && category !== 'myBookings' && category !== 'trainerReservations' && category !== 'trainerDashboard' && authReady && !authError && !user._id) router.push('/').then();
+		if (router.isReady && category !== 'myProfile' && category !== 'myBookings' && category !== 'trainerReservations' && category !== 'trainerDashboard' && authReady && !authError && !user._id) router.push('/').then();
 	}, [user, authReady, authError, router, category]);
 
 	/** HANDLERS **/
@@ -140,6 +141,26 @@ const likeMemberHandler = async (id: string, refetch: any, query: any) => {
 			<TrainerWorkspaceNavigation active="Profile" mobile />
 		</div>;
 	}
+	if (category === 'myProfile' && (user.memberType === 'USER' || !user._id)) {
+		const access = myBookingsAccess(authReady && router.isReady, authError, user);
+		return access === 'ready' ? (
+			<MyProfile key={user._id} userProfile />
+		) : (
+			<div className="user-profile-access" role={access === 'error' ? 'alert' : 'status'}>
+				<h1>{t('User profile.Title')}</h1>
+				<p>{t(`MyBookings.${access}`)}</p>
+				{access === 'error' && (
+					<Button onClick={() => void updateUserInfo(getJwtToken())}>{t('MyBookings.Retry')}</Button>
+				)}
+				{access === 'guest' && (
+					<Link href={{ pathname: '/account/join', query: { referrer: '/mypage?category=myProfile' } }}>
+						{t('Login / Register')}
+					</Link>
+				)}
+			</div>
+		);
+	}
+
 	if (authError) return <p role='alert'>{authError}</p>;
 if (!authReady || !user._id) return <p>Loading profile...</p>;
 if (category === 'trainerSchedule') {
