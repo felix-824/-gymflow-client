@@ -57,11 +57,16 @@ const MyMenu = () => {
 					</Stack>
 				</Stack>
 				<Stack className={'sections'}>
-					<Stack className={'section'} style={{ height: user.memberType === 'TRAINER' ? '278px' : '153px' }}>
+					<Stack className={'section'} style={{ height: user.memberType === 'TRAINER' ? '278px' : user.memberType === 'USER' ? 'auto' : '153px' }}>
 						<Typography className="title" variant={'h5'}>
 							MY ACTIVITY
 						</Typography>
 						<List className={'sub-section'}>
+							{user.memberType === 'USER' && <ListItem className={pathname === 'myBookings' ? 'focus' : ''}>
+								<Link href={{ pathname: '/mypage', query: { category: 'myBookings' } }} scroll={false}>
+									<div className="flex-box"><Typography className="sub-title" variant="subtitle1" component="p">{t('MyBookings.Title')}</Typography></div>
+								</Link>
+							</ListItem>}
 							{user.memberType === 'TRAINER' && (
 								<>
 									<ListItem className={pathname === 'trainerSchedule' ? 'focus' : ''}>

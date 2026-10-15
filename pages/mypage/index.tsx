@@ -15,6 +15,7 @@ import { userVar, authReadyVar, authErrorVar } from '../../apollo/store';
 import MyMenu from '../../libs/components/mypage/MyMenu';
 import WriteArticle from '../../libs/components/mypage/WriteArticle';
 import TrainerSchedule from '../../libs/components/mypage/TrainerSchedule';
+import MyBookings from '../../libs/components/mypage/MyBookings';
 import { useTranslation } from 'next-i18next';
 import Link from 'next/link';
 import MemberFollowers from '../../libs/components/member/MemberFollowers';
@@ -46,8 +47,8 @@ const authError = useReactiveVar(authErrorVar);
 
 	/** LIFECYCLES **/
 	useEffect(() => {
-		if (authReady && !authError && !user._id) router.push('/').then();
-	}, [user, authReady, authError, router]);
+		if (router.isReady && category !== 'myBookings' && authReady && !authError && !user._id) router.push('/').then();
+	}, [user, authReady, authError, router, category]);
 
 	/** HANDLERS **/
 	const subscribeHandler = async (id: string, refetch: any, query: any) => {
@@ -116,6 +117,7 @@ const likeMemberHandler = async (id: string, refetch: any, query: any) => {
 		}
 	};
 
+	if (category === 'myBookings') return <MyBookings />;
 	if (authError) return <p role='alert'>{authError}</p>;
 if (!authReady || !user._id) return <p>Loading profile...</p>;
 if (category === 'trainerSchedule') {
@@ -129,6 +131,8 @@ if (category === 'trainerSchedule') {
 if (device === 'mobile') {
 		return <div>MY PAGE{user.memberType === 'TRAINER' && (
 			<p><Link passHref href="/mypage?category=trainerSchedule" style={{ display: 'inline-flex', minHeight: 44, padding: '12px 20px' }}>{t('Trainer schedule.Schedule')}</Link></p>
+		)}{user.memberType === 'USER' && (
+			<p><Link passHref href="/mypage?category=myBookings" style={{ display: 'inline-flex', minHeight: 44, padding: '12px 20px' }}>{t('MyBookings.Title')}</Link></p>
 		)}</div>;
 	} else {
 		return (

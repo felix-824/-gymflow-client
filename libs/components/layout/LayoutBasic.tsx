@@ -28,9 +28,10 @@ const withLayoutBasic = (Component: any) => {
 		const communityDiscovery = router.pathname === '/community';
 		const communityArticle = router.pathname === '/community/detail';
 		const trainerSchedule = router.pathname === '/mypage' && router.query.category === 'trainerSchedule';
+		const myBookings = router.pathname === '/mypage' && router.query.category === 'myBookings';
 		const theme = useTheme();
 		const programTheme = useMemo(() => {
-			if (router.pathname !== '/program' && !communityDiscovery && !communityArticle) return theme;
+			if (router.pathname !== '/program' && !communityDiscovery && !communityArticle && !myBookings) return theme;
 			const fontFamily = "'Plus Jakarta Sans', sans-serif";
 			const typography = Object.fromEntries(
 				Object.entries(theme.typography).map(([variant, value]) => [
@@ -44,7 +45,7 @@ const withLayoutBasic = (Component: any) => {
 				},
 				typography: { ...typography, fontFamily },
 			});
-		}, [theme, router.pathname, communityDiscovery, communityArticle]);
+		}, [theme, router.pathname, communityDiscovery, communityArticle, myBookings]);
 
 		const memoizedValues = useMemo(() => {
 			let title = '',
@@ -167,7 +168,7 @@ const withLayoutBasic = (Component: any) => {
 			);
 		}
 
-		if (router.pathname === '/program' || compactTrainer || trainerDetail || communityDiscovery || communityArticle) {
+		if (router.pathname === '/program' || compactTrainer || trainerDetail || communityDiscovery || communityArticle || myBookings) {
 			return (
 				<ThemeProvider theme={programTheme}>
 					<Head>
@@ -182,7 +183,7 @@ const withLayoutBasic = (Component: any) => {
 						id="pc-wrap"
 						className={`program-discovery-layout${compactTrainer || trainerDetail ? ' trainer-discovery-layout' : ''}${
 							trainerDetail ? ' trainer-detail-layout' : ''
-						}${device === 'mobile' || compactTrainer ? ' is-mobile' : ''}${communityDiscovery ? ' community-discovery-layout' : ''}${communityArticle ? ' community-article-layout' : ''}`}
+						}${device === 'mobile' || compactTrainer ? ' is-mobile' : ''}${communityDiscovery ? ' community-discovery-layout' : ''}${communityArticle ? ' community-article-layout' : ''}${myBookings ? ' my-bookings-layout' : ''}`}
 					>
 						<Stack id={'top'}>
 							<Top variant={'programs'} />
@@ -190,7 +191,7 @@ const withLayoutBasic = (Component: any) => {
 						<Stack id={'main'} component="main">
 							<Component {...props} />
 						</Stack>
-						{device !== 'mobile' && <Chat />}
+						{device !== 'mobile' && !(myBookings && compactViewport) && <Chat />}
 						<Stack id={'footer'} component={'footer'}>
 							<Footer variant={compactTrainer || trainerDetail ? 'default' : 'programs'} />
 						</Stack>

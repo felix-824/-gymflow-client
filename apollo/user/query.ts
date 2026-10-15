@@ -1,5 +1,40 @@
 import { gql } from '@apollo/client';
 
+export const GET_MY_RESERVATIONS = gql`
+	query GetMyReservations($input: ReservationsInquiry!) {
+		getMyReservations(input: $input) {
+			list {
+				_id
+				reservationDate
+				startTime
+				endTime
+				reservationStatus
+				specialRequest
+				memberId
+				trainerId
+				programId
+				createdAt
+				updatedAt
+				programData {
+					_id
+					programName
+					programImages
+					programType
+					programLocation
+					programAddress
+				}
+				trainerData {
+					_id
+					memberFullName
+					memberNick
+					memberImage
+				}
+			}
+			metaCounter { total }
+		}
+	}
+`;
+
 export const CHECK_AUTH = gql`
 	query CheckAuth {
 		checkAuth
