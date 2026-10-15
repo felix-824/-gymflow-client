@@ -1,0 +1,786 @@
+#pc-wrap.trainer-reservations-layout {
+	background: #f7f8fa;
+	min-height: 100vh;
+	font-family: 'Plus Jakarta Sans', sans-serif;
+	#main {
+		flex: 1;
+		min-width: 0;
+	}
+	.schedule-workspace-header {
+		background: #12151d;
+	}
+	.schedule-workspace-header-inner {
+		max-width: 1344px;
+		min-height: 64px;
+		gap: 20px;
+	}
+	.schedule-workspace-label {
+		padding: 3px 6px;
+		border-radius: 4px;
+		background: #ffffff12;
+		letter-spacing: 0.04em;
+	}
+	.schedule-desktop-navigation {
+		gap: 4px;
+		a,
+		button {
+			min-height: 44px;
+			padding: 8px 12px;
+			border: 0;
+			border-radius: 8px;
+		}
+		a[aria-current='page'] {
+			background: #eb6753;
+			color: #12151d;
+		}
+	}
+	.schedule-member-view {
+		display: none;
+	}
+	.schedule-workspace-account {
+		margin-left: auto;
+	}
+	.schedule-identity .MuiAvatar-root {
+		width: 32px;
+		height: 32px;
+	}
+	#footer {
+		margin-top: auto;
+	}
+	button,
+	a {
+		touch-action: manipulation;
+	}
+	@media (max-width: 767px) {
+		padding-bottom: calc(80px + env(safe-area-inset-bottom, 0px));
+		.schedule-workspace-header {
+			background: #12151d;
+			color: #fff;
+		}
+		.schedule-workspace-header-inner {
+			min-height: 56px;
+			padding: 0 16px;
+			gap: 8px;
+		}
+		.schedule-workspace-label {
+			color: #e7e9ee;
+		}
+		.schedule-identity {
+			min-width: 44px;
+			justify-content: flex-end;
+		}
+		.schedule-mobile-navigation {
+			--schedule-navigation-height: 64px;
+		}
+		#footer {
+			display: none;
+		}
+	}
+}
+
+#trainer-reservations-page {
+	width: calc(100% - 64px);
+	max-width: 1280px;
+	margin: 0 auto;
+	padding: 28px 0 64px;
+	color: #17191f;
+	font-size: 14px;
+	line-height: 1.6;
+	*,
+	*::before,
+	*::after {
+		box-sizing: border-box;
+	}
+	h1,
+	p {
+		margin: 0;
+	}
+	button,
+	.MuiTypography-root {
+		font-family: inherit;
+	}
+	button {
+		text-transform: none;
+	}
+	a {
+		color: inherit;
+		white-space: normal;
+	}
+	:focus-visible {
+		outline: 2px solid #a53425;
+		outline-offset: 3px;
+	}
+	::selection {
+		background: #f8d2cb;
+		color: #12151d;
+	}
+	.trainer-reservations-breadcrumb {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 6px;
+		margin-bottom: 6px;
+		font-size: 11px;
+		font-weight: 600;
+		letter-spacing: 0.03em;
+		text-transform: uppercase;
+		color: #626978;
+		a:hover {
+			text-decoration: underline;
+			text-underline-offset: 3px;
+		}
+	}
+	.trainer-reservations-heading {
+		display: flex;
+		justify-content: space-between;
+		align-items: flex-end;
+		gap: 24px;
+		h1 {
+			font-size: 36px;
+			font-weight: 700;
+			letter-spacing: -0.025em;
+			line-height: 1.25;
+		}
+		p {
+			margin-top: 6px;
+			color: #626978;
+		}
+	}
+	.trainer-reservations-period {
+		display: flex;
+		flex-shrink: 0;
+		gap: 4px;
+		padding: 4px;
+		background: #edeef0;
+		border-radius: 12px;
+		button {
+			min-height: 44px;
+			padding: 8px 20px;
+			border: 0;
+			border-radius: 8px;
+			background: transparent;
+			color: #626978;
+			font-weight: 600;
+			&[aria-current] {
+				background: #12151d;
+				color: #fff;
+			}
+		}
+	}
+	.trainer-reservations-toolbar {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		gap: 16px;
+		margin-top: 28px;
+	}
+	.trainer-reservations-filters {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 8px;
+		button {
+			display: inline-flex;
+			align-items: center;
+			justify-content: center;
+			gap: 8px;
+			min-height: 44px;
+			padding: 8px 16px;
+			border: 1px solid #e7e9ee;
+			border-radius: 999px;
+			background: #fff;
+			color: #626978;
+			font-size: 12px;
+			font-weight: 600;
+			span {
+				width: 7px;
+				height: 7px;
+				border-radius: 50%;
+				background: #737985;
+				flex-shrink: 0;
+			}
+			&.filter-pending span {
+				background: #d49215;
+			}
+			&.filter-confirmed span {
+				background: #059669;
+			}
+			&[aria-pressed='true'] {
+				background: #12151d;
+				border-color: #12151d;
+				color: #fff;
+			}
+		}
+	}
+	.trainer-reservations-context {
+		display: flex;
+		align-items: center;
+		gap: 6px;
+		font-size: 12px;
+		color: #626978;
+		svg {
+			width: 16px;
+			height: 16px;
+			flex-shrink: 0;
+		}
+	}
+	.trainer-reservations-update {
+		min-height: 28px;
+		font-size: 12px;
+		color: #626978;
+	}
+	.trainer-reservations-table {
+		width: 100%;
+		table-layout: fixed;
+		border-collapse: separate;
+		border-spacing: 0;
+		background: #fff;
+		border-radius: 12px;
+		overflow: hidden;
+		.client-column {
+			width: 20%;
+		}
+		.time-column {
+			width: 21%;
+		}
+		.program-column {
+			width: 27%;
+		}
+		.status-column {
+			width: 13%;
+		}
+		.actions-column {
+			width: 19%;
+		}
+		th {
+			padding: 14px 18px;
+			background: #f1f3f6;
+			color: #626978;
+			font-size: 11px;
+			font-weight: 600;
+			letter-spacing: 0.04em;
+			text-align: left;
+			text-transform: uppercase;
+		}
+		th:last-child {
+			text-align: right;
+		}
+		td {
+			padding: 24px 18px;
+			vertical-align: middle;
+			overflow-wrap: anywhere;
+		}
+		tbody + tbody .trainer-reservation-main td {
+			border-top: 1px solid #e7e9ee;
+		}
+		.trainer-reservation-main td:first-child {
+			border-left: 3px solid transparent;
+		}
+		.status-pending .trainer-reservation-main td:first-child {
+			border-left-color: #e8ae40;
+		}
+		strong {
+			font-size: 14px;
+			font-weight: 600;
+		}
+	}
+	.trainer-reservation-client {
+		.MuiAvatar-root {
+			display: inline-flex;
+			width: 40px;
+			height: 40px;
+			margin-right: 12px;
+			vertical-align: middle;
+			font-family: inherit;
+			font-size: 16px;
+			background: #f1f3f6;
+			color: #626978;
+		}
+		> div:last-child {
+			display: inline-block;
+			max-width: calc(100% - 56px);
+			vertical-align: middle;
+		}
+		strong {
+			display: block;
+		}
+	}
+	.trainer-reservation-mobile-description,
+	.trainer-reservation-mobile-type {
+		display: none;
+	}
+	.trainer-reservation-time {
+		font-variant-numeric: tabular-nums;
+		time {
+			font-size: 14px;
+			font-weight: 600;
+		}
+		svg {
+			display: none;
+		}
+		.trainer-reservation-hours {
+			display: block;
+			color: #626978;
+			font-size: 12px;
+		}
+	}
+	.trainer-reservation-program-title {
+		> svg {
+			display: none;
+		}
+	}
+	.trainer-reservation-location {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: baseline;
+		gap: 4px;
+		margin-top: 4px;
+		color: #626978;
+		font-size: 11px;
+		svg {
+			align-self: center;
+			flex-shrink: 0;
+			width: 13px;
+			height: 13px;
+		}
+	}
+	.trainer-reservation-badge {
+		display: inline-flex;
+		align-items: center;
+		gap: 6px;
+		padding: 4px 8px;
+		border-radius: 999px;
+		background: #f1f3f6;
+		color: #626978;
+		font-size: 10px;
+		font-weight: 600;
+		line-height: 1.4;
+		> span {
+			width: 5px;
+			height: 5px;
+			flex-shrink: 0;
+			border-radius: 50%;
+			background: currentColor;
+		}
+	}
+	.status-pending .trainer-reservation-badge {
+		color: #875b0e;
+		background: #fff8e6;
+	}
+	.status-confirmed .trainer-reservation-badge,
+	.status-completed .trainer-reservation-badge {
+		color: #17634d;
+		background: #eaf7f0;
+	}
+	.status-no_show .trainer-reservation-badge {
+		color: #88463d;
+		background: #f9eeeb;
+	}
+	.trainer-reservation-actions {
+		text-align: right;
+		button {
+			min-height: 44px;
+			min-width: 0;
+			padding: 8px 10px;
+			border-radius: 8px;
+			color: #626978;
+			font-size: 12px;
+			line-height: 1.4;
+			vertical-align: middle;
+		}
+		button + button {
+			margin-left: 4px;
+		}
+		button.is-primary {
+			background: #eb6753;
+			color: #12151d;
+			font-weight: 600;
+			&:hover {
+				background: #f17d6b;
+			}
+		}
+		button.Mui-disabled {
+			color: #737985;
+			background: #f1f3f6;
+		}
+		svg {
+			display: none;
+		}
+	}
+	.trainer-reservation-request-row td {
+		padding: 0 24px 18px;
+	}
+	.trainer-reservation-request {
+		display: flex;
+		align-items: flex-start;
+		gap: 8px;
+		padding: 12px;
+		border-radius: 8px;
+		background: #f2f4f6;
+		font-size: 13px;
+		color: #444b58;
+		svg {
+			width: 18px;
+			height: 18px;
+			flex-shrink: 0;
+			margin-top: 2px;
+			color: #a53425;
+		}
+		p {
+			white-space: pre-wrap;
+			overflow-wrap: anywhere;
+		}
+		strong {
+			font-size: inherit;
+		}
+	}
+	.trainer-reservations-pagination {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		gap: 16px;
+		padding-top: 28px;
+		color: #626978;
+		font-size: 12px;
+	}
+	.MuiPaginationItem-root {
+		min-height: 44px;
+		min-width: 36px;
+		border-radius: 8px;
+		font-family: inherit;
+		color: #626978;
+		&.Mui-selected {
+			background: #12151d;
+			color: #fff;
+		}
+	}
+	.trainer-reservations-feedback {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		flex-wrap: wrap;
+		gap: 12px;
+		padding: 12px 16px;
+		margin-top: 16px;
+		border: 1px solid #e7e9ee;
+		background: #fff;
+		border-radius: 8px;
+		button {
+			color: #a53425;
+			min-height: 44px;
+		}
+	}
+	.trainer-reservations-state {
+		min-height: 240px;
+		display: flex;
+		flex-direction: column;
+		justify-content: center;
+		align-items: center;
+		gap: 16px;
+		padding: 40px 20px;
+		border-radius: 12px;
+		background: #fff;
+		color: #626978;
+		text-align: center;
+		button,
+		a {
+			min-height: 44px;
+			padding: 10px 16px;
+			color: #a53425;
+		}
+	}
+	.trainer-reservations-loading {
+		display: grid;
+		gap: 12px;
+		color: #626978;
+	}
+	.trainer-reservations-sr-only {
+		position: absolute;
+		width: 1px;
+		height: 1px;
+		overflow: hidden;
+		clip: rect(0, 0, 0, 0);
+		white-space: nowrap;
+	}
+	@media (min-width: 768px) and (max-width: 1023px) {
+		.trainer-reservations-heading {
+			flex-wrap: wrap;
+			align-items: flex-start;
+		}
+		.trainer-reservations-toolbar {
+			flex-wrap: wrap;
+		}
+		.trainer-reservations-table {
+			th,
+			td {
+				padding-left: 10px;
+				padding-right: 10px;
+			}
+			.client-column {
+				width: 19%;
+			}
+			.time-column {
+				width: 20%;
+			}
+			.program-column {
+				width: 24%;
+			}
+			.status-column {
+				width: 15%;
+			}
+			.actions-column {
+				width: 22%;
+			}
+		}
+		.trainer-reservation-client .MuiAvatar-root {
+			display: flex;
+			margin: 0 0 8px;
+		}
+		.trainer-reservation-client > div:last-child {
+			max-width: 100%;
+		}
+		.trainer-reservation-actions button + button {
+			margin: 4px 0 0;
+		}
+	}
+	@media (max-width: 767px) {
+		width: calc(100% - 32px);
+		padding: 20px 0 36px;
+		.trainer-reservations-breadcrumb {
+			font-size: 9px;
+			margin-bottom: 8px;
+			> span:last-child {
+				color: #a53425;
+			}
+		}
+		.trainer-reservations-heading {
+			flex-direction: column;
+			align-items: stretch;
+			gap: 18px;
+			h1 {
+				font-size: 26px;
+			}
+			p {
+				font-size: 13px;
+			}
+		}
+		.trainer-reservations-period {
+			width: 100%;
+			border-radius: 999px;
+			button {
+				flex: 1;
+				min-width: 0;
+				border-radius: 999px;
+				padding: 8px;
+			}
+		}
+		.trainer-reservations-toolbar {
+			margin-top: 16px;
+			align-items: flex-start;
+			flex-direction: column;
+			gap: 10px;
+		}
+		.trainer-reservations-filters {
+			gap: 6px;
+			button {
+				padding: 8px 12px;
+			}
+		}
+		.trainer-reservations-context {
+			font-size: 10px;
+		}
+		.trainer-reservations-update {
+			min-height: 20px;
+			font-size: 11px;
+		}
+		.trainer-reservations-table {
+			display: block;
+			background: transparent;
+			border-radius: 0;
+			overflow: visible;
+			colgroup,
+			thead {
+				display: none;
+			}
+			tbody {
+				display: grid;
+				grid-template-columns: minmax(0, 1fr) auto;
+				grid-template-areas: 'client status' 'time time' 'program program' 'actions actions';
+				&.has-request {
+					grid-template-areas: 'client status' 'time time' 'program program' 'request request' 'actions actions';
+				}
+				gap: 12px 8px;
+				padding: 16px;
+				margin-bottom: 14px;
+				border-radius: 16px;
+				background: #fff;
+				border-left: 3px solid transparent;
+				&.status-pending {
+					border-left-color: #e8ae40;
+				}
+				&.status-confirmed {
+					border-left-color: #36a481;
+				}
+			}
+			tr {
+				display: contents;
+			}
+			td {
+				display: block;
+				padding: 0;
+				min-width: 0;
+			}
+			tbody + tbody .trainer-reservation-main td {
+				border-top: 0;
+			}
+			.trainer-reservation-main td:first-child {
+				border-left: 0;
+			}
+		}
+		.trainer-reservation-client {
+			grid-area: client;
+			display: flex !important;
+			align-items: center;
+			padding-bottom: 12px !important;
+			border-bottom: 1px solid #e7e9ee;
+			.MuiAvatar-root {
+				flex-shrink: 0;
+				margin-right: 10px;
+			}
+			> div:last-child {
+				max-width: none;
+				min-width: 0;
+			}
+			strong {
+				font-size: 13px;
+			}
+		}
+		.trainer-reservation-mobile-description {
+			display: block;
+			font-size: 10px;
+			color: #626978;
+		}
+		.trainer-reservation-status {
+			grid-area: status;
+			align-self: stretch;
+			display: flex !important;
+			align-items: center;
+			justify-content: flex-end;
+			max-width: 125px;
+			padding-bottom: 12px !important;
+			border-bottom: 1px solid #e7e9ee;
+		}
+		.trainer-reservation-badge {
+			font-size: 9px;
+			padding: 4px 6px;
+		}
+		.trainer-reservation-time {
+			grid-area: time;
+			display: flex !important;
+			flex-wrap: wrap;
+			align-items: center;
+			justify-content: space-between;
+			gap: 6px;
+			> div {
+				display: flex;
+				align-items: center;
+				gap: 5px;
+			}
+			svg {
+				display: block;
+				width: 16px;
+				height: 16px;
+				color: #a53425;
+			}
+			time {
+				font-size: 12px;
+			}
+			.trainer-reservation-hours {
+				font-size: 12px;
+			}
+		}
+		.trainer-reservation-program {
+			grid-area: program;
+		}
+		.trainer-reservation-program-title {
+			display: flex;
+			flex-wrap: wrap;
+			align-items: baseline;
+			gap: 5px;
+			> svg {
+				display: block;
+				width: 16px;
+				height: 16px;
+				color: #626978;
+				flex-shrink: 0;
+				align-self: center;
+			}
+			strong {
+				font-size: 13px;
+			}
+		}
+		.trainer-reservation-mobile-type {
+			display: inline;
+			padding: 2px 5px;
+			background: #f1f3f6;
+			border-radius: 4px;
+			font-size: 10px;
+			color: #626978;
+		}
+		.trainer-reservation-desktop-type {
+			display: none;
+		}
+		.trainer-reservation-location {
+			padding-left: 21px;
+			font-size: 11px;
+			flex-wrap: nowrap;
+			align-items: flex-start;
+		}
+		.trainer-reservation-request-row td {
+			grid-area: request;
+			padding: 0;
+		}
+		.trainer-reservation-request {
+			padding: 10px;
+			font-size: 12px;
+			svg {
+				width: 16px;
+				height: 16px;
+			}
+		}
+		.trainer-reservation-actions {
+			grid-area: actions;
+			display: flex !important;
+			gap: 8px;
+			button {
+				flex: 1;
+				min-height: 44px;
+				padding: 10px 12px;
+				font-size: 12px;
+				background: #edeef0;
+			}
+			button.is-primary {
+				flex: 2;
+			}
+			button + button {
+				margin: 0;
+			}
+			svg {
+				display: inline;
+				width: 16px;
+				height: 16px;
+				margin-right: 4px;
+			}
+			&:empty {
+				display: none !important;
+			}
+		}
+		.trainer-reservations-pagination {
+			flex-direction: column;
+			padding-top: 16px;
+			gap: 12px;
+		}
+		.trainer-reservations-state {
+			min-height: 220px;
+		}
+	}
+}

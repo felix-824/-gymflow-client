@@ -28,10 +28,11 @@ const withLayoutBasic = (Component: any) => {
 		const communityDiscovery = router.pathname === '/community';
 		const communityArticle = router.pathname === '/community/detail';
 		const trainerSchedule = router.pathname === '/mypage' && router.query.category === 'trainerSchedule';
+		const trainerReservations = router.pathname === '/mypage' && router.query.category === 'trainerReservations';
 		const myBookings = router.pathname === '/mypage' && router.query.category === 'myBookings';
 		const theme = useTheme();
 		const programTheme = useMemo(() => {
-			if (router.pathname !== '/program' && !communityDiscovery && !communityArticle && !myBookings) return theme;
+			if (router.pathname !== '/program' && !communityDiscovery && !communityArticle && !myBookings && !trainerReservations) return theme;
 			const fontFamily = "'Plus Jakarta Sans', sans-serif";
 			const typography = Object.fromEntries(
 				Object.entries(theme.typography).map(([variant, value]) => [
@@ -45,7 +46,7 @@ const withLayoutBasic = (Component: any) => {
 				},
 				typography: { ...typography, fontFamily },
 			});
-		}, [theme, router.pathname, communityDiscovery, communityArticle, myBookings]);
+		}, [theme, router.pathname, communityDiscovery, communityArticle, myBookings, trainerReservations]);
 
 		const memoizedValues = useMemo(() => {
 			let title = '',
@@ -152,19 +153,19 @@ const withLayoutBasic = (Component: any) => {
 		}, [compactTrainer, compactTrainerDetail]);
 
 		/** HANDLERS **/
-		if (trainerSchedule) {
+		if (trainerSchedule || trainerReservations) {
 			return (
-				<>
+				<ThemeProvider theme={trainerReservations ? programTheme : theme}>
 					<Head>
 						<title>GymFlow</title>
 						<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" />
 					</Head>
-					<Stack id="pc-wrap" className="trainer-schedule-layout">
+					<Stack id="pc-wrap" className={`trainer-schedule-layout${trainerReservations ? ' trainer-reservations-layout' : ''}`}>
 						<Stack id="main" component="main"><Component {...props} /></Stack>
-						{device !== 'mobile' && <Chat />}
+						{device !== 'mobile' && !trainerReservations && <Chat />}
 						<Stack id="footer" component="footer"><Footer variant="programs" /></Stack>
 					</Stack>
-				</>
+				</ThemeProvider>
 			);
 		}
 

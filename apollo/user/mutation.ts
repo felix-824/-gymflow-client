@@ -1,5 +1,23 @@
 import { gql } from '@apollo/client';
 
+export const UPDATE_TRAINER_RESERVATION = gql`
+	mutation UpdateTrainerReservation($input: TrainerReservationUpdate!) {
+		updateTrainerReservation(input: $input) {
+			_id
+			reservationDate
+			startTime
+			endTime
+			reservationStatus
+			specialRequest
+			memberId
+			trainerId
+			programId
+			createdAt
+			updatedAt
+		}
+	}
+`;
+
 export const CANCEL_RESERVATION = gql`
 	mutation CancelReservation($input: String!) {
 		cancelReservation(reservationId: $input) {
