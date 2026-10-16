@@ -4,11 +4,13 @@ import { MeLiked, TotalCounter } from '../program/program';
 
 export interface BoardArticle {
 	_id: string;
+	/** Selected by owner documents; existing public documents omit it. */
+	articleRevision?: number;
 	articleCategory: BoardArticleCategory;
 	articleStatus: BoardArticleStatus;
 	articleTitle: string;
 	articleContent: string;
-	articleImage: string;
+	articleImage?: string | null;
 	articleViews: number;
 	articleLikes: number;
 	articleComments: number;

@@ -515,6 +515,48 @@ export const GET_BOARD_ARTICLE = gql`
 	}
 `;
 
+export const GET_MY_BOARD_ARTICLE = gql`
+	query GetMyBoardArticle($input: String!) {
+		getMyBoardArticle(articleId: $input) {
+			_id
+			articleCategory
+			articleStatus
+			articleTitle
+			articleContent
+			articleImage
+			articleRevision
+			memberId
+			createdAt
+			updatedAt
+		}
+	}
+`;
+
+export const GET_MY_BOARD_ARTICLES = gql`
+	query GetMyBoardArticles($input: OrdinaryInquiry!) {
+		getMyBoardArticles(input: $input) {
+			list {
+				_id
+				articleCategory
+				articleStatus
+				articleTitle
+				articleContent
+				articleImage
+				articleViews
+				articleLikes
+				articleComments
+				articleRevision
+				memberId
+				createdAt
+				updatedAt
+			}
+			metaCounter {
+				total
+			}
+		}
+	}
+`;
+
 export const GET_BOARD_ARTICLES = gql`
 	query GetBoardArticles($input: BoardArticlesInquiry!) {
 		getBoardArticles(input: $input) {

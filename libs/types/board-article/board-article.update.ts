@@ -5,5 +5,7 @@ export interface BoardArticleUpdate {
 	articleStatus?: BoardArticleStatus;
 	articleTitle?: string;
 	articleContent?: string;
-	articleImage?: string;
+	articleImage?: string | null;
+	/** Required for owner mutations; existing admin mutations may omit it. */
+	expectedRevision?: number;
 }

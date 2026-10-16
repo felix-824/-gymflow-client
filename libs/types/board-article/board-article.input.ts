@@ -5,8 +5,7 @@ export interface BoardArticleInput {
 	articleCategory: BoardArticleCategory;
 	articleTitle: string;
 	articleContent: string;
-	articleImage: string;
-	memberId?: string;
+	articleImage?: string | null;
 }
 
 interface BAISearch {

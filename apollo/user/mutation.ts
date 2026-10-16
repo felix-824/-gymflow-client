@@ -316,6 +316,7 @@ export const UPDATE_BOARD_ARTICLE = gql`
 	mutation UpdateBoardArticle($input: BoardArticleUpdate!) {
 		updateBoardArticle(input: $input) {
 			_id
+			articleRevision
 			articleCategory
 			articleStatus
 			articleTitle
