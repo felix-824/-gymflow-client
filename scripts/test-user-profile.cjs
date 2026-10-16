@@ -605,47 +605,20 @@ async function integration() {
 		await until(() => document.querySelector('[data-test="my-bookings"]'));
 		assert.ok(document.querySelector('.my-bookings-layout'));
 		assert.ok(!document.querySelector('.user-profile-layout'));
-		Object.defineProperty(navigator, 'userAgent', { configurable: true, value: 'Desktop' });
-		mobile = false;
-		router.query = { category: 'myFavorites' };
-		routeKey++;
-		render();
-		await until(() => document.querySelector('[data-test="my-favorites"]'));
-		assert.ok(document.querySelector('#my-page .left-config'));
-		assert.ok(!document.querySelector('.user-profile-layout'));
-		const sidebarLogout = [...document.querySelectorAll('#my-page .left-config li')].find(
-			(item) => item.textContent.trim() === 'Logout',
-		);
-		assert.ok(sidebarLogout);
-		const beforeSidebarLogout = destinations.length;
-		confirmedLogout = false;
-		flushSync(() => sidebarLogout.click());
-		await new Promise((resolve) => setTimeout(resolve, 20));
-		assert.ok(auth.getJwtToken());
-		assert.equal(destinations.length, beforeSidebarLogout);
-		confirmedLogout = true;
-		flushSync(() => sidebarLogout.click());
-		await until(() => destinations.length === beforeSidebarLogout + 1 && document.querySelector('.programs-auth-link'));
-		assert.equal(destinations.at(-1), '/');
-		assert.equal(auth.getJwtToken(), '');
-		assert.equal(router.pathname, '/');
-		pass('existing USER Favorites sidebar confirmation/cancel and logout reuse the same Home destination');
-		await signIn(await members.findById(user._id));
-		router.pathname = '/mypage';
-		router.asPath = '/mypage';
-		router.query = { category: 'myFavorites' };
-		Object.defineProperty(navigator, 'userAgent', { configurable: true, value: 'iPhone Mobile' });
-		mobile = true;
-		routeKey++;
-		render();
-		await until(
-			() => document.body.textContent.includes('MY PAGE') && !document.querySelector('[data-test="my-favorites"]'),
-		);
-		assert.ok(!document.querySelector('#user-profile-page'));
-		assert.ok(document.body.textContent.includes('MY PAGE'));
-		pass(
-			'explicit My Bookings History remains isolated; legacy Favorites desktop and mobile placeholder remain unchanged',
-		);
+		for (const [width, ua] of [[1440, 'Desktop'], [390, 'Desktop'], [390, 'iPhone Mobile']]) {
+			Object.defineProperty(navigator, 'userAgent', { configurable: true, value: ua });
+			mobile = width === 390;
+			router.query = { category: 'myFavorites' };
+			routeKey++;
+			render();
+			await until(() => document.querySelector('[data-test="my-favorites"]'));
+			assert.ok(document.querySelector('.user-favorites-layout'));
+			assert.ok(!document.querySelector('#my-page .left-config, .user-profile-layout, #user-profile-page'));
+			assert.ok(document.querySelector('.programs-header'));
+			assert.ok(document.querySelector('.programs-bottom-navigation'));
+			assert.ok(document.querySelector('[data-test="existing-footer"]'));
+			pass(`Favorites uses the dedicated consumer layout without legacy sidebar at ${width}px / ${ua}`);
+		}
 		router.query = { category: 'myProfile' };
 		render();
 		await until(() => document.querySelector('#user-profile-page'));
