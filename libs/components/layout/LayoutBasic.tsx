@@ -30,6 +30,7 @@ const withLayoutBasic = (Component: any) => {
 		const authHeader = router.pathname === '/account/join';
 		const communityDiscovery = router.pathname === '/community';
 		const communityArticle = router.pathname === '/community/detail';
+		const communityWrite = router.pathname === '/mypage' && router.query.category === 'writeArticle';
 		const trainerSchedule = router.pathname === '/mypage' && router.query.category === 'trainerSchedule';
 		const trainerReservations = router.pathname === '/mypage' && router.query.category === 'trainerReservations';
 		const trainerDashboard = router.pathname === '/mypage' && router.query.category === 'trainerDashboard';
@@ -44,7 +45,7 @@ const withLayoutBasic = (Component: any) => {
 		const userFavorites = router.pathname === '/mypage' && router.query.category === 'myFavorites';
 		const theme = useTheme();
 		const programTheme = useMemo(() => {
-			if (router.pathname !== '/program' && !communityDiscovery && !communityArticle && !myBookings && !userProfile && !userFavorites && !trainerReservations && !trainerDashboard && !trainerProfile && !trainerPrograms && !trainerProgramEditor) return theme;
+			if (router.pathname !== '/program' && !communityDiscovery && !communityArticle && !communityWrite && !myBookings && !userProfile && !userFavorites && !trainerReservations && !trainerDashboard && !trainerProfile && !trainerPrograms && !trainerProgramEditor) return theme;
 			const fontFamily = "'Plus Jakarta Sans', sans-serif";
 			const typography = Object.fromEntries(
 				Object.entries(theme.typography).map(([variant, value]) => [
@@ -58,7 +59,7 @@ const withLayoutBasic = (Component: any) => {
 				},
 				typography: { ...typography, fontFamily },
 			});
-		}, [theme, router.pathname, communityDiscovery, communityArticle, myBookings, userProfile, userFavorites, trainerReservations, trainerDashboard, trainerProfile, trainerPrograms, trainerProgramEditor]);
+		}, [theme, router.pathname, communityDiscovery, communityArticle, communityWrite, myBookings, userProfile, userFavorites, trainerReservations, trainerDashboard, trainerProfile, trainerPrograms, trainerProgramEditor]);
 
 		const memoizedValues = useMemo(() => {
 			let title = '',
@@ -191,7 +192,7 @@ const withLayoutBasic = (Component: any) => {
 			);
 		}
 
-		if (router.pathname === '/program' || compactTrainer || trainerDetail || communityDiscovery || communityArticle || myBookings || userProfile || userFavorites) {
+		if (router.pathname === '/program' || compactTrainer || trainerDetail || communityDiscovery || communityArticle || communityWrite || myBookings || userProfile || userFavorites) {
 			return (
 				<ThemeProvider theme={programTheme}>
 					<Head>
@@ -206,7 +207,7 @@ const withLayoutBasic = (Component: any) => {
 						id="pc-wrap"
 						className={`program-discovery-layout${compactTrainer || trainerDetail ? ' trainer-discovery-layout' : ''}${
 							trainerDetail ? ' trainer-detail-layout' : ''
-						}${device === 'mobile' || compactTrainer ? ' is-mobile' : ''}${communityDiscovery ? ' community-discovery-layout' : ''}${communityArticle ? ' community-article-layout' : ''}${myBookings ? ' my-bookings-layout' : ''}${userProfile ? ' user-profile-layout' : ''}${userFavorites ? ' user-favorites-layout' : ''}`}
+						}${device === 'mobile' || compactTrainer ? ' is-mobile' : ''}${communityDiscovery ? ' community-discovery-layout' : ''}${communityArticle ? ' community-article-layout' : ''}${communityWrite ? ' community-write-layout' : ''}${myBookings ? ' my-bookings-layout' : ''}${userProfile ? ' user-profile-layout' : ''}${userFavorites ? ' user-favorites-layout' : ''}`}
 					>
 						<Stack id={'top'}>
 							<Top variant={'programs'} />
@@ -214,7 +215,7 @@ const withLayoutBasic = (Component: any) => {
 						<Stack id={'main'} component="main">
 							<Component {...props} />
 						</Stack>
-						{device !== 'mobile' && !userProfile && !userFavorites && !(myBookings && compactViewport) && <Chat />}
+						{device !== 'mobile' && !communityWrite && !userProfile && !userFavorites && !(myBookings && compactViewport) && <Chat />}
 						<Stack id={'footer'} component={'footer'}>
 							<Footer variant={compactTrainer || trainerDetail ? 'default' : 'programs'} />
 						</Stack>

@@ -54,7 +54,7 @@ const authError = useReactiveVar(authErrorVar);
 
 	/** LIFECYCLES **/
 	useEffect(() => {
-		if (router.isReady && category !== 'myProfile' && category !== 'myFavorites' && category !== 'myBookings' && category !== 'trainerReservations' && category !== 'trainerDashboard' && authReady && !authError && !user._id) router.push('/').then();
+		if (router.isReady && category !== 'writeArticle' && category !== 'myProfile' && category !== 'myFavorites' && category !== 'myBookings' && category !== 'trainerReservations' && category !== 'trainerDashboard' && authReady && !authError && !user._id) router.push('/').then();
 	}, [user, authReady, authError, router, category]);
 
 	/** HANDLERS **/
@@ -124,6 +124,7 @@ const likeMemberHandler = async (id: string, refetch: any, query: any) => {
 		}
 	};
 
+	if (category === 'writeArticle') return <WriteArticle />;
 	if (category === 'myPrograms') return <MyPrograms />;
 	if (category === 'myFavorites') return <MyFavorites />;
 	if (category === 'myBookings') return <MyBookings />;
@@ -194,7 +195,6 @@ if (device === 'mobile') {
 									{category === 'addProgram' && <AddProgram />}
 									{category === 'recentlyVisited' && <RecentlyVisited />}
 									{category === 'myArticles' && <MyArticles />}
-									{category === 'writeArticle' && <WriteArticle />}
 									{category === 'myProfile' && <MyProfile />}
 									{category === 'followers' && (
 										<MemberFollowers

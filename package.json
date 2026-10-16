@@ -4,6 +4,7 @@
 	"private": true,
 	"license": "ITC",
 	"scripts": {
+		"postinstall": "node scripts/patch-toastui-editor.cjs",
 		"dev": "next dev",
 		"build": "next build",
 		"start": "next start",

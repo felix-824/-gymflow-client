@@ -25,7 +25,8 @@ const programDestinations = [
 	{ label: 'My Page', href: '/mypage', icon: AccountCircleOutlinedIcon },
 ];
 
-const isDestinationActive = (pathname: string, href: string) =>
+const isDestinationActive = (pathname: string, href: string, category?: string | string[]) =>
+	pathname === '/mypage' && category === 'writeArticle' ? href === '/community?articleCategory=FREE' :
 	pathname === href || (pathname === '/trainer/detail' && href === '/trainer') ||
 	(pathname === '/program/booking' && href === '/program') ||
 	(pathname === '/mypage/review' && href === '/mypage');
@@ -70,7 +71,7 @@ export const ProgramsHeader = () => {
 					aria-label={t('Program navigation.Main navigation')}
 				>
 					{destinations.map(({ href, label }) => (
-						<Link key={href} href={href} aria-current={isDestinationActive(router.pathname, href) ? 'page' : undefined}>
+						<Link key={href} href={href} aria-current={isDestinationActive(router.pathname, href, router.query.category) ? 'page' : undefined}>
 							{t(label)}
 						</Link>
 					))}
@@ -187,8 +188,8 @@ export const ProgramsHeader = () => {
 						component={Link}
 						href={href}
 						onClick={() => setNavigationAnchor(null)}
-						aria-current={isDestinationActive(router.pathname, href) ? 'page' : undefined}
-						selected={isDestinationActive(router.pathname, href)}
+						aria-current={isDestinationActive(router.pathname, href, router.query.category) ? 'page' : undefined}
+						selected={isDestinationActive(router.pathname, href, router.query.category)}
 					>
 						{t(label)}
 					</MenuItem>
@@ -212,7 +213,7 @@ export const ProgramsBottomNavigation = () => {
 					key={href}
 					href={href}
 					passHref
-					aria-current={isDestinationActive(router.pathname, href) ? 'page' : undefined}
+					aria-current={isDestinationActive(router.pathname, href, router.query.category) ? 'page' : undefined}
 				>
 					<Icon aria-hidden={true} />
 					<span>{t(label)}</span>
