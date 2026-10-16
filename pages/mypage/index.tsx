@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import { useRouter } from 'next/router';
 import { NextPage } from 'next';
-import { Stack, useMediaQuery } from '@mui/material';
+import { Stack } from '@mui/material';
 import useDeviceDetect from '../../libs/hooks/useDeviceDetect';
 import withLayoutBasic from '../../libs/components/layout/LayoutBasic';
 import MyPrograms from '../../libs/components/mypage/MyPrograms';
@@ -45,7 +45,6 @@ const MyPage: NextPage = () => {
 const authReady = useReactiveVar(authReadyVar);
 const authError = useReactiveVar(authErrorVar);
 	const router = useRouter();
-	const compactViewport = useMediaQuery('(max-width:767px)');
 	const category: any = router.query?.category ?? 'myProfile';
 
 	/** APOLLO REQUESTS **/
@@ -173,15 +172,7 @@ if (category === 'trainerSchedule') {
 		</div>
 	);
 }
-if (compactViewport && user.memberType === 'TRAINER' && category === 'addProgram') {
-	return <div className="trainer-mobile-program-workspace">
-		<TrainerWorkspaceHeader active="Programs" />
-		<div id="my-page"><div className="container">
-			<AddProgram allowMobile />
-		</div></div>
-		<TrainerWorkspaceNavigation active="Programs" mobile />
-	</div>;
-}
+if (user.memberType === 'TRAINER' && category === 'addProgram') return <AddProgram />;
 if (device === 'mobile') {
 		return <div>MY PAGE{user.memberType === 'TRAINER' && (
 			<><p><Link passHref href="/mypage?category=trainerSchedule" style={{ display: 'inline-flex', minHeight: 44, padding: '12px 20px' }}>{t('Trainer schedule.Schedule')}</Link></p>

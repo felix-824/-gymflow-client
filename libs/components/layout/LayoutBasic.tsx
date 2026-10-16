@@ -36,7 +36,7 @@ const withLayoutBasic = (Component: any) => {
 		const trainerProfile = router.pathname === '/mypage' && user.memberType === 'TRAINER' &&
 			(router.query.category == null || router.query.category === 'myProfile');
 		const trainerPrograms = router.pathname === '/mypage' && router.query.category === 'myPrograms';
-		const compactTrainerPrograms = compactViewport && router.pathname === '/mypage' && user.memberType === 'TRAINER' &&
+		const trainerProgramEditor = router.pathname === '/mypage' && user.memberType === 'TRAINER' &&
 			router.query.category === 'addProgram';
 		const userProfile = router.pathname === '/mypage' && (user.memberType === 'USER' || !user._id) &&
 			(router.query.category == null || router.query.category === 'myProfile');
@@ -44,7 +44,7 @@ const withLayoutBasic = (Component: any) => {
 		const userFavorites = router.pathname === '/mypage' && router.query.category === 'myFavorites';
 		const theme = useTheme();
 		const programTheme = useMemo(() => {
-			if (router.pathname !== '/program' && !communityDiscovery && !communityArticle && !myBookings && !userProfile && !userFavorites && !trainerReservations && !trainerDashboard && !trainerProfile && !trainerPrograms && !compactTrainerPrograms) return theme;
+			if (router.pathname !== '/program' && !communityDiscovery && !communityArticle && !myBookings && !userProfile && !userFavorites && !trainerReservations && !trainerDashboard && !trainerProfile && !trainerPrograms && !trainerProgramEditor) return theme;
 			const fontFamily = "'Plus Jakarta Sans', sans-serif";
 			const typography = Object.fromEntries(
 				Object.entries(theme.typography).map(([variant, value]) => [
@@ -58,7 +58,7 @@ const withLayoutBasic = (Component: any) => {
 				},
 				typography: { ...typography, fontFamily },
 			});
-		}, [theme, router.pathname, communityDiscovery, communityArticle, myBookings, userProfile, userFavorites, trainerReservations, trainerDashboard, trainerProfile, trainerPrograms, compactTrainerPrograms]);
+		}, [theme, router.pathname, communityDiscovery, communityArticle, myBookings, userProfile, userFavorites, trainerReservations, trainerDashboard, trainerProfile, trainerPrograms, trainerProgramEditor]);
 
 		const memoizedValues = useMemo(() => {
 			let title = '',
@@ -175,14 +175,14 @@ const withLayoutBasic = (Component: any) => {
 				<main className="auth-layout"><Component {...props} /></main>
 			</ThemeProvider>;
 		}
-		if (trainerSchedule || trainerReservations || trainerDashboard || trainerProfile || trainerPrograms || compactTrainerPrograms) {
+		if (trainerSchedule || trainerReservations || trainerDashboard || trainerProfile || trainerPrograms || trainerProgramEditor) {
 			return (
 				<ThemeProvider theme={trainerSchedule ? theme : programTheme}>
 					<Head>
 						<title>GymFlow</title>
 						<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" />
 					</Head>
-					<Stack id="pc-wrap" className={`trainer-schedule-layout${trainerReservations || trainerDashboard || trainerProfile || trainerPrograms || compactTrainerPrograms ? ' trainer-reservations-layout' : ''}${trainerDashboard ? ' trainer-dashboard-layout' : ''}${trainerProfile ? ' trainer-profile-layout' : ''}${trainerPrograms ? ' trainer-programs-layout' : ''}${compactTrainerPrograms ? ' trainer-programs-mobile-layout' : ''}`}>
+					<Stack id="pc-wrap" className={`trainer-schedule-layout${trainerReservations || trainerDashboard || trainerProfile || trainerPrograms || trainerProgramEditor ? ' trainer-reservations-layout' : ''}${trainerDashboard ? ' trainer-dashboard-layout' : ''}${trainerProfile ? ' trainer-profile-layout' : ''}${trainerPrograms ? ' trainer-programs-layout' : ''}${trainerProgramEditor ? ' trainer-program-editor-layout' : ''}`}>
 						<Stack id="main" component="main"><Component {...props} /></Stack>
 						{device !== 'mobile' && trainerSchedule && <Chat />}
 						<Stack id="footer" component="footer"><Footer variant="programs" /></Stack>

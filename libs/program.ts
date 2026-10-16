@@ -2,6 +2,7 @@ import { ProgramCategory, ProgramLocation, ProgramStatus, ProgramType } from './
 import { Direction } from './enums/common.enum';
 import { ProgramInput, ProgramsInquiry, TrainerProgramsInquiry } from './types/program/program.input';
 import { TrainersInquiry } from './types/member/member.input';
+import { Program, Programs } from './types/program/program';
 
 export function readTrainersInquiry(value: unknown, fallback: TrainersInquiry): TrainersInquiry {
 	try {
@@ -103,6 +104,30 @@ export function readTrainerProgramsInquiry(value: unknown): TrainerProgramsInqui
 		/* Use the safe management default. */
 	}
 	return inquiry;
+}
+
+// The management API enforces ownership and excludes deleted programs server-side.
+export async function findTrainerProgram(
+	programId: string,
+	read: (input: TrainerProgramsInquiry) => Promise<Programs>,
+	isCurrent: () => boolean = () => true,
+): Promise<Program | null> {
+	if (!/^[a-f\d]{24}$/i.test(programId)) return null;
+	let page = 1;
+	while (isCurrent()) {
+		const result = await read({ page, limit: 100, sort: 'createdAt', direction: Direction.DESC, search: {} });
+		if (!isCurrent()) return null;
+		const program = result.list.find(
+			(item) =>
+				item._id === programId.toLowerCase() &&
+				[ProgramStatus.ACTIVE, ProgramStatus.PAUSED].includes(item.programStatus),
+		);
+		if (program) return program;
+		const total = result.metaCounter?.[0]?.total;
+		if (!result.list.length || (total !== undefined && page * 100 >= total)) return null;
+		page++;
+	}
+	return null;
 }
 
 export function programFormError(input: ProgramInput): string {

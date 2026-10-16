@@ -1,19 +1,29 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/router';
-import { Button, Stack, Typography } from '@mui/material';
-import useDeviceDetect from '../../hooks/useDeviceDetect';
+import Link from 'next/link';
+import { useTranslation } from 'next-i18next';
+import { useMediaQuery } from '@mui/material';
+import ArrowBackRoundedIcon from '@mui/icons-material/ArrowBackRounded';
+import CheckCircleOutlineRoundedIcon from '@mui/icons-material/CheckCircleOutlineRounded';
+import PersonOutlineRoundedIcon from '@mui/icons-material/PersonOutlineRounded';
+import GroupsOutlinedIcon from '@mui/icons-material/GroupsOutlined';
+import VideocamOutlinedIcon from '@mui/icons-material/VideocamOutlined';
+import AddPhotoAlternateOutlinedIcon from '@mui/icons-material/AddPhotoAlternateOutlined';
+import DeleteOutlineRoundedIcon from '@mui/icons-material/DeleteOutlineRounded';
+import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import { ProgramCategory, ProgramLocation, ProgramType } from '../../enums/program.enum';
 import { ProgramInput } from '../../types/program/program.input';
-import { Program } from '../../types/program/program';
+import { Programs } from '../../types/program/program';
 import axios from 'axios';
 import { getJwtToken, invalidateSession, isAuthenticationError } from '../../auth';
 import { authReadyVar, userVar } from '../../../apollo/store';
-import { useMutation, useQuery, useReactiveVar } from '@apollo/client';
+import { useApolloClient, useMutation, useReactiveVar } from '@apollo/client';
 import { CREATE_PROGRAM, UPDATE_PROGRAM } from '../../../apollo/user/mutation';
 import { GET_TRAINER_PROGRAMS } from '../../../apollo/user/query';
 import { sweetMixinSuccessAlert } from '../../sweetAlert';
-import { programFormError, programPayload, readTrainerProgramsInquiry } from '../../program';
+import { findTrainerProgram, programFormError, programPayload, readTrainerProgramsInquiry } from '../../program';
 import { REACT_APP_API_URL } from '../../config';
+import { TrainerWorkspaceHeader, TrainerWorkspaceNavigation } from './TrainerWorkspaceNavigation';
 
 const initialValues: ProgramInput = {
 	programName: '',
@@ -28,50 +38,104 @@ const initialValues: ProgramInput = {
 	programImages: [],
 };
 
-const AddProgram = ({ allowMobile = false }: { allowMobile?: boolean }) => {
-	const device = useDeviceDetect();
+const AddProgram = () => {
+	const { t } = useTranslation('common');
+	const compactViewport = useMediaQuery('(max-width:767px)');
 	const router = useRouter();
 	const user = useReactiveVar(userVar);
 	const authReady = useReactiveVar(authReadyVar);
-	const programId = typeof router.query.programId === 'string' ? router.query.programId : '';
+	const client = useApolloClient();
+	const editing = router.query.programId !== undefined;
+	const programId = typeof router.query.programId === 'string' ? router.query.programId.toLowerCase() : '';
+	const token = getJwtToken();
+	const scope = `${authReady}:${user.memberType}:${user._id}:${token}:${programId}`;
 	const inquiry = readTrainerProgramsInquiry(router.query.input);
 	const [insertProgramData, setInsertProgramData] = useState<ProgramInput>({ ...initialValues });
-	const [loadedId, setLoadedId] = useState('');
+	const [loadedScope, setLoadedScope] = useState('');
+	const [loading, setLoading] = useState(false);
 	const [formError, setFormError] = useState('');
 	const [loadError, setLoadError] = useState('');
 	const [uploading, setUploading] = useState(false);
+	const [validationAttempt, setValidationAttempt] = useState(0);
 	const inputRef = useRef<HTMLInputElement>(null);
+	const errorRef = useRef<HTMLParagraphElement>(null);
+	const lookupRequest = useRef(0);
+	const currentScope = useRef(scope);
+	currentScope.current = scope;
 	const submitting = useRef(false);
 	const [createProgram, { loading: creating }] = useMutation(CREATE_PROGRAM);
 	const [updateProgram, { loading: updating }] = useMutation(UPDATE_PROGRAM);
 
 	/** APOLLO REQUESTS **/
-	const { loading, refetch: getTrainerProgramsRefetch } = useQuery(GET_TRAINER_PROGRAMS, {
-		fetchPolicy: 'network-only',
-		variables: { input: inquiry },
-		skip: !router.isReady || !programId || !authReady || user.memberType !== 'TRAINER',
-		onCompleted: (data) => {
-			const program: Program | undefined = data.getTrainerPrograms?.list?.find(
-				(item: Program) => item._id === programId,
-			);
-			if (!program) {
-				setLoadError('Program not found on this management page. Return to My Programs and select it again.');
-				return;
-			}
-			setInsertProgramData(programPayload(program));
-			setLoadedId(program._id);
+	const lookupProgram = useCallback(
+		async (conflict = false) => {
+			const request = ++lookupRequest.current;
+			const isCurrent = () =>
+				request === lookupRequest.current &&
+				currentScope.current === scope &&
+				authReadyVar() &&
+				userVar().memberType === 'TRAINER' &&
+				userVar()._id === user._id &&
+				getJwtToken() === token;
+			setLoading(true);
+			setLoadedScope('');
 			setLoadError('');
+			try {
+				if (!/^[a-f\d]{24}$/i.test(programId)) {
+					setLoadError('Invalid id');
+					return;
+				}
+				const program = await findTrainerProgram(
+					programId,
+					async (input) => {
+						const { data } = await client.query<{ getTrainerPrograms: Programs }>({
+							query: GET_TRAINER_PROGRAMS,
+							variables: { input },
+							fetchPolicy: 'no-cache',
+							context: { queryDeduplication: false, handleErrorLocally: true },
+						});
+						return data.getTrainerPrograms;
+					},
+					isCurrent,
+				);
+				if (!isCurrent()) return;
+				if (!program) {
+					setLoadError('Unavailable');
+					return;
+				}
+				setInsertProgramData(programPayload(program));
+				setLoadedScope(scope);
+				setFormError(
+					conflict ? 'Program changed. The latest values have been loaded; review them before saving again.' : '',
+				);
+			} catch (err) {
+				if (isCurrent()) setLoadError(conflict ? 'Conflict refresh error' : 'Load error');
+			} finally {
+				if (isCurrent()) setLoading(false);
+			}
 		},
-		onError: () => setLoadError('Could not load this program. Return to My Programs to retry.'),
-	});
+		[client, programId, scope, token, user._id],
+	);
 
 	/** LIFECYCLES **/
 	useEffect(() => {
-		setLoadedId('');
+		setLoadedScope('');
 		setLoadError('');
 		setFormError('');
-		if (!programId) setInsertProgramData({ ...initialValues });
-	}, [programId]);
+		if (!editing) {
+			setLoading(false);
+			setInsertProgramData({ ...initialValues });
+		} else if (router.isReady && authReady && user.memberType === 'TRAINER') void lookupProgram();
+		return () => {
+			lookupRequest.current += 1;
+		};
+	}, [editing, router.isReady, authReady, user.memberType, lookupProgram]);
+
+	useEffect(() => {
+		if (!validationAttempt) return;
+		errorRef.current?.focus({ preventScroll: true });
+		errorRef.current?.scrollIntoView({ block: 'center' });
+	}, [validationAttempt]);
 
 	/** HANDLERS **/
 	const typeHandler = (type: ProgramType) => {
@@ -137,10 +201,11 @@ const AddProgram = ({ allowMobile = false }: { allowMobile?: boolean }) => {
 	};
 	const submitHandler = async (event: React.FormEvent) => {
 		event.preventDefault();
-		if (submitting.current || uploading || (programId && loadedId !== programId)) return;
+		if (submitting.current || uploading || (editing && loadedScope !== scope)) return;
 		const error = programFormError(insertProgramData);
 		if (error) {
 			setFormError(error);
+			setValidationAttempt((attempt) => attempt + 1);
 			return;
 		}
 		submitting.current = true;
@@ -149,192 +214,428 @@ const AddProgram = ({ allowMobile = false }: { allowMobile?: boolean }) => {
 			const payload = programPayload(insertProgramData, Boolean(programId));
 			if (programId) await updateProgram({ variables: { input: { ...payload, _id: programId } } });
 			else await createProgram({ variables: { input: payload } });
-			await sweetMixinSuccessAlert(programId ? 'Program updated successfully.' : 'Program created successfully.');
+			await sweetMixinSuccessAlert(t(`Trainer program form.${editing ? 'Updated' : 'Created'}`));
 			await router.push({ pathname: '/mypage', query: { category: 'myPrograms', input: JSON.stringify(inquiry) } });
 		} catch (err: any) {
-			if (/program changed|conflict/i.test(err.message ?? '')) {
-				await getTrainerProgramsRefetch();
-				setFormError('Program changed. The latest values have been loaded; review them before saving again.');
+			if (editing && currentScope.current === scope && /program changed|conflict/i.test(err.message ?? '')) {
+				await lookupProgram(true);
 			} else setFormError(err.message ?? 'Could not save this program.');
 		} finally {
 			submitting.current = false;
 		}
 	};
 
-	if (!authReady) return <p>Loading profile...</p>;
-	if (user.memberType !== 'TRAINER') return <p>Only trainers can manage programs.</p>;
-	if (device === 'mobile' && !allowMobile) return <div>ADD PROGRAM MOBILE PAGE</div>;
-	if (programId && (loading || loadedId !== programId || loadError))
-		return (
-			<Stack>
-				<Typography role={loadError ? 'alert' : undefined}>{loadError || 'Loading program...'}</Typography>
-				<Button onClick={() => router.push('/mypage?category=myPrograms')}>My Programs</Button>
-			</Stack>
-		);
+	const busy = creating || updating || uploading;
+	const loadBlocked = editing && (loading || loadedScope !== scope || Boolean(loadError));
+	const saveLabel = t(
+		`Trainer program form.${creating || updating ? 'Saving' : editing ? 'Save Changes' : 'Create Program'}`,
+	);
+	const programsUrl = { pathname: '/mypage', query: { category: 'myPrograms', input: JSON.stringify(inquiry) } };
+	const online = insertProgramData.programType === ProgramType.ONLINE;
+	const privateSession = insertProgramData.programType === ProgramType.PT_1ON1;
+	const messageKeys: Record<string, string> = {
+		'Please select a type, category and location.': 'Invalid selection',
+		'Program name must contain 3–100 characters.': 'Invalid name',
+		'Price must be a non-negative integer; duration and capacity must be positive integers.': 'Invalid numbers',
+		'One-on-one programs require capacity 1.': 'Capacity note',
+		'Online type and location must be selected together.': 'Invalid online',
+		'In-person programs require a physical address.': 'Address required',
+		'Address must contain 3–100 characters.': 'Invalid address',
+		'Description must contain 5–500 characters, or be empty.': 'Invalid description',
+		'Upload at least one program image.': 'Image required',
+		'Cannot upload more than 5 images.': 'Image maximum',
+		'Only JPEG and PNG images are allowed.': 'Image format',
+		'Image upload failed.': 'Upload failed',
+		'Could not save this program.': 'Save failed',
+		'Program changed. The latest values have been loaded; review them before saving again.': 'Conflict',
+	};
+	const errorMessage = messageKeys[formError] ? t('Trainer program form.' + messageKeys[formError]) : formError;
+
+	const descriptionSection = (
+		<section className="editor-section editor-description" aria-labelledby="editor-description-title">
+			<div className="editor-section-heading">
+				<h2 id="editor-description-title">
+					<span className="editor-desktop-copy">{t('Trainer program form.Description')}</span>
+					<span className="editor-mobile-copy">{t('Trainer program form.Mobile description')}</span>
+				</h2>
+				<p>{t('Trainer program form.Description intro')}</p>
+			</div>
+			<div className="editor-field">
+				<label className="editor-sr-only" htmlFor="program-description">
+					{t('Trainer program form.Description')}
+				</label>
+				<textarea
+					id="program-description"
+					name="programDesc"
+					value={insertProgramData.programDesc ?? ''}
+					maxLength={500}
+					rows={6}
+					placeholder={t('Trainer program form.Description placeholder')}
+					onChange={(e) => setInsertProgramData({ ...insertProgramData, programDesc: e.target.value })}
+				/>
+				<p className="editor-description-meta">
+					<span>{t('Trainer program form.Optional')}</span>
+					<span>{t('Trainer program form.Characters', { count: (insertProgramData.programDesc ?? '').length })}</span>
+				</p>
+			</div>
+		</section>
+	);
+
+	if (!authReady) return <p role="status">{t('Trainer programs.Auth loading')}</p>;
+	if (user.memberType !== 'TRAINER') return <p role="alert">{t('Trainer programs.Trainer only')}</p>;
 
 	return (
-		<div id="add-program-page">
-			<Stack className="main-title-box">
-				<Typography className="main-title">{programId ? 'Edit Program' : 'Add New Program'}</Typography>
-			</Stack>
-			<form onSubmit={submitHandler}>
-				<Stack className="config">
-					<Stack className="description-box" spacing={3}>
-						<Stack className="config-column">
-							<Typography className="title">Program name</Typography>
-							<input
-								className="description-input"
-								value={insertProgramData.programName}
-								maxLength={100}
-								onChange={(e) => setInsertProgramData({ ...insertProgramData, programName: e.target.value })}
-							/>
-						</Stack>
-						<Stack className="config-row" spacing={2} direction="row">
-							<Stack className="price-year-after-price">
-								<Typography className="title">Type</Typography>
-								<select
-									className="select-description"
-									value={insertProgramData.programType}
-									onChange={(e) => typeHandler(e.target.value as ProgramType)}
-								>
-									{Object.values(ProgramType).map((value) => (
-										<option key={value} value={value}>
-											{value.replace(/_/g, ' ')}
-										</option>
-									))}
-								</select>
-							</Stack>
-							<Stack className="price-year-after-price">
-								<Typography className="title">Category</Typography>
-								<select
-									className="select-description"
-									value={insertProgramData.programCategory}
-									onChange={(e) =>
-										setInsertProgramData({ ...insertProgramData, programCategory: e.target.value as ProgramCategory })
-									}
-								>
-									{Object.values(ProgramCategory).map((value) => (
-										<option key={value} value={value}>
-											{value.replace(/_/g, ' ')}
-										</option>
-									))}
-								</select>
-							</Stack>
-						</Stack>
-						<Stack className="config-row" spacing={2} direction="row">
-							{(['programPrice', 'programDuration', 'programCapacity'] as const).map((key, index) => (
-								<Stack key={key} className="price-year-after-price">
-									<Typography className="title">
-										{['Price (KRW/session)', 'Duration (minutes/session)', 'Capacity (participants/session)'][index]}
-									</Typography>
-									<input
-										className="description-input"
-										type="number"
-										min={index === 0 ? 0 : 1}
-										max={2147483647}
-										step={1}
-										disabled={key === 'programCapacity' && insertProgramData.programType === ProgramType.PT_1ON1}
-										value={Number.isNaN(insertProgramData[key]) ? '' : insertProgramData[key]}
-										onChange={(e) =>
-											setInsertProgramData({
-												...insertProgramData,
-												[key]: e.target.value === '' ? NaN : Number(e.target.value),
-											})
-										}
-									/>
-								</Stack>
-							))}
-						</Stack>
-						<Stack className="config-column">
-							<Typography className="title">Location</Typography>
-							<select
-								className="select-description"
-								value={insertProgramData.programLocation}
-								disabled={insertProgramData.programType === ProgramType.ONLINE}
-								onChange={(e) =>
-									setInsertProgramData({ ...insertProgramData, programLocation: e.target.value as ProgramLocation })
-								}
+		<div className="trainer-program-editor-workspace">
+			<TrainerWorkspaceHeader active="Programs" />
+			<div id="add-program-page">
+				<header className="editor-page-heading">
+					<div>
+						<Link passHref href={programsUrl} className="editor-back">
+							<ArrowBackRoundedIcon aria-hidden="true" />
+							{t('Trainer program form.Back')}
+						</Link>
+						<h1>{t(`Trainer program form.${editing ? 'Edit Program' : 'Create Program'}`)}</h1>
+						<p>{t(`Trainer program form.${editing ? 'Edit intro' : 'Create intro'}`)}</p>
+					</div>
+					{!loadBlocked && (
+						<div className="editor-top-actions">
+							<Link passHref href={programsUrl} className="editor-cancel">
+								{t('Trainer program form.Cancel')}
+							</Link>
+							<button type="submit" form="trainer-program-form" className="editor-save" disabled={busy}>
+								<CheckCircleOutlineRoundedIcon aria-hidden="true" />
+								{saveLabel}
+							</button>
+						</div>
+					)}
+				</header>
+				{loadBlocked ? (
+					<div className="editor-load-state" role={loadError ? 'alert' : 'status'}>
+						<p>{t(`Trainer program form.${loadError || 'Loading'}`)}</p>
+						{['Load error', 'Conflict refresh error'].includes(loadError) && (
+							<button
+								type="button"
+								className="editor-back"
+								onClick={() => void lookupProgram(loadError === 'Conflict refresh error')}
 							>
-								{Object.values(ProgramLocation)
-									.filter(
-										(location) =>
-											insertProgramData.programType === ProgramType.ONLINE || location !== ProgramLocation.ONLINE,
-									)
-									.map((value) => (
-										<option key={value} value={value}>
-											{value}
-										</option>
-									))}
-							</select>
-						</Stack>
-						{insertProgramData.programType !== ProgramType.ONLINE && (
-							<Stack className="config-column">
-								<Typography className="title">Physical address</Typography>
-								<input
-									className="description-input"
-									value={insertProgramData.programAddress ?? ''}
-									maxLength={100}
-									onChange={(e) => setInsertProgramData({ ...insertProgramData, programAddress: e.target.value })}
-								/>
-							</Stack>
+								{t('Trainer programs.Retry')}
+							</button>
 						)}
-						<Stack className="config-column">
-							<Typography className="title">Description (optional)</Typography>
-							<textarea
-								className="description-input"
-								value={insertProgramData.programDesc ?? ''}
-								maxLength={500}
-								onChange={(e) => setInsertProgramData({ ...insertProgramData, programDesc: e.target.value })}
-							/>
-						</Stack>
-						<Stack className="config-column">
-							<Typography className="title">Program images (up to 5)</Typography>
-							<input
-								ref={inputRef}
-								type="file"
-								accept="image/jpeg,image/png"
-								multiple
-								disabled={uploading || creating || updating}
-								onChange={uploadImages}
-							/>
-							{uploading && <Typography>Uploading images...</Typography>}
-							<Stack direction="row" spacing={2} flexWrap="wrap">
-								{insertProgramData.programImages.map((image, index) => (
-									<Stack key={image}>
-										<img
-											src={REACT_APP_API_URL + '/' + image}
-											alt={'Program image ' + (index + 1)}
-											width={120}
-											height={90}
-											style={{ objectFit: 'cover' }}
+						{loadError && (
+							<Link passHref href={programsUrl} className="editor-back">
+								{t('Trainer program form.Back')}
+							</Link>
+						)}
+					</div>
+				) : (
+					<form id="trainer-program-form" onSubmit={submitHandler} noValidate aria-busy={busy}>
+						<fieldset className="editor-columns" disabled={creating || updating}>
+							<legend className="editor-sr-only">
+								{t(`Trainer program form.${editing ? 'Edit Program' : 'Create Program'}`)}
+							</legend>
+							<div className="editor-main-column">
+								<section className="editor-section editor-basics" aria-labelledby="editor-basics-title">
+									<div className="editor-section-heading">
+										<h2 id="editor-basics-title">
+											<span className="editor-desktop-copy">{t('Trainer program form.Basics')}</span>
+											<span className="editor-mobile-copy">{t('Trainer program form.Mobile basics')}</span>
+										</h2>
+										<p>{t('Trainer program form.Basics intro')}</p>
+									</div>
+									<div className="editor-field">
+										<label htmlFor="program-name">
+											{t('Trainer program form.Name')} <span>*</span>
+										</label>
+										<input
+											id="program-name"
+											name="programName"
+											value={insertProgramData.programName}
+											maxLength={100}
+											required
+											placeholder={t('Trainer program form.Name placeholder')}
+											onChange={(e) => setInsertProgramData({ ...insertProgramData, programName: e.target.value })}
 										/>
-										<Button
-											type="button"
-											disabled={uploading}
-											onClick={() =>
+									</div>
+									<fieldset className="editor-type-field">
+										<legend>
+											{t('Trainer program form.Type')} <span>*</span>
+										</legend>
+										<div className="editor-type-options">
+											{Object.values(ProgramType).map((value, index) => {
+												const Icon = [PersonOutlineRoundedIcon, GroupsOutlinedIcon, VideocamOutlinedIcon][index];
+												return (
+													<label
+														key={value}
+														className={`editor-type-option${
+															insertProgramData.programType === value ? ' is-selected' : ''
+														}`}
+													>
+														<input
+															type="radio"
+															name="programType"
+															value={value}
+															checked={insertProgramData.programType === value}
+															onChange={() => typeHandler(value)}
+														/>
+														<Icon aria-hidden="true" />
+														<span>{t('Program discovery card.' + value)}</span>
+														<small>{t('Trainer program form.' + value)}</small>
+													</label>
+												);
+											})}
+										</div>
+									</fieldset>
+									<div className="editor-field">
+										<label htmlFor="program-category">
+											{t('Trainer program form.Category')} <span>*</span>
+										</label>
+										<div className="editor-category-chips" role="group" aria-label={t('Trainer program form.Category')}>
+											{Object.values(ProgramCategory).map((value) => (
+												<button
+													key={value}
+													type="button"
+													aria-pressed={insertProgramData.programCategory === value}
+													onClick={() => setInsertProgramData({ ...insertProgramData, programCategory: value })}
+												>
+													{t('Program discovery card.' + value)}
+												</button>
+											))}
+										</div>
+										<select
+											className="editor-mobile-category"
+											id="program-category"
+											name="programCategory"
+											required
+											value={insertProgramData.programCategory}
+											onChange={(e) =>
 												setInsertProgramData({
 													...insertProgramData,
-													programImages: insertProgramData.programImages.filter((_, position) => position !== index),
+													programCategory: e.target.value as ProgramCategory,
 												})
 											}
 										>
-											Remove
-										</Button>
-									</Stack>
-								))}
-							</Stack>
-						</Stack>
-						{formError && (
-							<Typography role="alert" color="error">
-								{formError}
-							</Typography>
-						)}
-						<Button type="submit" variant="contained" disabled={creating || updating || uploading}>
-							{creating || updating ? 'Saving...' : programId ? 'Save Changes' : 'Create Program'}
-						</Button>
-					</Stack>
-				</Stack>
-			</form>
+											{Object.values(ProgramCategory).map((value) => (
+												<option key={value} value={value}>
+													{t('Program discovery card.' + value)}
+												</option>
+											))}
+										</select>
+									</div>
+								</section>
+								<section className="editor-section editor-pricing" aria-labelledby="editor-pricing-title">
+									<div className="editor-section-heading">
+										<h2 id="editor-pricing-title">
+											<span className="editor-desktop-copy">{t('Trainer program form.Pricing')}</span>
+											<span className="editor-mobile-copy">{t('Trainer program form.Mobile pricing')}</span>
+										</h2>
+										<p>{t('Trainer program form.Pricing intro')}</p>
+									</div>
+									<div className="editor-pricing-fields">
+										{(['programPrice', 'programDuration', 'programCapacity'] as const).map((key, index) => (
+											<div key={key} className={`editor-field editor-${key}`}>
+												<label htmlFor={key}>
+													{t('Trainer program form.' + ['Price', 'Duration', 'Capacity'][index])} <span>*</span>
+												</label>
+												<div className="editor-number-control">
+													{key === 'programPrice' && <span aria-hidden="true">₩</span>}
+													<input
+														id={key}
+														name={key}
+														type="number"
+														min={index === 0 ? 0 : 1}
+														max={2147483647}
+														step={1}
+														required
+														disabled={key === 'programCapacity' && privateSession}
+														aria-describedby={
+															key === 'programCapacity' && privateSession ? 'editor-capacity-note' : undefined
+														}
+														value={Number.isNaN(insertProgramData[key]) ? '' : insertProgramData[key]}
+														onChange={(e) =>
+															setInsertProgramData({
+																...insertProgramData,
+																[key]: e.target.value === '' ? NaN : Number(e.target.value),
+															})
+														}
+													/>
+													<span>
+														{t('Trainer program form.' + ['KRW per session', 'Minutes', 'Participants'][index])}
+													</span>
+												</div>
+											</div>
+										))}
+									</div>
+									{privateSession && (
+										<p className="editor-note" id="editor-capacity-note">
+											<InfoOutlinedIcon aria-hidden="true" />
+											{t('Trainer program form.Capacity note')}
+										</p>
+									)}
+								</section>
+								<section className="editor-section editor-location" aria-labelledby="editor-location-title">
+									<div className="editor-section-heading">
+										<h2 id="editor-location-title">
+											<span className="editor-desktop-copy">{t('Trainer program form.Location')}</span>
+											<span className="editor-mobile-copy">{t('Trainer program form.Mobile location')}</span>
+										</h2>
+										<p>{t('Trainer program form.Location intro')}</p>
+									</div>
+									<div className="editor-location-fields">
+										<div className="editor-field">
+											<label htmlFor="program-location">
+												{t('Trainer program form.Region')} <span>*</span>
+											</label>
+											<select
+												id="program-location"
+												name="programLocation"
+												value={insertProgramData.programLocation}
+												disabled={online}
+												onChange={(e) =>
+													setInsertProgramData({
+														...insertProgramData,
+														programLocation: e.target.value as ProgramLocation,
+													})
+												}
+											>
+												{Object.values(ProgramLocation)
+													.filter((location) => online || location !== ProgramLocation.ONLINE)
+													.map((value) => (
+														<option key={value} value={value}>
+															{t(value)}
+														</option>
+													))}
+											</select>
+										</div>
+										{!online && (
+											<div className="editor-field">
+												<label htmlFor="program-address">
+													{t('Trainer program form.Address')} <span>*</span>
+												</label>
+												<input
+													id="program-address"
+													name="programAddress"
+													value={insertProgramData.programAddress ?? ''}
+													maxLength={100}
+													required
+													onChange={(e) =>
+														setInsertProgramData({ ...insertProgramData, programAddress: e.target.value })
+													}
+												/>
+											</div>
+										)}
+									</div>
+									{online && <p className="editor-note">{t('Trainer program form.Online note')}</p>}
+								</section>
+								{!compactViewport && descriptionSection}
+							</div>
+							<aside className="editor-aside-column">
+								<section className="editor-section editor-photos" aria-labelledby="editor-photos-title">
+									<div className="editor-section-heading">
+										<div className="editor-photos-heading">
+											<h2 id="editor-photos-title">
+												<span className="editor-desktop-copy">{t('Trainer program form.Photos')}</span>
+												<span className="editor-mobile-copy">{t('Trainer program form.Mobile photos')}</span>
+											</h2>
+											<span className="editor-photo-count">
+												{t('Trainer program form.Photo count', { count: insertProgramData.programImages.length })}
+											</span>
+										</div>
+										<p>{t('Trainer program form.Photos intro')}</p>
+									</div>
+									<div className="editor-photo-grid">
+										{insertProgramData.programImages.map((image, index) => (
+											<div className="editor-photo" key={image}>
+												<img
+													src={REACT_APP_API_URL + '/' + image}
+													alt={t('Trainer program form.Image alt', { index: index + 1 })}
+													width={80}
+													height={80}
+												/>
+												<div className="editor-photo-caption">
+													<span>{t('Trainer program form.Image alt', { index: index + 1 })}</span>
+													{index === 0 && <small>{t('Trainer program form.Primary')}</small>}
+												</div>
+												<button
+													type="button"
+													className="editor-remove-photo"
+													disabled={busy}
+													aria-label={t('Trainer program form.Remove image', { index: index + 1 })}
+													onClick={() =>
+														setInsertProgramData({
+															...insertProgramData,
+															programImages: insertProgramData.programImages.filter(
+																(_, position) => position !== index,
+															),
+														})
+													}
+												>
+													<DeleteOutlineRoundedIcon aria-hidden="true" />
+												</button>
+											</div>
+										))}
+										<button
+											type="button"
+											className="editor-add-photo"
+											disabled={busy || insertProgramData.programImages.length >= 5}
+											onClick={() => inputRef.current?.click()}
+										>
+											<AddPhotoAlternateOutlinedIcon aria-hidden="true" />
+											<span>
+												{t(
+													`Trainer program form.${
+														uploading
+															? 'Uploading'
+															: insertProgramData.programImages.length >= 5
+															? 'Image maximum'
+															: 'Add photos'
+													}`,
+												)}
+											</span>
+											<small>JPG / JPEG / PNG</small>
+										</button>
+									</div>
+									<input
+										ref={inputRef}
+										className="editor-sr-only"
+										type="file"
+										accept="image/jpeg,image/png"
+										multiple
+										disabled={busy}
+										onChange={uploadImages}
+										aria-label={t('Trainer program form.Add photos')}
+										tabIndex={-1}
+									/>
+									{uploading && <p role="status">{t('Trainer program form.Uploading')}</p>}
+									<p className="editor-note">
+										<InfoOutlinedIcon aria-hidden="true" />
+										{t('Trainer program form.Primary note')}
+									</p>
+								</section>
+								{compactViewport && descriptionSection}
+								<section className="editor-section editor-confirm" aria-labelledby="editor-confirm-title">
+									<div className="editor-section-heading">
+										<h2 id="editor-confirm-title">{t('Trainer program form.Confirm')}</h2>
+										<p>{t('Trainer program form.Confirm intro')}</p>
+									</div>
+									{errorMessage && (
+										<p className="editor-error" role="alert" tabIndex={-1} ref={errorRef}>
+											{errorMessage}
+										</p>
+									)}
+									<button type="submit" className="editor-save" disabled={busy}>
+										<CheckCircleOutlineRoundedIcon aria-hidden="true" />
+										{saveLabel}
+									</button>
+									<Link passHref href={programsUrl} className="editor-cancel">
+										{t('Trainer program form.Cancel')}
+									</Link>
+								</section>
+							</aside>
+						</fieldset>
+					</form>
+				)}
+			</div>
+			<TrainerWorkspaceNavigation active="Programs" mobile />
 		</div>
 	);
 };
