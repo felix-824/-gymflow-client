@@ -12,6 +12,7 @@ import { CREATE_BOARD_ARTICLE } from '../../../apollo/user/mutation';
 import { Message } from './../../enums/common.enum';
 import { sweetErrorHandling, sweetTopSuccessAlert } from './../../sweetAlert';
 import '@toast-ui/editor/dist/toastui-editor.css';
+import { articleHtmlPlugin, sanitizeArticleHtml } from '../../article-html';
 
 const TuiEditor = () => {
 	const editorRef = useRef<Editor>(null),
@@ -157,6 +158,8 @@ const TuiEditor = () => {
 			</Stack>
 
 			<Editor
+				customHTMLSanitizer={sanitizeArticleHtml}
+				plugins={[articleHtmlPlugin]}
 				initialValue={'Type here'}
 				placeholder={'Type here'}
 				previewStyle={'vertical'}

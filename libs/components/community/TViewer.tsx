@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import '@toast-ui/editor/dist/toastui-editor.css';
 import { Viewer } from '@toast-ui/react-editor';
 import { Box, Stack, CircularProgress } from '@mui/material';
+import { sanitizeArticleHtml } from '../../article-html';
 
 const TViewer = (props: any) => {
 	const [editorLoaded, setEditorLoaded] = useState(false);
@@ -21,20 +22,9 @@ const TViewer = (props: any) => {
 				{editorLoaded ? (
 					<Viewer
 						initialValue={props.markdown}
+						customHTMLSanitizer={sanitizeArticleHtml}
 						customHTMLRenderer={{
 							htmlBlock: {
-								iframe(node: any) {
-									return [
-										{
-											type: 'openTag',
-											tagName: 'iframe',
-											outerNewLine: true,
-											attributes: node.attrs,
-										},
-										{ type: 'html', content: node.childrenHTML ?? '' },
-										{ type: 'closeTag', tagName: 'iframe', outerNewLine: true },
-									];
-								},
 								div(node: any) {
 									return [
 										{ type: 'openTag', tagName: 'div', outerNewLine: true, attributes: node.attrs },
