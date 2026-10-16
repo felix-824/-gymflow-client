@@ -125,6 +125,7 @@ const likeMemberHandler = async (id: string, refetch: any, query: any) => {
 		}
 	};
 
+	if (category === 'myPrograms') return <MyPrograms />;
 	if (category === 'myFavorites') return <MyFavorites />;
 	if (category === 'myBookings') return <MyBookings />;
 	if (category === 'trainerReservations') return <TrainerReservations />;
@@ -172,11 +173,11 @@ if (category === 'trainerSchedule') {
 		</div>
 	);
 }
-if (compactViewport && user.memberType === 'TRAINER' && ['myPrograms', 'addProgram'].includes(category)) {
+if (compactViewport && user.memberType === 'TRAINER' && category === 'addProgram') {
 	return <div className="trainer-mobile-program-workspace">
 		<TrainerWorkspaceHeader active="Programs" />
 		<div id="my-page"><div className="container">
-			{category === 'myPrograms' ? <MyPrograms allowMobile /> : <AddProgram allowMobile />}
+			<AddProgram allowMobile />
 		</div></div>
 		<TrainerWorkspaceNavigation active="Programs" mobile />
 	</div>;
@@ -200,7 +201,6 @@ if (device === 'mobile') {
 							<Stack className="main-config" mb={'76px'}>
 								<Stack className={'list-config'}>
 									{category === 'addProgram' && <AddProgram />}
-									{category === 'myPrograms' && <MyPrograms />}
 									{category === 'recentlyVisited' && <RecentlyVisited />}
 									{category === 'myArticles' && <MyArticles />}
 									{category === 'writeArticle' && <WriteArticle />}

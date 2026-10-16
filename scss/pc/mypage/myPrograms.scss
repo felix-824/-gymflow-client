@@ -252,3 +252,458 @@
 		}
 	}
 }
+#pc-wrap.trainer-programs-layout {
+	.trainer-programs-workspace,
+	.trainer-programs-workspace * {
+		font-family: 'Plus Jakarta Sans', sans-serif;
+	}
+	#trainer-programs-page {
+		width: calc(100% - 64px);
+		max-width: 1216px;
+		margin: 0 auto;
+		padding: 40px 0 64px;
+		color: #17191f;
+		font-size: 14px;
+		line-height: 1.6;
+	}
+	#trainer-programs-page * {
+		box-sizing: border-box;
+	}
+	#trainer-programs-page h1,
+	#trainer-programs-page h2,
+	#trainer-programs-page p {
+		margin: 0;
+	}
+	#trainer-programs-page a {
+		text-decoration: none;
+	}
+	.trainer-programs-heading {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 24px;
+		margin-bottom: 32px;
+	}
+	.trainer-programs-heading h1 {
+		font-size: 36px;
+		font-weight: 700;
+		line-height: 1.25;
+		letter-spacing: -0.025em;
+		margin-bottom: 10px !important;
+	}
+	.trainer-programs-heading p {
+		color: #626978;
+	}
+	.trainer-programs-heading .trainer-programs-eyebrow {
+		color: #626978;
+		font-size: 11px;
+		font-weight: 600;
+		letter-spacing: 0.07em;
+		text-transform: uppercase;
+		margin-bottom: 8px !important;
+	}
+	.trainer-programs-create {
+		display: inline-flex;
+		justify-content: center;
+		align-items: center;
+		flex-shrink: 0;
+		gap: 8px;
+		min-height: 46px;
+		padding: 12px 24px;
+		border-radius: 999px;
+		background: #c74c3b;
+		color: #fff;
+		font-weight: 600;
+	}
+	.trainer-programs-create:hover {
+		background: #a53425;
+	}
+	.trainer-programs-create svg {
+		width: 20px;
+		height: 20px;
+	}
+	.trainer-programs-toolbar {
+		display: flex;
+		align-items: center;
+		gap: 20px;
+		flex-wrap: wrap;
+		margin-bottom: 24px;
+	}
+	.trainer-programs-tabs {
+		display: inline-flex;
+		padding: 4px;
+		border-radius: 999px;
+		background: #edeef0;
+	}
+	.trainer-programs-tabs button {
+		border: 0;
+		min-height: 44px;
+		padding: 10px 22px;
+		border-radius: 999px;
+		background: transparent;
+		color: #5b5e68;
+		font: inherit;
+		font-weight: 600;
+		cursor: pointer;
+	}
+	.trainer-programs-tabs button[aria-pressed='true'] {
+		color: #fff;
+		background: #191c1e;
+	}
+	.trainer-programs-count {
+		color: #626978;
+		font-size: 12px;
+		font-variant-numeric: tabular-nums;
+	}
+	.trainer-programs-list {
+		display: flex;
+		flex-direction: column;
+		gap: 20px;
+	}
+	.trainer-program-row {
+		display: grid;
+		grid-template-columns: 176px minmax(0, 1fr) auto;
+		align-items: center;
+		gap: 24px;
+		padding: 24px;
+		border-radius: 16px;
+		background: #fff;
+		box-shadow: 0 2px 8px rgba(18, 21, 29, 0.04);
+	}
+	.trainer-program-image {
+		width: 176px;
+		height: 144px;
+		overflow: hidden;
+		border-radius: 12px;
+		background: #edeef0;
+	}
+	.trainer-program-image img {
+		display: block;
+		width: 100%;
+		height: 100%;
+		object-fit: cover;
+	}
+	.trainer-program-image-fallback {
+		display: flex;
+		height: 100%;
+		align-items: center;
+		justify-content: center;
+		color: #626978;
+	}
+	.trainer-program-image-fallback svg {
+		width: 40px;
+		height: 40px;
+	}
+	.trainer-program-info {
+		min-width: 0;
+	}
+	.trainer-program-labels,
+	.trainer-program-metadata {
+		display: flex;
+		align-items: center;
+		flex-wrap: wrap;
+		gap: 8px 12px;
+		color: #626978;
+		font-size: 12px;
+	}
+	.trainer-program-labels > span,
+	.trainer-program-metadata > span {
+		overflow-wrap: anywhere;
+	}
+	.trainer-program-status {
+		display: inline-flex;
+		align-items: center;
+		gap: 6px;
+		padding: 3px 10px;
+		border-radius: 999px;
+		font-size: 11px;
+		font-weight: 600;
+		background: #ecfdf5;
+		color: #047857;
+	}
+	.trainer-program-status::before {
+		content: '';
+		width: 6px;
+		height: 6px;
+		flex-shrink: 0;
+		border-radius: 50%;
+		background: currentColor;
+	}
+	.trainer-program-status.is-paused {
+		color: #92400e;
+		background: #fffbeb;
+	}
+	.trainer-program-info h2 {
+		font-size: 19px;
+		font-weight: 600;
+		line-height: 1.45;
+		letter-spacing: -0.02em;
+		overflow-wrap: anywhere;
+		margin: 8px 0 !important;
+	}
+	.trainer-program-price {
+		display: flex;
+		align-items: baseline;
+		flex-wrap: wrap;
+		gap: 6px;
+		margin-top: 12px !important;
+		font-variant-numeric: tabular-nums;
+	}
+	.trainer-program-price strong {
+		color: #a53425;
+		font-size: 19px;
+		font-weight: 700;
+	}
+	.trainer-program-price > span {
+		color: #626978;
+		font-size: 12px;
+	}
+	.trainer-program-actions {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+	}
+	.trainer-program-actions button {
+		min-height: 44px;
+		border: 0;
+		padding: 10px 16px;
+		border-radius: 999px;
+		background: #f2f4f6;
+		color: #17191f;
+		font: inherit;
+		font-size: 13px;
+		font-weight: 600;
+		cursor: pointer;
+	}
+	.trainer-program-actions button:hover {
+		background: #e7e9ee;
+	}
+	.trainer-program-actions button.is-resume {
+		background: #ffdad4;
+		color: #881f13;
+	}
+	.trainer-program-actions .trainer-program-delete {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		padding: 10px;
+		background: transparent;
+		color: #626978;
+	}
+	.trainer-program-delete svg {
+		width: 20px;
+		height: 20px;
+	}
+	.trainer-program-delete span {
+		display: none;
+	}
+	.trainer-program-actions .trainer-program-delete:hover {
+		color: #ba1a1a;
+		background: #fff1f0;
+	}
+	#trainer-programs-page button:disabled {
+		opacity: 0.55;
+		cursor: default;
+	}
+	#trainer-programs-page a:focus-visible,
+	#trainer-programs-page button:focus-visible {
+		outline: 2px solid #a53425;
+		outline-offset: 4px;
+	}
+	.trainer-programs-state {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		gap: 12px;
+		padding: 48px 24px;
+		text-align: center;
+		background: #fff;
+		border-radius: 16px;
+	}
+	.trainer-programs-state > svg {
+		width: 40px;
+		height: 40px;
+		color: #626978;
+	}
+	.trainer-programs-state h2 {
+		font-size: 22px;
+		line-height: 1.4;
+	}
+	.trainer-programs-state p {
+		max-width: 430px;
+		color: #626978;
+	}
+	.trainer-programs-state .trainer-programs-create {
+		margin-top: 8px;
+	}
+	.trainer-programs-state.is-error {
+		padding: 20px;
+		margin-bottom: 20px;
+	}
+	.trainer-programs-loading,
+	.trainer-programs-feedback {
+		margin-bottom: 16px !important;
+		color: #626978;
+	}
+	.trainer-programs-feedback {
+		color: #17191f;
+	}
+	.trainer-programs-pagination {
+		display: flex;
+		justify-content: center;
+		margin-top: 28px;
+	}
+	.trainer-programs-pagination ul {
+		flex-wrap: wrap;
+		justify-content: center;
+	}
+	@media (min-width: 768px) and (max-width: 1100px) {
+		.trainer-program-row {
+			grid-template-columns: 144px minmax(0, 1fr);
+			gap: 20px;
+		}
+		.trainer-program-image {
+			width: 144px;
+		}
+		.trainer-program-actions {
+			grid-column: 2;
+			justify-content: flex-end;
+		}
+	}
+	@media (max-width: 767px) {
+		#trainer-programs-page {
+			width: calc(100% - 32px);
+			padding: 28px 0 32px;
+		}
+		.trainer-programs-heading {
+			flex-direction: column;
+			align-items: stretch;
+			gap: 20px;
+			margin-bottom: 24px;
+		}
+		.trainer-programs-heading h1 {
+			font-size: 28px;
+		}
+		.trainer-programs-heading p {
+			font-size: 13px;
+			line-height: 1.6;
+		}
+		.trainer-programs-create {
+			width: 100%;
+			border-radius: 12px;
+			min-height: 48px;
+		}
+		.trainer-programs-toolbar {
+			gap: 12px;
+			justify-content: space-between;
+		}
+		.trainer-programs-tabs button {
+			padding: 10px 18px;
+		}
+		.trainer-programs-list {
+			gap: 24px;
+		}
+		.trainer-program-row {
+			display: flex;
+			flex-direction: column;
+			align-items: stretch;
+			gap: 0;
+			padding: 0;
+			overflow: hidden;
+		}
+		.trainer-program-image {
+			width: 100%;
+			height: auto;
+			aspect-ratio: 2 / 1;
+			border-radius: 0;
+		}
+		.trainer-program-info {
+			padding: 16px 16px 0;
+		}
+		.trainer-program-info h2 {
+			font-size: 18px;
+		}
+		.trainer-program-labels {
+			gap: 8px;
+		}
+		.trainer-program-metadata {
+			gap: 8px 12px;
+		}
+		.trainer-program-price {
+			margin-top: 10px !important;
+		}
+		.trainer-program-actions {
+			display: grid;
+			grid-template-columns: repeat(2, minmax(0, 1fr));
+			padding: 16px;
+			gap: 10px;
+		}
+		.trainer-program-actions button {
+			border-radius: 10px;
+			padding: 10px 12px;
+		}
+		.trainer-program-actions .trainer-program-delete {
+			grid-column: 1 / -1;
+			gap: 6px;
+			font-size: 12px;
+			padding: 8px;
+		}
+		.trainer-program-delete span {
+			display: inline;
+		}
+		.trainer-programs-state {
+			padding: 32px 20px;
+		}
+		.trainer-programs-state h2 {
+			font-size: 20px;
+		}
+	}
+}
+.trainer-program-confirmation.MuiPaper-root {
+	width: min(440px, calc(100% - 32px));
+	margin: 16px;
+	border-radius: 16px;
+	font-family: 'Plus Jakarta Sans', sans-serif;
+	.MuiTypography-root,
+	.MuiButton-root {
+		font-family: inherit;
+	}
+	.MuiDialogTitle-root {
+		font-size: 22px;
+	}
+	.MuiDialogContentText-root {
+		color: #626978;
+		font-size: 14px;
+		line-height: 1.7;
+	}
+	.trainer-program-confirm-name {
+		overflow-wrap: anywhere;
+		font-weight: 600;
+		color: #17191f;
+	}
+	.MuiDialogActions-root {
+		padding: 16px 24px 24px;
+		flex-wrap: wrap;
+		gap: 8px;
+	}
+	.MuiButton-root {
+		min-height: 44px;
+		border-radius: 10px;
+		color: #17191f;
+	}
+	.MuiButton-root:last-child {
+		background: #12151d;
+		color: #fff;
+		padding: 10px 20px;
+	}
+	.MuiButton-root.is-destructive {
+		background: #ba1a1a;
+	}
+	.MuiButton-root:focus-visible {
+		outline: 2px solid #a53425;
+		outline-offset: 3px;
+	}
+	.MuiButton-root.Mui-disabled {
+		opacity: 0.55;
+	}
+}

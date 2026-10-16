@@ -372,10 +372,10 @@ async function integration() {
 			root.render(React.createElement(ApolloProvider, { client }, React.createElement(MyPage)));
 		router.query = { category: 'myPrograms' };
 		renderManagement();
-		await until(() => document.querySelector('.program-card-box'));
+		await until(() => document.querySelector('.trainer-program-row'));
 		assert.ok(!text().includes('GYMFLOW PROGRAMS MOBILE'));
 		assert.ok(!text().includes('MOBILE PROGRAM CARD'));
-		assert.ok(document.querySelector('.trainer-mobile-program-workspace'));
+		assert.ok(document.querySelector('.trainer-programs-workspace'));
 		assert.ok(document.querySelector('.schedule-mobile-navigation a[aria-current="page"][href*="myPrograms"]'));
 		router.query = { category: 'addProgram' };
 		renderManagement();
@@ -386,10 +386,10 @@ async function integration() {
 		mobile = false;
 		router.query = { category: 'myPrograms' };
 		renderManagement();
-		await until(() => document.querySelector('.main-config .program-card-box'));
+		await until(() => document.querySelector('.trainer-programs-workspace .trainer-program-row'));
 		assert.ok(!document.querySelector('.trainer-mobile-program-workspace'));
 		pass(
-			'actual MyPage mobile Create/Manage Programs render existing forms/cards and workspace; desktop keeps its original branch',
+			'actual MyPage Programs uses Workspace on desktop/mobile; mobile Create keeps its existing form',
 		);
 		router.query = { category: 'trainerDashboard' };
 		render();
