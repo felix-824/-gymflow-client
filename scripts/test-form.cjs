@@ -42,15 +42,21 @@ module.exports = async function runFormChecks(loadTs, forms) {
 		waitMutation: null,
 		mobile: false,
 		failLookup: false, read: null, navigation: [], success: [], scrolled: [],
+		reservationRead: null, failReservations: false, policyError: '',
 	};
 	dom.window.HTMLElement.prototype.scrollIntoView = function () { state.scrolled.push(this); };
 	let trainer = { _id: 'b'.repeat(24), memberType: 'TRAINER' }, token = 'test-token';
 	const variables = { userVar: () => trainer, authReadyVar: () => true };
 	const client = { query: async (request) => {
 		state.queries.push(request);
-		assert.equal(request.query, 'GET_TRAINER_PROGRAMS');
 		assert.equal(request.fetchPolicy, 'no-cache');
 		assert.deepEqual(request.context, { queryDeduplication: false, handleErrorLocally: true });
+		if (request.query === 'GET_TRAINER_RESERVATIONS') {
+			assert.deepEqual(request.variables.input, { page: request.variables.input.page, limit: 100, search: { programId: router.query.programId.toLowerCase(), period: 'UPCOMING' } });
+			if (state.failReservations) throw new Error('Reservation read failed');
+			return { data: { getTrainerReservations: state.reservationRead ? await state.reservationRead(request.variables.input) : { list: [], metaCounter: [{ total: 0 }] } } };
+		}
+		assert.equal(request.query, 'GET_TRAINER_PROGRAMS');
 		assert.deepEqual(request.variables.input, { page: request.variables.input.page, limit: 100, sort: 'createdAt', direction: 'DESC', search: {} });
 		if (state.failLookup) throw new Error('Network unavailable');
 		const result = state.read ? await state.read(request.variables.input) : { list: [state.program], metaCounter: [{ total: 1 }] };
@@ -63,6 +69,7 @@ module.exports = async function runFormChecks(loadTs, forms) {
 			try {
 				if (state.waitMutation) await state.waitMutation;
 				if (state.failMutation) throw new Error('Program changed; reload and retry');
+				if (state.policyError) throw new Error(state.policyError);
 				return { data: {} };
 			} finally { setLoading(false); }
 		}, [name]);
@@ -88,7 +95,7 @@ module.exports = async function runFormChecks(loadTs, forms) {
 		'../../../apollo/store': variables,
 		'@apollo/client': { useApolloClient: () => client, useMutation, useReactiveVar: (variable) => variable() },
 		'../../../apollo/user/mutation': { CREATE_PROGRAM: 'CREATE_PROGRAM', UPDATE_PROGRAM: 'UPDATE_PROGRAM' },
-		'../../../apollo/user/query': { GET_TRAINER_PROGRAMS: 'GET_TRAINER_PROGRAMS' },
+		'../../../apollo/user/query': { GET_TRAINER_PROGRAMS: 'GET_TRAINER_PROGRAMS', GET_TRAINER_RESERVATIONS: 'GET_TRAINER_RESERVATIONS' },
 		'../../sweetAlert': { sweetMixinSuccessAlert: async (message) => { state.success.push(message); } },
 		'axios': { post: async (url, body) => {
 			state.uploads.push({ operations: JSON.parse(body.get('operations')), map: JSON.parse(body.get('map')) });
@@ -254,7 +261,7 @@ module.exports = async function runFormChecks(loadTs, forms) {
 		router.query = { programId: program._id, input: JSON.stringify({ page: 99, limit: 1, search: { text: 'nonmatching', programStatus: 'ACTIVE', memberId: 'f'.repeat(24) } }) };
 		let before = state.queries.length;
 		await render('later');
-		assert.deepEqual(state.queries.slice(before).map(q => q.variables.input.page), [1, 2]);
+		assert.deepEqual(state.queries.slice(before).filter(q => q.query === 'GET_TRAINER_PROGRAMS').map(q => q.variables.input.page), [1, 2]);
 		assert.equal(document.querySelector('#program-name').value, 'Paused strength');
 		assert.deepEqual(JSON.parse(new URL(document.querySelector('.editor-cancel').href).searchParams.get('input')), forms.readTrainerProgramsInquiry(router.query.input));
 		pass('later owned page loads despite stale page, status, text and owner filters; Cancel preserves inquiry');
@@ -320,6 +327,109 @@ module.exports = async function runFormChecks(loadTs, forms) {
 		await act(async () => resolveOld({ list: [program], metaCounter: [{ total: 1 }] }));
 		assert.equal(document.querySelector('form'), null);
 		pass('obsolete account/session response cannot restore another trainer form');
+
+		trainer = { _id: 'b'.repeat(24), memberType: 'TRAINER' }; token = 'test-token';
+		state.read = null; state.failLookup = false; state.failMutation = false;
+		state.program = { ...program, programName: 'Reserved group', programType: 'GROUP_CLASS', programCapacity: 120 };
+		router.query = { programId: program._id };
+		const reservation = (index, patch = {}) => ({ _id: String(index).padStart(24, '0'), programId: program._id, reservationDate: '2099-01-08', startTime: '09:00', endTime: '10:00', reservationStatus: index % 2 ? 'PENDING' : 'CONFIRMED', ...patch });
+		state.reservationRead = input => ({ list: input.page === 1 ? Array.from({ length: 100 }, (_, index) => reservation(index)) : [reservation(100)], metaCounter: [{ total: 101 }] });
+		before = state.queries.length;
+		await render('policy');
+		assert.deepEqual(state.queries.slice(before).filter(q => q.query === 'GET_TRAINER_RESERVATIONS').map(q => q.variables.input.page), [1, 2]);
+		assert.equal(document.querySelector('.editor-type-field').disabled, true);
+		assert.equal(document.querySelector('#programDuration').disabled, true);
+		assert.equal(document.querySelector('#program-location').disabled, true);
+		assert.equal(document.querySelector('#program-address').disabled, true);
+		assert.equal(document.querySelector('#programPrice').disabled, false);
+		assert.equal(document.querySelector('#programCapacity').disabled, false);
+		assert.equal(document.querySelector('#programCapacity').min, '101');
+		assert.ok(document.querySelector('#editor-group-capacity-note').textContent.includes('101'));
+		pass('15C fully paginates >100 protected rows; locks type/duration/location while price and group capacity remain editable');
+
+		before = state.mutations.length;
+		await act(async () => Simulate.change(document.querySelector('#programCapacity'), { target: { value: '100' } }));
+		await act(async () => Simulate.submit(document.querySelector('form')));
+		assert.equal(state.mutations.length, before);
+		assert.equal(document.activeElement, document.querySelector('.editor-error'));
+		await act(async () => Simulate.change(document.querySelector('#programCapacity'), { target: { value: '101' } }));
+		await act(async () => Simulate.change(document.querySelector('#programPrice'), { target: { value: '90000' } }));
+		await act(async () => Simulate.submit(document.querySelector('form')));
+		assert.equal(state.mutations.length, before + 1);
+		assert.equal(state.mutations.at(-1).variables.input.programCapacity, 101);
+		assert.equal(state.mutations.at(-1).variables.input.programPrice, 90000);
+		pass('15C capacity below occupied minimum is blocked accessibly; equality and price change can be submitted');
+
+		state.policyError = 'Program duration cannot be changed while upcoming reservations exist.';
+		await act(async () => Simulate.change(document.querySelector('#program-name'), { target: { value: 'Unsaved policy draft' } }));
+		const readsBeforePolicyError = state.queries.length;
+		for (const locale of ['en', 'kr', 'ru']) {
+			await i18n.changeLanguage(locale);
+			await render('policy');
+			before = state.mutations.length;
+			await act(async () => Simulate.submit(document.querySelector('form')));
+			assert.equal(state.mutations.length, before + 1);
+			assert.equal(document.querySelector('.editor-error').textContent, resources[locale].common['Trainer program form']['Duration locked']);
+			assert.equal(document.querySelector('#program-name').value, 'Unsaved policy draft');
+		}
+		assert.equal(state.queries.length, readsBeforePolicyError);
+		await i18n.changeLanguage('en'); state.policyError = '';
+		pass('15C backend policy rejection is localized, preserves draft and never triggers conflict refresh or mutation retry');
+
+		state.program = { ...state.program, programCapacity: 2 };
+		state.reservationRead = () => ({ list: [reservation(0), reservation(1), reservation(2)], metaCounter: [{ total: 3 }] });
+		await render('legacy-capacity');
+		assert.equal(document.querySelector('#programCapacity').min, '2');
+		await act(async () => Simulate.change(document.querySelector('#programCapacity'), { target: { value: '3' } }));
+		before = state.mutations.length;
+		await act(async () => Simulate.submit(document.querySelector('form')));
+		assert.equal(state.mutations.length, before + 1);
+		pass('15C advisory minimum preserves allowed increases for pre-existing overcapacity');
+
+		state.failReservations = true;
+		await render('policy-failure');
+		await act(async () => Simulate.change(document.querySelector('#program-name'), { target: { value: 'Draft kept through retry' } }));
+		assert.equal(document.querySelector('.editor-type-field').disabled, true);
+		assert.equal(document.querySelector('#programCapacity').disabled, true);
+		assert.equal(document.querySelector('button[type=submit]').disabled, true);
+		assert.equal(document.querySelector('#programPrice').disabled, false);
+		assert.ok(document.querySelector('#editor-reservation-note[role=alert]'));
+		state.failReservations = false;
+		state.reservationRead = () => ({ list: [], metaCounter: [{ total: 1 }] });
+		await act(async () => document.querySelector('#editor-reservation-note button').click());
+		assert.equal(document.querySelector('button[type=submit]').disabled, true);
+		state.reservationRead = () => ({ list: [], metaCounter: [] });
+		before = state.mutations.length;
+		await act(async () => document.querySelector('#editor-reservation-note button').click());
+		assert.equal(document.querySelector('#program-name').value, 'Draft kept through retry');
+		assert.equal(document.querySelector('.editor-type-field').disabled, false);
+		assert.equal(document.querySelector('button[type=submit]').disabled, false);
+		assert.equal(state.mutations.length, before);
+		pass('15C failed/incomplete reads fail closed; read-only Retry recovers without replacing the draft or saving');
+
+		let resolveReservations;
+		state.reservationRead = () => new Promise(resolve => { resolveReservations = resolve; });
+		await render('obsolete-policy');
+		state.program = { ...state.program, _id: 'c'.repeat(24), programName: 'Different owned program' };
+		router.query = { programId: state.program._id };
+		state.reservationRead = () => ({ list: [], metaCounter: [] });
+		await render('obsolete-policy');
+		before = state.queries.length;
+		await act(async () => resolveReservations({ list: Array.from({ length: 100 }, (_, index) => reservation(index)), metaCounter: [{ total: 101 }] }));
+		assert.equal(document.querySelector('#program-name').value, 'Different owned program');
+		assert.equal(document.querySelector('.editor-type-field').disabled, false);
+		assert.equal(state.queries.length, before);
+		pass('15C obsolete advisory response cannot lock a new program or continue paging');
+
+		const ignored = await forms.readProgramEditConstraints(program._id, async () => ({ list: [reservation(0, { reservationStatus: 'CANCELLED' }), reservation(1, { reservationStatus: 'COMPLETED' }), reservation(2, { reservationStatus: 'NO_SHOW' }), reservation(3, { reservationDate: '2020-01-01' })], metaCounter: [{ total: 4 }] }));
+		assert.deepEqual(ignored, { hasProtected: false, maxOccupied: 0 });
+		before = state.queries.length; router.query = {};
+		await render('policy-create');
+		assert.equal(document.querySelector('.editor-type-field').disabled, false);
+		assert.equal(document.querySelector('#programDuration').disabled, false);
+		assert.equal(document.querySelector('#programCapacity').value, '1');
+		assert.equal(state.queries.length, before);
+		pass('15C ignores terminal/ended history and does not query or restrict create mode');
 		return checks;
 	} finally {
 		await act(async () => root.unmount());

@@ -3,6 +3,74 @@ import { Direction } from './enums/common.enum';
 import { ProgramInput, ProgramsInquiry, TrainerProgramsInquiry } from './types/program/program.input';
 import { TrainersInquiry } from './types/member/member.input';
 import { Program, Programs } from './types/program/program';
+import { ReservationPeriod } from './enums/reservation-query.enum';
+import { ReservationStatus } from './enums/reservation.enum';
+import {
+	TrainerReservation,
+	TrainerReservations,
+	TrainerReservationsInquiry,
+} from './types/reservation/trainer-reservation';
+import { seoulNow } from './my-bookings';
+import { isBookingDate } from './booking';
+
+export interface ProgramEditConstraints {
+	hasProtected: boolean;
+	maxOccupied: number;
+}
+
+export async function readProgramEditConstraints(
+	programId: string,
+	read: (input: TrainerReservationsInquiry) => Promise<TrainerReservations>,
+	isCurrent: () => boolean = () => true,
+): Promise<ProgramEditConstraints | null> {
+	const reservations = new Map<string, TrainerReservation>();
+	let page = 1;
+	while (isCurrent()) {
+		const result = await read({ page, limit: 100, search: { programId, period: ReservationPeriod.UPCOMING } });
+		if (!isCurrent()) return null;
+		const total = result?.metaCounter?.[0]?.total ?? (result?.list?.length === 0 ? 0 : undefined);
+		if (
+			!Array.isArray(result?.list) ||
+			!Number.isSafeInteger(total) ||
+			total! < 0 ||
+			(!result.list.length && total! > (page - 1) * 100)
+		)
+			throw new Error('Incomplete reservation result');
+		result.list.forEach((reservation) => {
+			if (reservation.programId === programId) reservations.set(reservation._id, reservation);
+		});
+		if (page * 100 >= total!) break;
+		page++;
+	}
+	if (!isCurrent()) return null;
+	const now = seoulNow();
+	const sessions = new Map<string, number>();
+	reservations.forEach((reservation) => {
+		if (![ReservationStatus.PENDING, ReservationStatus.CONFIRMED].includes(reservation.reservationStatus)) return;
+		if (
+			!isBookingDate(reservation.reservationDate) ||
+			![reservation.startTime, reservation.endTime].every((time) => /^(?:[01]\d|2[0-3]):[0-5]\d$/.test(time)) ||
+			reservation.startTime >= reservation.endTime
+		)
+			throw new Error('Invalid reservation interval');
+		if (
+			reservation.reservationDate < now.date ||
+			(reservation.reservationDate === now.date && reservation.endTime <= now.time)
+		)
+			return;
+		const key = JSON.stringify([
+			reservation.programId,
+			reservation.reservationDate,
+			reservation.startTime,
+			reservation.endTime,
+		]);
+		sessions.set(key, (sessions.get(key) ?? 0) + 1);
+	});
+	return {
+		hasProtected: sessions.size > 0,
+		maxOccupied: Array.from(sessions.values()).reduce((max, count) => Math.max(max, count), 0),
+	};
+}
 
 export function readTrainersInquiry(value: unknown, fallback: TrainersInquiry): TrainersInquiry {
 	try {

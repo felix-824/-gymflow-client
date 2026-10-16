@@ -14,14 +14,22 @@ import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import { ProgramCategory, ProgramLocation, ProgramType } from '../../enums/program.enum';
 import { ProgramInput } from '../../types/program/program.input';
 import { Programs } from '../../types/program/program';
+import { TrainerReservations } from '../../types/reservation/trainer-reservation';
 import axios from 'axios';
 import { getJwtToken, invalidateSession, isAuthenticationError } from '../../auth';
 import { authReadyVar, userVar } from '../../../apollo/store';
 import { useApolloClient, useMutation, useReactiveVar } from '@apollo/client';
 import { CREATE_PROGRAM, UPDATE_PROGRAM } from '../../../apollo/user/mutation';
-import { GET_TRAINER_PROGRAMS } from '../../../apollo/user/query';
+import { GET_TRAINER_PROGRAMS, GET_TRAINER_RESERVATIONS } from '../../../apollo/user/query';
 import { sweetMixinSuccessAlert } from '../../sweetAlert';
-import { findTrainerProgram, programFormError, programPayload, readTrainerProgramsInquiry } from '../../program';
+import {
+	findTrainerProgram,
+	programFormError,
+	programPayload,
+	ProgramEditConstraints,
+	readProgramEditConstraints,
+	readTrainerProgramsInquiry,
+} from '../../program';
 import { REACT_APP_API_URL } from '../../config';
 import { TrainerWorkspaceHeader, TrainerWorkspaceNavigation } from './TrainerWorkspaceNavigation';
 
@@ -57,9 +65,16 @@ const AddProgram = () => {
 	const [loadError, setLoadError] = useState('');
 	const [uploading, setUploading] = useState(false);
 	const [validationAttempt, setValidationAttempt] = useState(0);
+	const [editConstraints, setEditConstraints] = useState<{ scope: string; values: ProgramEditConstraints } | null>(
+		null,
+	);
+	const [reservationLoading, setReservationLoading] = useState(false);
+	const [reservationError, setReservationError] = useState(false);
+	const [loadedCapacity, setLoadedCapacity] = useState(1);
 	const inputRef = useRef<HTMLInputElement>(null);
 	const errorRef = useRef<HTMLParagraphElement>(null);
 	const lookupRequest = useRef(0);
+	const reservationRequest = useRef(0);
 	const currentScope = useRef(scope);
 	currentScope.current = scope;
 	const submitting = useRef(false);
@@ -67,6 +82,40 @@ const AddProgram = () => {
 	const [updateProgram, { loading: updating }] = useMutation(UPDATE_PROGRAM);
 
 	/** APOLLO REQUESTS **/
+	const readReservations = useCallback(async () => {
+		const request = ++reservationRequest.current;
+		const isCurrent = () =>
+			request === reservationRequest.current &&
+			currentScope.current === scope &&
+			authReadyVar() &&
+			userVar().memberType === 'TRAINER' &&
+			userVar()._id === user._id &&
+			getJwtToken() === token;
+		setEditConstraints(null);
+		setReservationLoading(true);
+		setReservationError(false);
+		try {
+			const values = await readProgramEditConstraints(
+				programId,
+				async (input) => {
+					const { data } = await client.query<{ getTrainerReservations: TrainerReservations }>({
+						query: GET_TRAINER_RESERVATIONS,
+						variables: { input },
+						fetchPolicy: 'no-cache',
+						context: { queryDeduplication: false, handleErrorLocally: true },
+					});
+					return data.getTrainerReservations;
+				},
+				isCurrent,
+			);
+			if (isCurrent() && values) setEditConstraints({ scope, values });
+		} catch {
+			if (isCurrent()) setReservationError(true);
+		} finally {
+			if (isCurrent()) setReservationLoading(false);
+		}
+	}, [client, programId, scope, token, user._id]);
+
 	const lookupProgram = useCallback(
 		async (conflict = false) => {
 			const request = ++lookupRequest.current;
@@ -104,6 +153,7 @@ const AddProgram = () => {
 					return;
 				}
 				setInsertProgramData(programPayload(program));
+				setLoadedCapacity(program.programCapacity);
 				setLoadedScope(scope);
 				setFormError(
 					conflict ? 'Program changed. The latest values have been loaded; review them before saving again.' : '',
@@ -118,6 +168,16 @@ const AddProgram = () => {
 	);
 
 	/** LIFECYCLES **/
+	useEffect(() => {
+		setEditConstraints(null);
+		setReservationError(false);
+		setReservationLoading(false);
+		if (editing && loadedScope === scope) void readReservations();
+		return () => {
+			reservationRequest.current += 1;
+		};
+	}, [editing, loadedScope, scope, readReservations]);
+
 	useEffect(() => {
 		setLoadedScope('');
 		setLoadError('');
@@ -201,8 +261,16 @@ const AddProgram = () => {
 	};
 	const submitHandler = async (event: React.FormEvent) => {
 		event.preventDefault();
-		if (submitting.current || uploading || (editing && loadedScope !== scope)) return;
-		const error = programFormError(insertProgramData);
+		if (submitting.current || uploading || (editing && (loadedScope !== scope || editConstraints?.scope !== scope)))
+			return;
+		const error =
+			programFormError(insertProgramData) ||
+			(editing &&
+			insertProgramData.programType === ProgramType.GROUP_CLASS &&
+			insertProgramData.programCapacity < loadedCapacity &&
+			insertProgramData.programCapacity < (editConstraints?.values.maxOccupied ?? 0)
+				? 'Program capacity cannot be reduced below occupied session seats.'
+				: '');
 		if (error) {
 			setFormError(error);
 			setValidationAttempt((attempt) => attempt + 1);
@@ -226,6 +294,11 @@ const AddProgram = () => {
 	};
 
 	const busy = creating || updating || uploading;
+	const policyReady = !editing || editConstraints?.scope === scope;
+	const sensitiveLocked = editing && (!policyReady || Boolean(editConstraints?.values.hasProtected));
+	const capacityMinimum =
+		editing && policyReady ? Math.min(loadedCapacity, Math.max(1, editConstraints!.values.maxOccupied)) : 1;
+	const saveDisabled = busy || !policyReady;
 	const loadBlocked = editing && (loading || loadedScope !== scope || Boolean(loadError));
 	const saveLabel = t(
 		`Trainer program form.${creating || updating ? 'Saving' : editing ? 'Save Changes' : 'Create Program'}`,
@@ -248,6 +321,11 @@ const AddProgram = () => {
 		'Image upload failed.': 'Upload failed',
 		'Could not save this program.': 'Save failed',
 		'Program changed. The latest values have been loaded; review them before saving again.': 'Conflict',
+		'Program type cannot be changed while upcoming reservations exist.': 'Type locked',
+		'Program duration cannot be changed while upcoming reservations exist.': 'Duration locked',
+		'Program location cannot be changed while upcoming reservations exist.': 'Location locked',
+		'Program address cannot be changed while upcoming reservations exist.': 'Address locked',
+		'Program capacity cannot be reduced below occupied session seats.': 'Capacity locked',
 	};
 	const errorMessage = messageKeys[formError] ? t('Trainer program form.' + messageKeys[formError]) : formError;
 
@@ -302,7 +380,7 @@ const AddProgram = () => {
 							<Link passHref href={programsUrl} className="editor-cancel">
 								{t('Trainer program form.Cancel')}
 							</Link>
-							<button type="submit" form="trainer-program-form" className="editor-save" disabled={busy}>
+							<button type="submit" form="trainer-program-form" className="editor-save" disabled={saveDisabled}>
 								<CheckCircleOutlineRoundedIcon aria-hidden="true" />
 								{saveLabel}
 							</button>
@@ -328,7 +406,7 @@ const AddProgram = () => {
 						)}
 					</div>
 				) : (
-					<form id="trainer-program-form" onSubmit={submitHandler} noValidate aria-busy={busy}>
+					<form id="trainer-program-form" onSubmit={submitHandler} noValidate aria-busy={busy || reservationLoading}>
 						<fieldset className="editor-columns" disabled={creating || updating}>
 							<legend className="editor-sr-only">
 								{t(`Trainer program form.${editing ? 'Edit Program' : 'Create Program'}`)}
@@ -342,6 +420,28 @@ const AddProgram = () => {
 										</h2>
 										<p>{t('Trainer program form.Basics intro')}</p>
 									</div>
+									{editing && (!policyReady || editConstraints?.values.hasProtected) && (
+										<p
+											id="editor-reservation-note"
+											className={reservationError ? 'editor-error' : 'editor-note'}
+											role={reservationError ? 'alert' : 'status'}
+										>
+											{t(
+												`Trainer program form.${
+													reservationError
+														? 'Reservations error'
+														: policyReady
+														? 'Reservations locked'
+														: 'Reservations loading'
+												}`,
+											)}
+											{reservationError && (
+												<button type="button" className="editor-back" onClick={() => void readReservations()}>
+													{t('Trainer programs.Retry')}
+												</button>
+											)}
+										</p>
+									)}
 									<div className="editor-field">
 										<label htmlFor="program-name">
 											{t('Trainer program form.Name')} <span>*</span>
@@ -356,7 +456,11 @@ const AddProgram = () => {
 											onChange={(e) => setInsertProgramData({ ...insertProgramData, programName: e.target.value })}
 										/>
 									</div>
-									<fieldset className="editor-type-field">
+									<fieldset
+										className="editor-type-field"
+										disabled={sensitiveLocked}
+										aria-describedby={sensitiveLocked ? 'editor-reservation-note' : undefined}
+									>
 										<legend>
 											{t('Trainer program form.Type')} <span>*</span>
 										</legend>
@@ -442,13 +546,22 @@ const AddProgram = () => {
 														id={key}
 														name={key}
 														type="number"
-														min={index === 0 ? 0 : 1}
+														min={index === 0 ? 0 : key === 'programCapacity' ? capacityMinimum : 1}
 														max={2147483647}
 														step={1}
 														required
-														disabled={key === 'programCapacity' && privateSession}
+														disabled={
+															(key === 'programCapacity' && (privateSession || !policyReady)) ||
+															(key === 'programDuration' && sensitiveLocked)
+														}
 														aria-describedby={
-															key === 'programCapacity' && privateSession ? 'editor-capacity-note' : undefined
+															key === 'programCapacity' && privateSession
+																? 'editor-capacity-note'
+																: key === 'programDuration' && sensitiveLocked
+																? 'editor-reservation-note'
+																: key === 'programCapacity' && editConstraints?.values.hasProtected
+																? 'editor-group-capacity-note'
+																: undefined
 														}
 														value={Number.isNaN(insertProgramData[key]) ? '' : insertProgramData[key]}
 														onChange={(e) =>
@@ -471,6 +584,14 @@ const AddProgram = () => {
 											{t('Trainer program form.Capacity note')}
 										</p>
 									)}
+									{editing &&
+										policyReady &&
+										editConstraints?.values.hasProtected &&
+										insertProgramData.programType === ProgramType.GROUP_CLASS && (
+											<p className="editor-note" id="editor-group-capacity-note">
+												{t('Trainer program form.Capacity minimum', { count: editConstraints.values.maxOccupied })}
+											</p>
+										)}
 								</section>
 								<section className="editor-section editor-location" aria-labelledby="editor-location-title">
 									<div className="editor-section-heading">
@@ -489,7 +610,8 @@ const AddProgram = () => {
 												id="program-location"
 												name="programLocation"
 												value={insertProgramData.programLocation}
-												disabled={online}
+												disabled={online || sensitiveLocked}
+												aria-describedby={sensitiveLocked ? 'editor-reservation-note' : undefined}
 												onChange={(e) =>
 													setInsertProgramData({
 														...insertProgramData,
@@ -514,6 +636,8 @@ const AddProgram = () => {
 												<input
 													id="program-address"
 													name="programAddress"
+													disabled={sensitiveLocked}
+													aria-describedby={sensitiveLocked ? 'editor-reservation-note' : undefined}
 													value={insertProgramData.programAddress ?? ''}
 													maxLength={100}
 													required
@@ -622,7 +746,7 @@ const AddProgram = () => {
 											{errorMessage}
 										</p>
 									)}
-									<button type="submit" className="editor-save" disabled={busy}>
+									<button type="submit" className="editor-save" disabled={saveDisabled}>
 										<CheckCircleOutlineRoundedIcon aria-hidden="true" />
 										{saveLabel}
 									</button>

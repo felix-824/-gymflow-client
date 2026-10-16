@@ -826,6 +826,15 @@
 		"Unavailable": "This program is unavailable. Return to Programs.",
 		"Conflict refresh error": "The program changed, but the latest values could not be loaded. Retry loading before saving again.",
 		"Created": "Program created successfully.",
-		"Updated": "Program updated successfully."
+		"Updated": "Program updated successfully.",
+		"Reservations loading": "Checking reservation restrictions…",
+		"Reservations error": "Could not check reservations. Sensitive fields and saving are locked. Retry to continue.",
+		"Reservations locked": "Upcoming or ongoing reservations lock program type, duration and location.",
+		"Capacity minimum": "Capacity decreases must leave at least {{count}} seats per existing session. Increases remain allowed.",
+		"Type locked": "Program type cannot change while upcoming or ongoing reservations exist.",
+		"Duration locked": "Duration cannot change while upcoming or ongoing reservations exist.",
+		"Location locked": "Location cannot change while upcoming or ongoing reservations exist.",
+		"Address locked": "Address cannot change while upcoming or ongoing reservations exist.",
+		"Capacity locked": "Capacity cannot be reduced below the occupied seats of an existing session."
 	}
 }
