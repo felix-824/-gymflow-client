@@ -28,7 +28,7 @@ const { MongooseModule, getConnectionToken } = backendRequire('@nestjs/mongoose'
 const { GraphQLModule } = backendRequire('@nestjs/graphql');
 const { ApolloDriver } = backendRequire('@nestjs/apollo');
 const { JwtService } = backendRequire('@nestjs/jwt');
-const { MongoMemoryServer } = backendRequire('mongodb-memory-server');
+const { MongoMemoryReplSet } = backendRequire('mongodb-memory-server');
 const { graphqlUploadExpress } = backendRequire('graphql-upload');
 const request = backendRequire('supertest');
 const { ComponentsModule } = require(path.join(backend, 'apps/gymflow-api/src/components/components.module.ts'));
@@ -56,8 +56,8 @@ async function gql(name, input, token, allowErrors = false) {
 }
 async function main() {
 	const fixturePng = await backendRequire('sharp')({ create: { width: 2, height: 2, channels: 3, background: 'red' } }).png().toBuffer();
-	mongo = await MongoMemoryServer.create({
-		instance: { ip: '127.0.0.1', dbName: 'gymflow_frontend_test' },
+	mongo = await MongoMemoryReplSet.create({
+		replSet: { count: 1, storageEngine: 'wiredTiger', ip: '127.0.0.1', dbName: 'gymflow_frontend_test' },
 		binary: { version: '8.2.6', downloadDir: path.join(backend, '.tmp/mongodb-binaries') },
 	});
 	const module = await Test.createTestingModule({
