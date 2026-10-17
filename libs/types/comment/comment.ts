@@ -1,6 +1,6 @@
 import { CommentStatus } from '../../enums/comment.enum';
 import { MeLiked, TotalCounter } from '../program/program';
-import { Member } from '../member/member';
+import { PublicMember } from '../member/member';
 
 export interface Comment {
 	_id: string;
@@ -12,7 +12,7 @@ export interface Comment {
 	updatedAt: Date;
 	/** from aggregation **/
 	meLiked?: MeLiked[];
-	memberData?: Member;
+	memberData?: PublicMember;
 }
 
 export interface Comments {

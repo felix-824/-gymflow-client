@@ -3,7 +3,7 @@ import { useRouter } from 'next/router';
 import { Stack, Typography, Box, List, ListItem, Button } from '@mui/material';
 import useDeviceDetect from '../../hooks/useDeviceDetect';
 import Link from 'next/link';
-import { Member } from '../../types/member/member';
+import { PublicMember } from '../../types/member/member';
 import { REACT_APP_API_URL } from '../../config';
 import { useQuery } from '@apollo/client';
 import { GET_MEMBER } from '../../../apollo/user/query';
@@ -19,7 +19,7 @@ const MemberMenu = (props: MemberMenuProps) => {
 	const device = useDeviceDetect();
 	const router = useRouter();
 	const category: any = router.query?.category;
-	const [member, setMember] = useState<Member | null>(null);
+	const [member, setMember] = useState<PublicMember | null>(null);
 	const { memberId } = router.query;
 
 	/** APOLLO REQUESTS **/
@@ -52,10 +52,6 @@ const MemberMenu = (props: MemberMenuProps) => {
 					</Box>
 					<Stack className={'user-info'}>
 						<Typography className={'user-name'}>{member?.memberNick}</Typography>
-						<Box component={'div'} className={'user-phone'}>
-							<img src={'/img/icons/call.svg'} alt={'icon'} />
-							<Typography className={'p-number'}>{member?.memberPhone}</Typography>
-						</Box>
 						<Typography className={'view-list'}>{member?.memberType}</Typography>
 					</Stack>
 				</Stack>

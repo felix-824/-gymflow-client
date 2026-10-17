@@ -3,7 +3,6 @@ import { Stack, Button } from '@mui/material';
 import Link from 'next/link';
 import { useTranslation } from 'next-i18next';
 import { REACT_APP_API_URL } from '../../config';
-import LocationOnOutlinedIcon from '@mui/icons-material/LocationOnOutlined';
 import ArrowForwardRoundedIcon from '@mui/icons-material/ArrowForwardRounded';
 import FavoriteIcon from '@mui/icons-material/Favorite';
 import FavoriteBorderIcon from '@mui/icons-material/FavoriteBorder';
@@ -11,10 +10,10 @@ import PersonAddAltRoundedIcon from '@mui/icons-material/PersonAddAltRounded';
 import CheckRoundedIcon from '@mui/icons-material/CheckRounded';
 import { useReactiveVar } from '@apollo/client';
 import { userVar } from '../../../apollo/store';
-import { Member } from '../../types/member/member';
+import { PublicMember } from '../../types/member/member';
 
 interface TrainerCardProps {
-	trainer: Member;
+	trainer: PublicMember;
 	likeMemberHandler: (user: any, id: string) => Promise<void>;
 	followMemberHandler: (user: any, id: string, following: boolean) => Promise<void>;
 	followPending: boolean;
@@ -72,12 +71,6 @@ const TrainerCard = (props: TrainerCardProps) => {
 						</h2>
 						{nickname && nickname !== name && <span className={'trainer-card-nickname'}>{nickname}</span>}
 					</div>
-					{trainer.memberAddress?.trim() && (
-						<p className={'trainer-card-address'}>
-							<LocationOnOutlinedIcon aria-hidden={'true'} />
-							<span>{trainer.memberAddress}</span>
-						</p>
-					)}
 					{trainer.memberDesc?.trim() && <p className={'trainer-card-description'}>{trainer.memberDesc}</p>}
 				</div>
 				<dl className={'trainer-card-stats'}>

@@ -82,6 +82,34 @@ export const CHECK_AUTH = gql`
 	}
 `;
 
+export const GET_MY_MEMBER = gql`
+	query GetMyMember {
+		getMyMember {
+			_id
+			memberType
+			memberStatus
+			memberAuthType
+			memberPhone
+			memberNick
+			memberFullName
+			memberImage
+			memberAddress
+			memberDesc
+			memberPrograms
+			memberArticles
+			memberFollowers
+			memberFollowings
+			memberPoints
+			memberLikes
+			memberViews
+			memberComments
+			memberRank
+			createdAt
+			updatedAt
+		}
+	}
+`;
+
 export const GET_MY_TRAINER_SCHEDULE = gql`
 	query GetMyTrainerSchedule {
 		getMyTrainerSchedule {
@@ -107,26 +135,15 @@ export const GET_TRAINERS = gql`
 			list {
 				_id
 				memberType
-				memberStatus
-				memberAuthType
-				memberPhone
 				memberNick
 				memberFullName
 				memberImage
-				memberAddress
 				memberDesc
-				memberWarnings
-				memberBlocks
 				memberPrograms
 				memberFollowers
 				memberRank
-				memberPoints
 				memberLikes
 				memberViews
-				deletedAt
-				createdAt
-				updatedAt
-				accessToken
 				meLiked {
 					memberId
 					likeRefId
@@ -148,29 +165,18 @@ query GetMember($input: String!) {
     getMember(memberId: $input) {
         _id
         memberType
-        memberStatus
-        memberAuthType
-        memberPhone
         memberNick
         memberFullName
         memberImage
-        memberAddress
         memberDesc
         memberPrograms
         memberArticles
 		memberComments
-        memberPoints
         memberLikes
         memberViews
         memberFollowings
 				memberFollowers
         memberRank
-        memberWarnings
-        memberBlocks
-        deletedAt
-        createdAt
-        updatedAt
-        accessToken
         meFollowed {
 					followingId
 					followerId
@@ -220,23 +226,12 @@ export const GET_PROGRAM = gql`
 			memberData {
 				_id
 				memberType
-				memberStatus
-				memberAuthType
-				memberPhone
 				memberNick
 				memberFullName
 				memberImage
-				memberAddress
 				memberDesc
-				memberWarnings
-				memberBlocks
-				memberPoints
 				memberLikes
 				memberViews
-				deletedAt
-				createdAt
-				updatedAt
-				accessToken
 			}
 			meLiked {
 				memberId
@@ -276,24 +271,14 @@ export const GET_PROGRAMS = gql`
 				memberData {
 					_id
 					memberType
-					memberStatus
-					memberAuthType
-					memberPhone
 					memberNick
 					memberFullName
 					memberImage
-					memberAddress
 					memberDesc
-					memberWarnings
-					memberBlocks
 					memberPrograms
 					memberRank
-					memberPoints
 					memberLikes
 					memberViews
-					deletedAt
-					createdAt
-					updatedAt
 				}
 				meLiked {
 					memberId
@@ -371,29 +356,18 @@ export const GET_FAVORITES = gql`
 				memberData {
 					_id
 					memberType
-					memberStatus
-					memberAuthType
-					memberPhone
 					memberNick
 					memberFullName
 					memberImage
-					memberAddress
 					memberDesc
 					memberPrograms
 					memberArticles
-					memberPoints
 					memberLikes
 					memberViews
 					memberComments
 					memberFollowings
 					memberFollowers
 					memberRank
-					memberWarnings
-					memberBlocks
-					deletedAt
-					createdAt
-					updatedAt
-					accessToken
 				}
 			}
 			metaCounter {
@@ -433,29 +407,18 @@ export const GET_VISITED = gql`
 				memberData {
 					_id
 					memberType
-					memberStatus
-					memberAuthType
-					memberPhone
 					memberNick
 					memberFullName
 					memberImage
-					memberAddress
 					memberDesc
 					memberPrograms
 					memberArticles
-					memberPoints
 					memberLikes
 					memberViews
 					memberComments
 					memberFollowings
 					memberFollowers
 					memberRank
-					memberWarnings
-					memberBlocks
-					deletedAt
-					createdAt
-					updatedAt
-					accessToken
 				}
 			}
 			metaCounter {
@@ -487,24 +450,14 @@ export const GET_BOARD_ARTICLE = gql`
 			memberData {
 				_id
 				memberType
-				memberStatus
-				memberAuthType
-				memberPhone
 				memberNick
 				memberFullName
 				memberImage
-				memberAddress
 				memberDesc
-				memberWarnings
-				memberBlocks
 				memberPrograms
 				memberRank
-				memberPoints
 				memberLikes
 				memberViews
-				deletedAt
-				createdAt
-				updatedAt
 			}
 			meLiked {
 				memberId
@@ -581,24 +534,14 @@ export const GET_BOARD_ARTICLES = gql`
 				memberData {
 					_id
 					memberType
-					memberStatus
-					memberAuthType
-					memberPhone
 					memberNick
 					memberFullName
 					memberImage
-					memberAddress
 					memberDesc
-					memberWarnings
-					memberBlocks
 					memberPrograms
 					memberRank
-					memberPoints
 					memberLikes
 					memberViews
-					deletedAt
-					createdAt
-					updatedAt
 				}
 			}
 			metaCounter {
@@ -627,25 +570,14 @@ export const GET_COMMENTS = gql`
 				memberData {
 					_id
 					memberType
-					memberStatus
-					memberAuthType
-					memberPhone
 					memberNick
 					memberFullName
 					memberImage
-					memberAddress
 					memberDesc
-					memberWarnings
-					memberBlocks
 					memberPrograms
 					memberRank
-					memberPoints
 					memberLikes
 					memberViews
-					deletedAt
-					createdAt
-					updatedAt
-					accessToken
 				}
 			}
 			metaCounter {
@@ -680,28 +612,18 @@ export const GET_MEMBER_FOLLOWERS = gql`
 				followerData {
 					_id
 					memberType
-					memberStatus
-					memberAuthType
-					memberPhone
 					memberNick
 					memberFullName
 					memberImage
-					memberAddress
 					memberDesc
 					memberPrograms
 					memberArticles
-					memberPoints
 					memberLikes
 					memberViews
 					memberComments
 					memberFollowings
 					memberFollowers
 					memberRank
-					memberWarnings
-					memberBlocks
-					deletedAt
-					createdAt
-					updatedAt
 				}
 			}
 			metaCounter {
@@ -723,29 +645,18 @@ export const GET_MEMBER_FOLLOWINGS = gql`
 				followingData {
 					_id
 					memberType
-					memberStatus
-					memberAuthType
-					memberPhone
 					memberNick
 					memberFullName
 					memberImage
-					memberAddress
 					memberDesc
 					memberPrograms
 					memberArticles
-					memberPoints
 					memberLikes
 					memberViews
 					memberComments
 					memberFollowings
 					memberFollowers
 					memberRank
-					memberWarnings
-					memberBlocks
-					deletedAt
-					createdAt
-					updatedAt
-					accessToken
 				}
 				meLiked {
 					memberId

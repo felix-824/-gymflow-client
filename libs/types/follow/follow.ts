@@ -1,5 +1,5 @@
 import { MeLiked, TotalCounter } from '../program/program';
-import { Member } from '../member/member';
+import { PublicMember } from '../member/member';
 
 export interface MeFollowed {
 	followingId: string;
@@ -16,7 +16,7 @@ export interface Follower {
 	/** from aggregation **/
 	meLiked?: MeLiked[];
 	meFollowed?: MeFollowed[];
-	followerData?: Member;
+	followerData?: PublicMember;
 }
 
 export interface Followers {
@@ -33,7 +33,7 @@ export interface Following {
 	/** from aggregation **/
 	meLiked?: MeLiked[];
 	meFollowed?: MeFollowed[];
-	followingData?: Member;
+	followingData?: PublicMember;
 }
 
 export interface Followings {

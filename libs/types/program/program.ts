@@ -1,5 +1,5 @@
 import { ProgramCategory, ProgramLocation, ProgramStatus, ProgramType } from '../../enums/program.enum';
-import { Member } from '../member/member';
+import { PublicMember } from '../member/member';
 
 export interface MeLiked {
 	memberId: string;
@@ -32,7 +32,7 @@ export interface Program {
 	createdAt: Date | string;
 	updatedAt: Date | string;
 	meLiked?: MeLiked[];
-	memberData?: Member | null;
+	memberData?: PublicMember | null;
 }
 
 export interface Programs {

@@ -1,5 +1,5 @@
 import { BoardArticleCategory, BoardArticleStatus } from '../../enums/board-article.enum';
-import { Member } from '../member/member';
+import { PublicMember } from '../member/member';
 import { MeLiked, TotalCounter } from '../program/program';
 
 export interface BoardArticle {
@@ -19,7 +19,7 @@ export interface BoardArticle {
 	updatedAt: Date;
 	/** from aggregation **/
 	meLiked?: MeLiked[];
-	memberData?: Member;
+	memberData?: PublicMember;
 }
 
 export interface BoardArticles {

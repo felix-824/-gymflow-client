@@ -2,13 +2,12 @@ import React from 'react';
 import Link from 'next/link';
 import { Stack } from '@mui/material';
 import ArrowForwardRoundedIcon from '@mui/icons-material/ArrowForwardRounded';
-import LocationOnOutlinedIcon from '@mui/icons-material/LocationOnOutlined';
 import { useTranslation } from 'next-i18next';
 import { REACT_APP_API_URL } from '../../config';
-import { Member } from '../../types/member/member';
+import { PublicMember } from '../../types/member/member';
 
 interface TopTrainerProps {
-	trainer: Member;
+	trainer: PublicMember;
 }
 
 const TopTrainerCard = ({ trainer }: TopTrainerProps) => {
@@ -44,12 +43,6 @@ const TopTrainerCard = ({ trainer }: TopTrainerProps) => {
 						</h3>
 						{nickname && nickname !== name && <span>{nickname}</span>}
 					</div>
-					{trainer.memberAddress?.trim() && (
-						<p className={'home-trainer-address'}>
-							<LocationOnOutlinedIcon aria-hidden={true} />
-							<span>{trainer.memberAddress}</span>
-						</p>
-					)}
 					{trainer.memberDesc?.trim() && <p className={'home-trainer-description'}>{trainer.memberDesc}</p>}
 				</div>
 				<dl className={'home-trainer-stats'}>

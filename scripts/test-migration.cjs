@@ -81,7 +81,7 @@ function authHarness() {
 	const storage = new Map();
 	const store = { emptyUser: { _id: '', memberType: '' }, userVar: createVar({ _id: '', memberType: '' }), authReadyVar: createVar(false), authErrorVar: createVar('') };
 	const calls = [];
-	const client = { clearStore: async () => {}, query: async (request) => { calls.push(request); return client.respond(request); }, respond: async (request) => request.query === 'CHECK_AUTH' ? { data: { checkAuth: 'ok' } } : { data: { getMember: member } }, mutate: async () => ({ data: { login: member, signup: member } }) };
+	const client = { clearStore: async () => {}, query: async (request) => { calls.push(request); return client.respond(request); }, respond: async (request) => request.query === 'CHECK_AUTH' ? { data: { checkAuth: 'ok' } } : { data: { getMyMember: member } }, mutate: async () => ({ data: { login: member, signup: member } }) };
 	const member = { _id: 'a'.repeat(24), memberNick: 'trainer', memberType: 'TRAINER', memberStatus: 'ACTIVE', memberPrograms: 2, memberImage: null };
 	const token = JSON.stringify({ sub: member._id, exp: Math.floor(Date.now() / 1000) + 3600 });
 	member.accessToken = token;
@@ -89,7 +89,7 @@ function authHarness() {
 	global.localStorage = { getItem: (key) => storage.get(key) ?? null, setItem: (key, value) => storage.set(key, value), removeItem: (key) => storage.delete(key) };
 	const auth = loadTs(path.join(__dirname, '../libs/auth/index.ts'), {
 		'jwt-decode': (value) => JSON.parse(value), '../../apollo/client': { initializeApollo: () => client },
-		'../../apollo/store': store, '../../apollo/user/mutation': { LOGIN: 'LOGIN', SIGN_UP: 'SIGN_UP' }, '../../apollo/user/query': { CHECK_AUTH: 'CHECK_AUTH', GET_MEMBER: 'GET_MEMBER' },
+		'../../apollo/store': store, '../../apollo/user/mutation': { LOGIN: 'LOGIN', SIGN_UP: 'SIGN_UP' }, '../../apollo/user/query': { CHECK_AUTH: 'CHECK_AUTH', GET_MY_MEMBER: 'GET_MY_MEMBER' },
 	});
 	return { auth, storage, store, client, calls, member, token };
 }
@@ -104,8 +104,10 @@ async function authChecks() {
 	const duplicate = h.auth.updateUserInfo(h.token);
 	assert.equal(first, duplicate); await first;
 	check('restore deduplicates and checks auth before loading current profile', () => {
-		assert.deepEqual(h.calls.map((call) => call.query), ['CHECK_AUTH', 'GET_MEMBER']);
-		assert.equal(h.calls[1].variables.input, h.member._id); assert.equal(h.store.authReadyVar(), true);
+		assert.deepEqual(h.calls.map((call) => call.query), ['CHECK_AUTH', 'GET_MY_MEMBER']);
+		assert.equal(h.calls[1].variables, undefined); assert.equal(h.store.authReadyVar(), true);
+		assert.equal(h.calls[1].fetchPolicy, 'no-cache');
+		assert.equal(h.calls[1].context.queryDeduplication, false);
 	});
 	h = authHarness(); const expired = JSON.stringify({ sub: h.member._id, exp: 1 }); h.storage.set('accessToken', expired); await h.auth.updateUserInfo(expired);
 	check('expired token resets identity without API calls', () => { assert.equal(h.storage.has('accessToken'), false); assert.equal(h.calls.length, 0); assert.equal(h.store.userVar()._id, ''); });

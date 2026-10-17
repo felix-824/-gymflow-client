@@ -29,7 +29,6 @@ export const GET_ALL_MEMBERS_BY_ADMIN = gql`
 				deletedAt
 				createdAt
 				updatedAt
-				accessToken
 			}
 			metaCounter {
 				total
@@ -71,25 +70,14 @@ export const GET_ALL_PROGRAMS_BY_ADMIN = gql`
 				memberData {
 					_id
 					memberType
-					memberStatus
-					memberAuthType
-					memberPhone
 					memberNick
 					memberFullName
 					memberImage
-					memberAddress
 					memberDesc
-					memberWarnings
-					memberBlocks
 					memberPrograms
 					memberRank
-					memberPoints
 					memberLikes
 					memberViews
-					deletedAt
-					createdAt
-					updatedAt
-					accessToken
 				}
 			}
 			metaCounter {
@@ -121,25 +109,14 @@ export const GET_ALL_BOARD_ARTICLES_BY_ADMIN = gql`
 				memberData {
 					_id
 					memberType
-					memberStatus
-					memberAuthType
-					memberPhone
 					memberNick
 					memberFullName
 					memberImage
-					memberAddress
 					memberDesc
-					memberWarnings
-					memberBlocks
 					memberPrograms
 					memberRank
-					memberPoints
 					memberLikes
 					memberViews
-					deletedAt
-					createdAt
-					updatedAt
-					accessToken
 				}
 			}
 			metaCounter {
@@ -168,25 +145,14 @@ export const GET_COMMENTS = gql`
 				memberData {
 					_id
 					memberType
-					memberStatus
-					memberAuthType
-					memberPhone
 					memberNick
 					memberFullName
 					memberImage
-					memberAddress
 					memberDesc
-					memberWarnings
-					memberBlocks
 					memberPrograms
 					memberRank
-					memberPoints
 					memberLikes
 					memberViews
-					deletedAt
-					createdAt
-					updatedAt
-					accessToken
 				}
 			}
 			metaCounter {

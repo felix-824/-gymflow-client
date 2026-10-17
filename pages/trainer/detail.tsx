@@ -3,7 +3,6 @@ import { NextPage } from 'next';
 import { Button, CircularProgress, Pagination, Stack } from '@mui/material';
 import Link from 'next/link';
 import { useTranslation } from 'next-i18next';
-import LocationOnOutlinedIcon from '@mui/icons-material/LocationOnOutlined';
 import ArrowBackRoundedIcon from '@mui/icons-material/ArrowBackRounded';
 import PersonAddAltRoundedIcon from '@mui/icons-material/PersonAddAltRounded';
 import CheckRoundedIcon from '@mui/icons-material/CheckRounded';
@@ -13,7 +12,7 @@ import { serverSideTranslations } from 'next-i18next/serverSideTranslations';
 import withLayoutBasic from '../../libs/components/layout/LayoutBasic';
 import ProgramCard from '../../libs/components/program/ProgramCard';
 import { Program } from '../../libs/types/program/program';
-import { Member } from '../../libs/types/member/member';
+import { PublicMember } from '../../libs/types/member/member';
 import { ProgramsInquiry } from '../../libs/types/program/program.input';
 import { authReadyVar, userVar } from '../../apollo/store';
 import { GET_MEMBER, GET_PROGRAMS } from '../../apollo/user/query';
@@ -56,7 +55,7 @@ const TrainerDetail: NextPage = () => {
 		skip: !router.isReady || !validTrainerId || !authReady,
 		notifyOnNetworkStatusChange: true,
 	});
-	const trainer: Member | null = data?.getMember?._id === trainerId ? data.getMember : null;
+	const trainer: PublicMember | null = data?.getMember?._id === trainerId ? data.getMember : null;
 	const following = Boolean(trainer?.meFollowed?.[0]?.myFollowing);
 	const {
 		loading: programsLoading,
@@ -65,8 +64,7 @@ const TrainerDetail: NextPage = () => {
 	} = useQuery(GET_PROGRAMS, {
 		fetchPolicy: 'network-only',
 		variables: { input: searchFilter },
-		skip:
-			!trainer || trainer._id !== trainerId || trainer.memberType !== 'TRAINER' || trainer.memberStatus !== 'ACTIVE',
+		skip: !trainer || trainer._id !== trainerId || trainer.memberType !== 'TRAINER',
 		onCompleted: (data) => {
 			setTrainerPrograms(data.getPrograms?.list ?? []);
 			setProgramTotal(data.getPrograms?.metaCounter?.[0]?.total ?? 0);
@@ -120,7 +118,7 @@ const TrainerDetail: NextPage = () => {
 		</nav>
 	);
 	const pending = !router.isReady || (validTrainerId && (!authReady || (loading && !trainer)));
-	if (pending || error || !trainer || trainer.memberType !== 'TRAINER' || trainer.memberStatus !== 'ACTIVE') {
+	if (pending || error || !trainer || trainer.memberType !== 'TRAINER') {
 		return (
 			<Stack className="trainer-detail-page">
 				<div className="trainer-detail-container">
@@ -165,12 +163,6 @@ const TrainerDetail: NextPage = () => {
 					<div className="trainer-detail-identity">
 						<h1 id="trainer-detail-title">{name}</h1>
 						{trainer.memberNick && <p className="trainer-detail-nickname">{trainer.memberNick}</p>}
-						{trainer.memberAddress?.trim() && (
-							<p className="trainer-detail-address">
-								<LocationOnOutlinedIcon aria-hidden={true} />
-								{trainer.memberAddress}
-							</p>
-						)}
 						{trainerId !== user._id && (
 							<Button
 								className="trainer-detail-follow"

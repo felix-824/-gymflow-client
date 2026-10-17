@@ -2,9 +2,9 @@ import decodeJWT from 'jwt-decode';
 import { initializeApollo } from '../../apollo/client';
 import { authErrorVar, authReadyVar, emptyUser, userVar } from '../../apollo/store';
 import { CustomJwtPayload } from '../types/customJwtPayload';
-import { Member } from '../types/member/member';
+import { OwnerMember } from '../types/member/member';
 import { LOGIN, SIGN_UP } from '../../apollo/user/mutation';
-import { CHECK_AUTH, GET_MEMBER } from '../../apollo/user/query';
+import { CHECK_AUTH, GET_MY_MEMBER } from '../../apollo/user/query';
 
 let restoring: Promise<void> | null = null;
 let restoringToken = '';
@@ -51,7 +51,7 @@ export function isAuthenticationError(err: any): boolean {
 	);
 }
 
-export const updateUserInfo = (jwtToken: string, member?: Member): Promise<void> => {
+export const updateUserInfo = (jwtToken: string, member?: OwnerMember): Promise<void> => {
 	if (member) {
 		if (getJwtToken() !== jwtToken) return Promise.resolve();
 		profileToken = jwtToken;
@@ -97,15 +97,15 @@ export const updateUserInfo = (jwtToken: string, member?: Member): Promise<void>
 		try {
 			const client = initializeApollo();
 			if (profileToken && profileToken !== jwtToken) await client.clearStore();
-			await client.query({ query: CHECK_AUTH, fetchPolicy: 'network-only' });
+			await client.query({ query: CHECK_AUTH, fetchPolicy: 'no-cache', context: { queryDeduplication: false } });
 			if (getJwtToken() !== jwtToken) return;
 			const result = await client.query({
-				query: GET_MEMBER,
-				variables: { input: claims.sub },
-				fetchPolicy: 'network-only',
+				query: GET_MY_MEMBER,
+				fetchPolicy: 'no-cache',
+				context: { queryDeduplication: false },
 			});
 			if (getJwtToken() !== jwtToken) return;
-			const profile: Member = result.data.getMember;
+			const profile: OwnerMember = result.data.getMyMember;
 			if (profile.memberStatus !== 'ACTIVE') {
 				invalidateSession();
 				return;
@@ -134,10 +134,11 @@ export const logIn = async (
 	const client = initializeApollo();
 	const result = await client.mutate({
 		mutation: LOGIN,
+		fetchPolicy: 'no-cache',
 		variables: { input: { memberNick: nick, memberPassword: password } },
 		context,
 	});
-	const member: Member = result.data?.login;
+	const member: OwnerMember = result.data?.login;
 	if (!member?.accessToken) throw new Error('Login failed. Please check your credentials.');
 	await client.clearStore();
 	updateStorage({ jwtToken: member.accessToken });
@@ -155,10 +156,11 @@ export const signUp = async (
 	const client = initializeApollo();
 	const result = await client.mutate({
 		mutation: SIGN_UP,
+		fetchPolicy: 'no-cache',
 		variables: { input: { memberNick: nick, memberPassword: password, memberPhone: phone, memberType: type } },
 		context,
 	});
-	const member: Member = result.data?.signup;
+	const member: OwnerMember = result.data?.signup;
 	if (!member?.accessToken) throw new Error('Signup failed. Please try again.');
 	await client.clearStore();
 	updateStorage({ jwtToken: member.accessToken });

@@ -439,6 +439,9 @@ async function integration() {
 		assert.equal(store.authReadyVar(), true);
 		assert.equal(store.authErrorVar(), '');
 		assert.ok(requests.some((request) => request.operationName === 'CheckAuth'));
+		assert.ok(requests.some((request) => request.operationName === 'GetMyMember'));
+		assert.ok(!requests.some((request) => request.operationName === 'GetMember'));
+		assert.equal(store.userVar().memberPhone, fixture.user.memberPhone);
 		pass('real login preserves return context, token persistence and server-authoritative session restoration');
 		const inquiry = { page: 1, limit: 5, search: { period: 'UPCOMING' } };
 		const { GET_MY_RESERVATIONS } = loadTs(path.join(__dirname, '../apollo/user/query.ts'));

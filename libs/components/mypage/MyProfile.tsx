@@ -17,7 +17,7 @@ import {
 import { UPDATE_MEMBER } from '../../../apollo/user/mutation';
 import { sweetConfirmAlert, sweetErrorHandling, sweetMixinSuccessAlert } from '../../sweetAlert';
 import { Messages, REACT_APP_API_URL } from '../../config';
-import { Member } from '../../types/member/member';
+import { OwnerMember } from '../../types/member/member';
 import { useTranslation } from 'next-i18next';
 import Link from 'next/link';
 import AlternateEmailRoundedIcon from '@mui/icons-material/AlternateEmailRounded';
@@ -77,9 +77,9 @@ const MyProfile: NextPage<{ initialValues?: MemberSelfUpdate; trainerWorkspace?:
 	);
 
 	/** APOLLO REQUESTS **/
-	const [updateMember, { loading: saving }] = useMutation<{ updateMember: Member }, { input: MemberSelfUpdate }>(
+	const [updateMember, { loading: saving }] = useMutation<{ updateMember: OwnerMember }, { input: MemberSelfUpdate }>(
 		UPDATE_MEMBER,
-		{ context: { handleErrorLocally: managedProfile } },
+		{ fetchPolicy: 'no-cache', context: { handleErrorLocally: managedProfile } },
 	);
 
 	/** LIFECYCLES **/

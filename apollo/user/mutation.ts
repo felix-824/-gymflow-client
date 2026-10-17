@@ -87,8 +87,6 @@ export const SIGN_UP = gql`
 			memberImage
 			memberAddress
 			memberDesc
-			memberWarnings
-			memberBlocks
 			memberPrograms
 			memberArticles
 			memberComments
@@ -98,7 +96,6 @@ export const SIGN_UP = gql`
 			memberPoints
 			memberLikes
 			memberViews
-			deletedAt
 			createdAt
 			updatedAt
 			accessToken
@@ -119,8 +116,6 @@ export const LOGIN = gql`
 			memberImage
 			memberAddress
 			memberDesc
-			memberWarnings
-			memberBlocks
 			memberPrograms
 			memberArticles
 			memberComments
@@ -130,7 +125,6 @@ export const LOGIN = gql`
 			memberPoints
 			memberLikes
 			memberViews
-			deletedAt
 			createdAt
 			updatedAt
 			accessToken
@@ -160,9 +154,6 @@ export const UPDATE_MEMBER = gql`
 			memberPoints
 			memberLikes
 			memberViews
-			memberWarnings
-			memberBlocks
-			deletedAt
 			createdAt
 			updatedAt
 			accessToken
@@ -175,29 +166,18 @@ export const LIKE_TARGET_MEMBER = gql`
 		likeTargetMember(memberId: $input) {
 			_id
 			memberType
-			memberStatus
-			memberAuthType
-			memberPhone
 			memberNick
 			memberFullName
 			memberImage
-			memberAddress
 			memberDesc
-			memberWarnings
-			memberBlocks
 			memberPrograms
 			memberArticles
 			memberComments
 			memberFollowers
 			memberFollowings
 			memberRank
-			memberPoints
 			memberLikes
 			memberViews
-			deletedAt
-			createdAt
-			updatedAt
-			accessToken
 		}
 	}
 `;

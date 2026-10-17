@@ -7,8 +7,6 @@ import Footer from '../Footer';
 import { Stack, useMediaQuery } from '@mui/material';
 import { ProgramsHeader, ProgramsBottomNavigation } from '../program/ProgramsNavigation';
 
-import Chat from '../Chat';
-
 import 'swiper/css';
 import 'swiper/css/pagination';
 import 'swiper/css/navigation';
@@ -84,8 +82,6 @@ const withLayoutFull = (Component: any) => {
 						<Stack id={'main'}>
 							<Component {...props} />
 						</Stack>
-
-						<Chat />
 
 						<Stack id={'footer'}>
 							<Footer />

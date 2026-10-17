@@ -25,6 +25,4 @@ export interface UserProfile {
 	memberComments: number;
 	memberFollowers?: number;
 	memberFollowings?: number;
-	memberWarnings: number;
-	memberBlocks: number;
 }

@@ -399,7 +399,6 @@ const BookingContent = ({ program }: { program: Program }) => {
 										<Link href={{ pathname: '/trainer/detail', query: { trainerId: program.memberId } }}>
 											{trainerName}
 										</Link>
-										{program.memberData.memberAddress?.trim() && <p>{program.memberData.memberAddress}</p>}
 										{program.memberData.memberDesc?.trim() && <p>{program.memberData.memberDesc}</p>}
 									</div>
 								</div>

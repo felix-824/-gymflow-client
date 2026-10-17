@@ -12,7 +12,7 @@ import TrainerCard from '../../libs/components/common/TrainerCard';
 import { useRouter } from 'next/router';
 import { readTrainersInquiry } from '../../libs/program';
 import { serverSideTranslations } from 'next-i18next/serverSideTranslations';
-import { Member } from '../../libs/types/member/member';
+import { PublicMember } from '../../libs/types/member/member';
 import { useMutation, useQuery, useReactiveVar } from '@apollo/client';
 import { authReadyVar } from '../../apollo/store';
 import { GET_TRAINERS } from '../../apollo/user/query';
@@ -61,7 +61,7 @@ const TrainerList: NextPage = ({ initialInput }: any) => {
 		notifyOnNetworkStatusChange: true,
 	});
 	const trainersResult = getTrainersData?.getTrainers ?? previousTrainersData?.getTrainers;
-	const trainers: Member[] = trainersResult?.list ?? [];
+	const trainers: PublicMember[] = trainersResult?.list ?? [];
 	const total = trainersResult?.metaCounter?.[0]?.total ?? 0;
 
 	/** LIFECYCLES **/
@@ -287,7 +287,7 @@ const TrainerList: NextPage = ({ initialInput }: any) => {
 									</div>
 								</div>
 						  ))
-						: trainers.map((trainer: Member) => (
+						: trainers.map((trainer: PublicMember) => (
 								<TrainerCard
 									trainer={trainer}
 									likeMemberHandler={likeMemberHandler}

@@ -6,7 +6,7 @@ import PeopleAltOutlinedIcon from '@mui/icons-material/PeopleAltOutlined';
 import { NetworkStatus, useQuery } from '@apollo/client';
 import { useTranslation } from 'next-i18next';
 import TopTrainerCard from './TopTrainerCard';
-import { Member } from '../../types/member/member';
+import { PublicMember } from '../../types/member/member';
 import { TrainersInquiry } from '../../types/member/member.input';
 import { GET_TRAINERS } from '../../../apollo/user/query';
 
@@ -29,7 +29,7 @@ const TopTrainers = ({ initialInput }: TopTrainersProps) => {
 		notifyOnNetworkStatusChange: true,
 	});
 	const resolvedTrainersData = getTrainersData ?? previousTrainersData;
-	const trainers: Member[] = resolvedTrainersData?.getTrainers?.list ?? [];
+	const trainers: PublicMember[] = resolvedTrainersData?.getTrainers?.list ?? [];
 	const visibleTrainers = trainers.slice(0, 4);
 	const initialLoading =
 		getTrainersLoading &&
@@ -87,7 +87,7 @@ const TopTrainers = ({ initialInput }: TopTrainersProps) => {
 						</Box>
 					) : (
 						<Box component={'div'} className={'home-meet-trainers-grid'}>
-							{visibleTrainers.map((trainer: Member) => (
+							{visibleTrainers.map((trainer: PublicMember) => (
 								<TopTrainerCard trainer={trainer} key={trainer._id} />
 							))}
 						</Box>

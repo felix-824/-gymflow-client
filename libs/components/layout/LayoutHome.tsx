@@ -6,7 +6,6 @@ import Footer from '../Footer';
 import { Stack } from '@mui/material';
 import HomeHero from '../homepage/HomeHero';
 
-import Chat from '../Chat';
 import 'swiper/css';
 import 'swiper/css/pagination';
 import 'swiper/css/navigation';
@@ -58,8 +57,6 @@ const withLayoutMain = (Component: any) => {
 						<Stack id={'main'}>
 							<Component {...props} />
 						</Stack>
-
-						<Chat />
 
 						<Stack id={'footer'} className="home-footer-shell">
 							<Footer variant="home" />

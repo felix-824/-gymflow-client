@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo } from 'react';
+import React, { useMemo } from 'react';
 import { useRouter } from 'next/router';
 import useDeviceDetect from '../../hooks/useDeviceDetect';
 import Head from 'next/head';
@@ -9,8 +9,6 @@ import { Stack, useMediaQuery } from '@mui/material';
 import { createTheme, ThemeProvider, useTheme } from '@mui/material/styles';
 import { useReactiveVar } from '@apollo/client';
 import { userVar } from '../../../apollo/store';
-
-import Chat from '../Chat';
 
 import { useTranslation } from 'next-i18next';
 import 'swiper/css';
@@ -126,45 +124,6 @@ const withLayoutBasic = (Component: any) => {
 		}, [router.pathname]);
 
 		/** LIFECYCLES **/
-		useEffect(() => {
-			if (!compactTrainer && !compactTrainerDetail) return;
-			const layout = document.querySelector<HTMLElement>('.trainer-discovery-layout');
-			if (!layout) return;
-			let frame = 0;
-			const positionChat = () => {
-				const navigation = layout.querySelector('.programs-bottom-navigation')?.getBoundingClientRect();
-				const button = layout.querySelector('.chat-button')?.getBoundingClientRect();
-				const height = button?.height || 50;
-				const left = button?.left ?? window.innerWidth - 66;
-				const right = button?.right ?? window.innerWidth - 16;
-				let top = (navigation?.top ?? window.innerHeight - 88) - 16 - height;
-				const obstacles = Array.from(layout.querySelectorAll('.trainer-card-actions, #footer'))
-					.map((element) => element.getBoundingClientRect())
-					.sort((a, b) => b.top - a.top);
-				obstacles.forEach((rect) => {
-					if (rect.left < right && rect.right > left && rect.top < top + height + 8 && rect.bottom > top - 8) {
-						top = rect.top - height - 8;
-					}
-				});
-				layout.style.setProperty('--trainer-chat-bottom', `${window.innerHeight - top - height}px`);
-			};
-			const schedulePosition = () => {
-				cancelAnimationFrame(frame);
-				frame = requestAnimationFrame(positionChat);
-			};
-			const observer = new ResizeObserver(schedulePosition);
-			layout.querySelectorAll('#main, #footer, .programs-bottom-navigation').forEach((element) => observer.observe(element));
-			window.addEventListener('scroll', schedulePosition, { passive: true });
-			window.addEventListener('resize', schedulePosition);
-			schedulePosition();
-			return () => {
-				cancelAnimationFrame(frame);
-				observer.disconnect();
-				window.removeEventListener('scroll', schedulePosition);
-				window.removeEventListener('resize', schedulePosition);
-				layout.style.removeProperty('--trainer-chat-bottom');
-			};
-		}, [compactTrainer, compactTrainerDetail]);
 
 		/** HANDLERS **/
 		if (authHeader) {
@@ -186,7 +145,6 @@ const withLayoutBasic = (Component: any) => {
 					</Head>
 					<Stack id="pc-wrap" className={`trainer-schedule-layout${trainerReservations || trainerDashboard || trainerProfile || trainerPrograms || trainerProgramEditor ? ' trainer-reservations-layout' : ''}${trainerDashboard ? ' trainer-dashboard-layout' : ''}${trainerProfile ? ' trainer-profile-layout' : ''}${trainerPrograms ? ' trainer-programs-layout' : ''}${trainerProgramEditor ? ' trainer-program-editor-layout' : ''}`}>
 						<Stack id="main" component="main"><Component {...props} /></Stack>
-						{device !== 'mobile' && trainerSchedule && <Chat />}
 						<Stack id="footer" component="footer"><Footer variant="programs" /></Stack>
 					</Stack>
 				</ThemeProvider>
@@ -216,7 +174,6 @@ const withLayoutBasic = (Component: any) => {
 						<Stack id={'main'} component="main">
 							<Component {...props} />
 						</Stack>
-						{device !== 'mobile' && !communityWrite && !communityMyArticles && !userProfile && !userFavorites && !(myBookings && compactViewport) && <Chat />}
 						<Stack id={'footer'} component={'footer'}>
 							<Footer variant={compactTrainer || trainerDetail ? 'default' : 'programs'} />
 						</Stack>
@@ -279,8 +236,6 @@ const withLayoutBasic = (Component: any) => {
 						<Stack id={'main'}>
 							<Component {...props} />
 						</Stack>
-
-						<Chat />
 
 						<Stack id={'footer'}>
 							<Footer />

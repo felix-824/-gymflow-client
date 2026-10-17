@@ -21,8 +21,6 @@ export const emptyUser: UserProfile = {
 	memberLikes: 0,
 	memberViews: 0,
 	memberComments: 0,
-	memberWarnings: 0,
-	memberBlocks: 0,
 };
 
 export const userVar = makeVar<UserProfile>({ ...emptyUser });

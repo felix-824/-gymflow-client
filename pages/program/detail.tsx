@@ -311,9 +311,6 @@ const ProgramDetail: NextPage = () => {
 													<Link href={'/trainer/detail?trainerId=' + program.memberId}>{trainerName}</Link>
 												</Typography>
 											)}
-											{program.memberData.memberPhone && (
-												<Typography className="detail-trainer-phone">{program.memberData.memberPhone}</Typography>
-											)}
 										</div>
 									</div>
 									{program.memberData.memberDesc?.trim() && (

@@ -32,7 +32,6 @@ export const UPDATE_MEMBER_BY_ADMIN = gql`
 			deletedAt
 			createdAt
 			updatedAt
-			accessToken
 		}
 	}
 `;
