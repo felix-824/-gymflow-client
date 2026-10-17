@@ -14,6 +14,7 @@ import { useMutation, useReactiveVar } from '@apollo/client';
 import { userVar, authReadyVar, authErrorVar } from '../../apollo/store';
 import MyMenu from '../../libs/components/mypage/MyMenu';
 import WriteArticle from '../../libs/components/mypage/WriteArticle';
+import EditArticle from '../../libs/components/mypage/EditArticle';
 import TrainerSchedule from '../../libs/components/mypage/TrainerSchedule';
 import MyBookings from '../../libs/components/mypage/MyBookings';
 import TrainerReservations from '../../libs/components/mypage/TrainerReservations';
@@ -54,7 +55,7 @@ const authError = useReactiveVar(authErrorVar);
 
 	/** LIFECYCLES **/
 	useEffect(() => {
-		if (router.isReady && category !== 'writeArticle' && category !== 'myProfile' && category !== 'myFavorites' && category !== 'myBookings' && category !== 'trainerReservations' && category !== 'trainerDashboard' && authReady && !authError && !user._id) router.push('/').then();
+		if (router.isReady && category !== 'writeArticle' && category !== 'editArticle' && category !== 'myProfile' && category !== 'myFavorites' && category !== 'myBookings' && category !== 'trainerReservations' && category !== 'trainerDashboard' && authReady && !authError && !user._id) router.push('/').then();
 	}, [user, authReady, authError, router, category]);
 
 	/** HANDLERS **/
@@ -125,6 +126,7 @@ const likeMemberHandler = async (id: string, refetch: any, query: any) => {
 	};
 
 	if (category === 'writeArticle') return <WriteArticle />;
+	if (category === 'editArticle') return <EditArticle />;
 	if (category === 'myPrograms') return <MyPrograms />;
 	if (category === 'myFavorites') return <MyFavorites />;
 	if (category === 'myBookings') return <MyBookings />;

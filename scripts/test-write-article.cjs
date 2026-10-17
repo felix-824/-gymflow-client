@@ -155,8 +155,9 @@ check('counter measures submitted code points including formatting', () =>
 		'@toast-ui/react-editor': { Editor: FakeEditor },
 		'@apollo/client': {
 			useReactiveVar: (variable) => variable(),
-			useMutation: () => [
+			useMutation: (document) => [
 				async (request) => {
+					assert.equal(document, 'CREATE_BOARD_ARTICLE', 'Write Article must only create');
 					state.mutations.push(request);
 					return state.mutationResult
 						? await state.mutationResult()
@@ -165,7 +166,10 @@ check('counter measures submitted code points including formatting', () =>
 			],
 		},
 		'../../../apollo/store': vars,
-		'../../../apollo/user/mutation': { CREATE_BOARD_ARTICLE: 'CREATE_BOARD_ARTICLE' },
+		'../../../apollo/user/mutation': {
+			CREATE_BOARD_ARTICLE: 'CREATE_BOARD_ARTICLE',
+			UPDATE_BOARD_ARTICLE: 'UPDATE_BOARD_ARTICLE',
+		},
 		'../../auth': {
 			getJwtToken: () => token,
 			isAuthenticationError: () => false,

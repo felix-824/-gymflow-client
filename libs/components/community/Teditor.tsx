@@ -9,14 +9,22 @@ import AddPhotoAlternateOutlinedIcon from '@mui/icons-material/AddPhotoAlternate
 import DeleteOutlineRoundedIcon from '@mui/icons-material/DeleteOutlineRounded';
 import SendRoundedIcon from '@mui/icons-material/SendRounded';
 import PublicOutlinedIcon from '@mui/icons-material/PublicOutlined';
-import { CREATE_BOARD_ARTICLE } from '../../../apollo/user/mutation';
+import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
+import { CREATE_BOARD_ARTICLE, UPDATE_BOARD_ARTICLE } from '../../../apollo/user/mutation';
 import { authErrorVar, authReadyVar, userVar } from '../../../apollo/store';
 import { BoardArticleCategory } from '../../enums/board-article.enum';
 import { getJwtToken, invalidateSession, isAuthenticationError } from '../../auth';
 import { REACT_APP_API_URL } from '../../config';
-import { articleCharacterCount, isArticleContent, isArticleTitle } from '../../article';
+import {
+	articleCharacterCount,
+	articleUpdateError,
+	isArticleContent,
+	isArticleTitle,
+	OwnedArticle,
+	readOwnedArticle,
+} from '../../article';
 import { articleHtmlPlugin, sanitizeArticleHtml } from '../../article-html';
-import { sweetTopSmallSuccessAlert } from '../../sweetAlert';
+import { sweetConfirmAlert, sweetTopSmallSuccessAlert } from '../../sweetAlert';
 import '@toast-ui/editor/dist/toastui-editor.css';
 import '@toast-ui/editor/dist/i18n/ko-kr';
 import '@toast-ui/editor/dist/i18n/ru-ru';
@@ -28,14 +36,31 @@ const categories = [
 	[BoardArticleCategory.NEWS, 'News'],
 ] as const;
 type FieldErrors = { title?: string; story?: string; cover?: string };
+type EditorProps = { memberId: string } & (
+	| { mode?: 'create' }
+	| { mode: 'edit'; article: OwnedArticle; reloadArticle: () => Promise<OwnedArticle | null> }
+);
 
-const TuiEditor = ({ memberId }: { memberId: string }) => {
+const TuiEditor = (props: EditorProps) => {
+	const { memberId } = props;
+	const editing = props.mode === 'edit';
+	const article = useRef<OwnedArticle | null>(
+		editing ? readOwnedArticle(props.article, props.article?._id, memberId) : null,
+	);
+	const initial = useRef({
+		title: article.current?.articleTitle ?? '',
+		cover: article.current?.articleImage ?? '',
+		story: '',
+	});
+	const reloadLock = useRef(false);
+	const cancelLock = useRef(false);
 	const { t, i18n } = useTranslation('common');
 	const router = useRouter();
 	const editorRef = useRef<Editor>(null);
 	const titleRef = useRef<HTMLTextAreaElement>(null);
 	const coverRef = useRef<HTMLInputElement>(null);
 	const storyRef = useRef<HTMLDivElement>(null);
+	const feedbackRef = useRef<HTMLDivElement>(null);
 	const mounted = useRef(false);
 	const epoch = useRef(0);
 	const away = useRef(false);
@@ -44,16 +69,22 @@ const TuiEditor = ({ memberId }: { memberId: string }) => {
 	const confirmed = useRef(false);
 	const uploadTask = useRef<{ controller: AbortController; epoch: number; kind: 'cover' | 'inline' } | null>(null);
 	const token = useRef(getJwtToken()).current;
-	const [category, setCategory] = useState(BoardArticleCategory.FREE);
-	const [title, setTitle] = useState('');
+	const [category, setCategory] = useState(article.current?.articleCategory ?? BoardArticleCategory.FREE);
+	const [title, setTitle] = useState(initial.current.title);
 	const [story, setStory] = useState('');
-	const [cover, setCover] = useState('');
+	const [cover, setCover] = useState(initial.current.cover);
 	const [uploading, setUploading] = useState(false);
 	const [publishing, setPublishing] = useState(false);
 	const [uncertain, setUncertain] = useState(false);
 	const [errors, setErrors] = useState<FieldErrors>({});
 	const [feedback, setFeedback] = useState('');
+	const [conflict, setConflict] = useState(false);
+	const [unavailable, setUnavailable] = useState(editing && !article.current);
+	const unavailableRef = useRef(unavailable);
+	unavailableRef.current = unavailable;
+	const [reloading, setReloading] = useState(false);
 	const [createBoardArticle] = useMutation(CREATE_BOARD_ARTICLE);
+	const [updateBoardArticle] = useMutation(UPDATE_BOARD_ARTICLE);
 	const sameAccount = () =>
 		mounted.current &&
 		authReadyVar() &&
@@ -68,12 +99,22 @@ const TuiEditor = ({ memberId }: { memberId: string }) => {
 	useLayoutEffect(() => {
 		mounted.current = true;
 		const editor = editorRef.current?.getInstance();
+		if (article.current && editor) {
+			// setHTML parses immediately: sanitize before entering the native editor.
+			editor.setHTML(sanitizeArticleHtml(article.current.articleContent), false);
+			initial.current.story = editor.getHTML();
+			setStory(initial.current.story);
+		}
 		const leave = () => {
 			away.current = true;
 			epoch.current++;
 			uploadTask.current?.controller.abort();
 			uploadTask.current = null;
 			if (confirmed.current) return;
+			if (editing) {
+				reloadLock.current = false;
+				setReloading(false);
+			}
 			setUploading(false);
 			if (pendingPublication.current) {
 				setPublishing(false);
@@ -102,14 +143,88 @@ const TuiEditor = ({ memberId }: { memberId: string }) => {
 			router.events.off('routeChangeComplete', resume);
 			router.events.off('routeChangeError', resume);
 		};
-	}, [router.events]);
+	}, [router.events, editing]);
 	useEffect(() => {
 		storyRef.current?.querySelector('[role="textbox"]')?.setAttribute('aria-invalid', String(Boolean(errors.story)));
 	}, [errors.story]);
+	useEffect(() => {
+		if (editing && feedback && !confirmed.current) {
+			feedbackRef.current?.focus();
+			feedbackRef.current?.scrollIntoView({ block: 'center' });
+		}
+	}, [editing, feedback]);
 
 	const readStory = () => editorRef.current?.getInstance().getHTML() ?? story;
+	const articleHref = article.current
+		? `/community/detail?articleCategory=${article.current.articleCategory}&id=${article.current._id}`
+		: '/community';
+	const cancel = async () => {
+		if (!currentAccount() || submitLock.current || reloadLock.current || cancelLock.current) return;
+		cancelLock.current = true;
+		const requestEpoch = epoch.current;
+		try {
+			const dirty =
+				title !== initial.current.title ||
+				cover !== initial.current.cover ||
+				readStory() !== initial.current.story ||
+				Boolean(uploadTask.current);
+			if (dirty && !(await sweetConfirmAlert(t('Edit article.Discard changes')))) return;
+			if (currentRequest(requestEpoch) && !submitLock.current && !reloadLock.current) await router.push(articleHref);
+		} catch {
+			if (currentRequest(requestEpoch)) setFeedback('Navigation failed');
+		} finally {
+			cancelLock.current = false;
+		}
+	};
+	const reloadArticle = async () => {
+		if (props.mode !== 'edit' || !currentAccount() || submitLock.current || reloadLock.current || uploadTask.current)
+			return;
+		reloadLock.current = true;
+		const requestEpoch = epoch.current;
+		try {
+			if (!(await sweetConfirmAlert(t('Edit article.Reload confirmation'))) || !currentRequest(requestEpoch)) return;
+			setReloading(true);
+			const latest = await props.reloadArticle();
+			if (!currentRequest(requestEpoch)) return;
+			if (!latest) {
+				setUnavailable(true);
+				setFeedback('Unavailable');
+				return;
+			}
+			const owned = readOwnedArticle(latest, article.current?._id ?? '', memberId);
+			if (!owned) throw new Error('Invalid owner article');
+			const editor = editorRef.current?.getInstance();
+			if (!editor) return;
+			editor.setHTML(sanitizeArticleHtml(owned.articleContent), false);
+			const html = editor.getHTML();
+			article.current = owned;
+			initial.current = { title: owned.articleTitle, cover: owned.articleImage ?? '', story: html };
+			setCategory(owned.articleCategory);
+			setTitle(initial.current.title);
+			setCover(initial.current.cover);
+			setStory(html);
+			setErrors({});
+			setConflict(false);
+			setUncertain(false);
+			setFeedback('');
+		} catch (error) {
+			if (!currentRequest(requestEpoch)) return;
+			const kind = articleUpdateError(error);
+			if (kind === 'auth') void invalidateSession();
+			else if (kind === 'unavailable') {
+				setUnavailable(true);
+				setFeedback('Unavailable');
+			} else setFeedback('Reload failed');
+		} finally {
+			if (currentRequest(requestEpoch)) {
+				reloadLock.current = false;
+				setReloading(false);
+			}
+		}
+	};
 	const uploadImage = async (file: File, kind: 'cover' | 'inline', callback?: (url: string) => void) => {
-		if (!currentAccount() || uploadTask.current || submitLock.current) return;
+		if (!currentAccount() || uploadTask.current || submitLock.current || reloadLock.current || unavailableRef.current)
+			return;
 		const field = kind === 'cover' ? 'cover' : 'story';
 		if (!['image/jpeg', 'image/png'].includes(file.type) || !/\.(jpe?g|png)$/i.test(file.name)) {
 			setErrors((previous) => ({ ...previous, [field]: 'Image format' }));
@@ -172,7 +287,17 @@ const TuiEditor = ({ memberId }: { memberId: string }) => {
 	};
 	const publish = async (event: React.FormEvent) => {
 		event.preventDefault();
-		if (!currentAccount() || submitLock.current || uploadTask.current || uncertain) return;
+		if (
+			!currentAccount() ||
+			submitLock.current ||
+			uploadTask.current ||
+			reloadLock.current ||
+			uncertain ||
+			conflict ||
+			unavailable
+		)
+			return;
+		if (editing && !article.current) return;
 		// Synchronous protection covers two clicks before React renders the pending state.
 		submitLock.current = true;
 		const html = readStory();
@@ -195,32 +320,62 @@ const TuiEditor = ({ memberId }: { memberId: string }) => {
 		setFeedback('');
 		const requestEpoch = epoch.current;
 		try {
-			const response = await createBoardArticle({
-				variables: {
-					input: {
-						articleCategory: category,
-						articleTitle: title,
-						articleContent: html,
-						...(cover ? { articleImage: cover } : {}),
-					},
-				},
-				fetchPolicy: 'no-cache',
-			});
+			const response = editing
+				? await updateBoardArticle({
+						variables: {
+							input: {
+								_id: article.current!._id,
+								expectedRevision: article.current!.articleRevision,
+								articleTitle: title,
+								articleContent: html,
+								articleImage: cover || null,
+							},
+						},
+						fetchPolicy: 'no-cache',
+						context: { handleErrorLocally: true },
+				  })
+				: await createBoardArticle({
+						variables: {
+							input: {
+								articleCategory: category,
+								articleTitle: title,
+								articleContent: html,
+								...(cover ? { articleImage: cover } : {}),
+							},
+						},
+						fetchPolicy: 'no-cache',
+				  });
 			if (!sameAccount()) return;
-			if (!response.data?.createBoardArticle?._id) throw new Error('Publication unconfirmed');
+			if (editing) {
+				const updated = response.data?.updateBoardArticle;
+				if (updated?._id !== article.current!._id || updated.articleRevision !== article.current!.articleRevision + 1)
+					throw new Error('Save unconfirmed');
+				article.current = { ...article.current!, articleRevision: updated.articleRevision };
+			} else if (!response.data?.createBoardArticle?._id) throw new Error('Publication unconfirmed');
 			confirmed.current = true;
 			pendingPublication.current = false;
 			setUncertain(false);
-			setFeedback('Published');
+			setFeedback(editing ? 'Saved' : 'Published');
 			setPublishing(false);
 			if (currentRequest(requestEpoch)) {
-				await sweetTopSmallSuccessAlert(t('Write article.Published'), 700);
-				if (currentRequest(requestEpoch)) await router.push('/mypage?category=myArticles');
+				await sweetTopSmallSuccessAlert(t(editing ? 'Edit article.Saved' : 'Write article.Published'), 700);
+				if (currentRequest(requestEpoch)) await router.push(editing ? articleHref : '/mypage?category=myArticles');
 			}
 		} catch (error) {
 			if (sameAccount() && !confirmed.current) {
-				if (isAuthenticationError(error)) invalidateSession();
-				else {
+				const kind = editing ? articleUpdateError(error) : 'unknown';
+				if (isAuthenticationError(error) || kind === 'auth') invalidateSession();
+				else if (kind === 'conflict') {
+					setConflict(true);
+					setUncertain(false);
+					setFeedback('Conflict');
+				} else if (kind === 'unavailable') {
+					setUnavailable(true);
+					setFeedback('Unavailable');
+				} else if (kind === 'rejected') {
+					setUncertain(false);
+					setFeedback('Save failed');
+				} else {
 					setUncertain(true);
 					setFeedback('Unconfirmed');
 				}
@@ -233,26 +388,37 @@ const TuiEditor = ({ memberId }: { memberId: string }) => {
 			}
 		}
 	};
-	const busy = uploading || publishing;
-	const readOnly = publishing || confirmed.current;
+	const busy = uploading || publishing || reloading;
+	const readOnly =
+		publishing || confirmed.current || (editing && (unavailable || reloading || pendingPublication.current));
 	return (
 		<form className="write-article-form" onSubmit={(event) => void publish(event)} noValidate aria-busy={busy}>
-			<fieldset className="write-category" disabled={readOnly}>
+			<fieldset className="write-category" disabled={readOnly || editing}>
 				<legend>{t('Write article.Category')}</legend>
-				<div className="write-category-options">
-					{categories.map(([value, label]) => (
-						<label key={value}>
-							<input
-								type="radio"
-								name="articleCategory"
-								value={value}
-								checked={category === value}
-								onChange={() => setCategory(value)}
-							/>
-							<span>{t(`Write article.${label}`)}</span>
-						</label>
-					))}
-				</div>
+				{editing ? (
+					<div className="write-category-readonly">
+						<strong>{t(`Write article.${categories.find(([value]) => value === category)?.[1]}`)}</strong>
+						<span>
+							<LockOutlinedIcon aria-hidden="true" />
+							{t('Edit article.Category locked')}
+						</span>
+					</div>
+				) : (
+					<div className="write-category-options">
+						{categories.map(([value, label]) => (
+							<label key={value}>
+								<input
+									type="radio"
+									name="articleCategory"
+									value={value}
+									checked={category === value}
+									onChange={() => setCategory(value)}
+								/>
+								<span>{t(`Write article.${label}`)}</span>
+							</label>
+						))}
+					</div>
+				)}
 			</fieldset>
 			<div className="write-title-field">
 				<div className="write-field-heading">
@@ -347,7 +513,7 @@ const TuiEditor = ({ memberId }: { memberId: string }) => {
 					<h2 id="write-story-label">{t('Write article.Story')}</h2>
 					<span>{t('Write article.Story limit')}</span>
 				</div>
-				<div ref={storyRef} className="write-story-editor">
+				<div ref={storyRef} className="write-story-editor" {...(editing && readOnly ? { inert: '' } : {})}>
 					<Editor
 						ref={editorRef}
 						initialValue=""
@@ -390,31 +556,63 @@ const TuiEditor = ({ memberId }: { memberId: string }) => {
 				</p>
 			</section>
 			{feedback && (
-				<div className="write-feedback" role={confirmed.current ? 'status' : 'alert'}>
-					<p>{t(`Write article.${feedback}`)}</p>
-					<Link
-						href="/mypage?category=myArticles"
-						target="_blank"
-						rel="noopener noreferrer"
-						onClick={() => {
-							if (!pendingPublication.current && !confirmed.current) setUncertain(false);
-						}}
-					>
-						{t(`Write article.${confirmed.current ? 'My Articles' : 'Check My Articles'}`)}
-					</Link>
+				<div ref={feedbackRef} tabIndex={-1} className="write-feedback" role={confirmed.current ? 'status' : 'alert'}>
+					<p>{t(`${editing ? 'Edit article' : 'Write article'}.${feedback}`)}</p>
+					{editing ? (
+						<>
+							{(conflict || uncertain) && !unavailable && (
+								<button type="button" onClick={() => void reloadArticle()} disabled={busy}>
+									{t('Edit article.Reload latest')}
+								</button>
+							)}
+							<Link href={articleHref} target="_blank" rel="noopener noreferrer">
+								{t('Edit article.View article')}
+							</Link>
+						</>
+					) : (
+						<Link
+							href="/mypage?category=myArticles"
+							target="_blank"
+							rel="noopener noreferrer"
+							onClick={() => {
+								if (!pendingPublication.current && !confirmed.current) setUncertain(false);
+							}}
+						>
+							{t(`Write article.${confirmed.current ? 'My Articles' : 'Check My Articles'}`)}
+						</Link>
+					)}
 				</div>
 			)}
 			<div className="write-publish-row">
 				<p className="write-publish-note">
 					<PublicOutlinedIcon aria-hidden="true" />
-					{t('Write article.Publish note')}
+					{t(editing ? 'Edit article.Save note' : 'Write article.Publish note')}
 				</p>
 				<div className="write-publish-actions">
-					<Link href="/community" className="write-cancel">
-						{t('Write article.Cancel')}
-					</Link>
-					<button type="submit" className="write-publish" disabled={busy || uncertain || confirmed.current}>
-						{t(`Write article.${publishing ? 'Publishing' : 'Publish Article'}`)}
+					{editing ? (
+						<button
+							type="button"
+							className="write-cancel"
+							disabled={publishing || reloading || confirmed.current || pendingPublication.current}
+							onClick={() => void cancel()}
+						>
+							{t('Write article.Cancel')}
+						</button>
+					) : (
+						<Link href="/community" className="write-cancel">
+							{t('Write article.Cancel')}
+						</Link>
+					)}
+					<button
+						type="submit"
+						className="write-publish"
+						disabled={busy || uncertain || conflict || unavailable || confirmed.current}
+					>
+						{t(
+							editing
+								? `Edit article.${publishing ? 'Saving' : 'Save Changes'}`
+								: `Write article.${publishing ? 'Publishing' : 'Publish Article'}`,
+						)}
 						<SendRoundedIcon aria-hidden="true" />
 					</button>
 				</div>

@@ -30,7 +30,7 @@ const withLayoutBasic = (Component: any) => {
 		const authHeader = router.pathname === '/account/join';
 		const communityDiscovery = router.pathname === '/community';
 		const communityArticle = router.pathname === '/community/detail';
-		const communityWrite = router.pathname === '/mypage' && router.query.category === 'writeArticle';
+		const communityWrite = router.pathname === '/mypage' && (router.query.category === 'writeArticle' || router.query.category === 'editArticle');
 		const trainerSchedule = router.pathname === '/mypage' && router.query.category === 'trainerSchedule';
 		const trainerReservations = router.pathname === '/mypage' && router.query.category === 'trainerReservations';
 		const trainerDashboard = router.pathname === '/mypage' && router.query.category === 'trainerDashboard';

@@ -882,5 +882,28 @@
 		"Login required": "Sign in to share your story.",
 		"Auth error": "Your session could not be loaded. Retry to continue.",
 		"Retry": "Retry"
+	},
+	"Edit article": {
+		"Context": "Community editing",
+		"Edit Article": "Edit Article",
+		"Edit your story": "Edit your story",
+		"Intro": "Update your experience, training tip, or idea for the GymFlow community.",
+		"Category locked": "Category cannot be changed.",
+		"Save note": "Changes will update your published article.",
+		"Save Changes": "Save Changes",
+		"Saving": "Saving…",
+		"Saved": "Article updated successfully.",
+		"Loading": "Loading your article…",
+		"Unavailable": "This article is unavailable for editing.",
+		"Load failed": "Your article could not be loaded. Please try again.",
+		"Save failed": "Your changes were not saved. Your draft is preserved. Check your title and story before trying again.",
+		"Unconfirmed": "Your changes could not be confirmed. Your draft is preserved. Check the published article or reload the latest article before saving again.",
+		"Conflict": "This article changed elsewhere. Your draft is preserved. Reload the latest article before saving again.",
+		"Reload latest": "Reload latest",
+		"Reload confirmation": "Reload the latest published article? Your current unsaved changes will be discarded.",
+		"Reload failed": "The latest article could not be loaded. Your draft is preserved. Please try again.",
+		"Discard changes": "Discard your unsaved changes and return to the article?",
+		"View article": "View published article",
+		"Navigation failed": "Could not return to the article. Your draft is preserved. Please try again."
 	}
 }

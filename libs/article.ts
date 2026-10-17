@@ -1,3 +1,50 @@
+import { BoardArticleCategory, BoardArticleStatus } from './enums/board-article.enum';
+import { BoardArticle } from './types/board-article/board-article';
+
+export type OwnedArticle = Pick<
+	BoardArticle,
+	'_id' | 'memberId' | 'articleCategory' | 'articleStatus' | 'articleTitle' | 'articleContent' | 'articleImage'
+> & { articleRevision: number };
+
+export function readOwnedArticle(value: unknown, articleId: string, memberId: string): OwnedArticle | null {
+	const article = value as OwnedArticle | undefined;
+	if (
+		!article ||
+		article._id !== articleId ||
+		article.memberId !== memberId ||
+		article.articleStatus !== BoardArticleStatus.ACTIVE ||
+		!Object.values(BoardArticleCategory).includes(article.articleCategory) ||
+		!Number.isInteger(article.articleRevision) ||
+		article.articleRevision < 0 ||
+		article.articleRevision >= 2147483647 ||
+		typeof article.articleTitle !== 'string' ||
+		typeof article.articleContent !== 'string' ||
+		(article.articleImage != null && typeof article.articleImage !== 'string')
+	)
+		return null;
+	return article;
+}
+
+export function articleUpdateError(error: any): 'conflict' | 'unavailable' | 'auth' | 'rejected' | 'unknown' {
+	if (error?.networkError || !error?.graphQLErrors?.length) return 'unknown';
+	for (const item of error.graphQLErrors) {
+		const status = item.extensions?.originalError?.statusCode ?? item.extensions?.status;
+		// The existing application formatter returns code/message without extensions.
+		const code = item.extensions?.code ?? item.code;
+		if (status === 409 || code === 'CONFLICT' || item.message === 'Article changed; reload before saving again')
+			return 'conflict';
+		if (status === 404 || code === 'NOT_FOUND' || item.message === 'No data found!') return 'unavailable';
+		if (status === 401 || ['UNAUTHENTICATED', 'FORBIDDEN'].includes(code)) return 'auth';
+	}
+	return error.graphQLErrors.some(
+		(item: any) =>
+			(item.extensions?.code ?? item.code) === 'INTERNAL_SERVER_ERROR' ||
+			(item.extensions?.originalError?.statusCode ?? item.extensions?.status) >= 500,
+	)
+		? 'unknown'
+		: 'rejected';
+}
+
 // Text-presence rules mirror Phase 16A; HTML safety is handled separately by article-html.ts.
 const spaceEntities = new Set([
 	'nbsp',

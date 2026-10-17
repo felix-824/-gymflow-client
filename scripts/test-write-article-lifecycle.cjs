@@ -86,7 +86,17 @@ async function testPublicationCleanup() {
 		return value;
 	};
 	const events = new Map();
-	let nativeEditor, editorProps, root, resolveMutation, mutationCount, successCount, navigationCount;
+	let nativeEditor, editorProps, root, resolveMutation, mutationCount, successCount, navigationCount, mode;
+	const article = {
+		_id: 'b'.repeat(24),
+		memberId: 'a'.repeat(24),
+		articleCategory: 'TIP',
+		articleStatus: 'ACTIVE',
+		articleTitle: 'Owned training story',
+		articleContent: '<p>Persisted story.</p>',
+		articleImage: null,
+		articleRevision: 0,
+	};
 	class ObservedEditor extends Editor {
 		componentDidMount() {
 			super.componentDidMount();
@@ -97,7 +107,10 @@ async function testPublicationCleanup() {
 	const router = {
 		events: { on: (name, callback) => events.set(name, callback), off: (name) => events.delete(name) },
 		push: async (url) => {
-			assert.equal(url, '/mypage?category=myArticles');
+			assert.equal(
+				url,
+				mode === 'create' ? '/mypage?category=myArticles' : '/community/detail?articleCategory=TIP&id=' + article._id,
+			);
 			navigationCount++;
 			events.get('routeChangeStart')?.();
 			// Next can commit the destination before the navigation promise resolves.
@@ -111,10 +124,15 @@ async function testPublicationCleanup() {
 		'next/link': ({ children, href, ...props }) => React.createElement('a', { ...props, href }, children),
 		'next-i18next': { useTranslation: () => ({ t, i18n: { language: 'en' } }) },
 		'@toast-ui/react-editor': { Editor: ObservedEditor },
-		'../../../apollo/user/mutation': { CREATE_BOARD_ARTICLE: 'CREATE_BOARD_ARTICLE' },
+		'../../../apollo/user/mutation': {
+			CREATE_BOARD_ARTICLE: 'CREATE_BOARD_ARTICLE',
+			UPDATE_BOARD_ARTICLE: 'UPDATE_BOARD_ARTICLE',
+		},
 		'@apollo/client': {
-			useMutation: () => [
-				() => {
+			useMutation: (document) => [
+				(request) => {
+					assert.equal(document, mode === 'create' ? 'CREATE_BOARD_ARTICLE' : 'UPDATE_BOARD_ARTICLE');
+					if (mode === 'edit') assert.equal(request.variables.input.expectedRevision, 0);
 					mutationCount++;
 					return new Promise((resolve) => {
 						resolveMutation = resolve;
@@ -131,7 +149,10 @@ async function testPublicationCleanup() {
 		'../../sweetAlert': {
 			// The real async helper starts Toast.fire but does not await its 700ms timer.
 			sweetTopSmallSuccessAlert: async (message) => {
-				assert.equal(message, dictionary['Write article'].Published);
+				assert.equal(
+					message,
+					mode === 'create' ? dictionary['Write article'].Published : dictionary['Edit article'].Saved,
+				);
 				successCount++;
 			},
 		},
@@ -167,12 +188,26 @@ async function testPublicationCleanup() {
 	}
 	const Form = load(path.join(__dirname, '../libs/components/community/Teditor.tsx')).default;
 	try {
-		for (width of [776, 358]) {
+		for (const [currentMode, currentWidth] of [
+			['create', 776],
+			['create', 358],
+			['edit', 776],
+			['edit', 358],
+		]) {
+			mode = currentMode;
+			width = currentWidth;
 			mutationCount = successCount = navigationCount = 0;
 			root = createRoot(document.querySelector('#root'));
 			await act(async () =>
 				root.render(
-					React.createElement(React.StrictMode, null, React.createElement(Form, { memberId: 'a'.repeat(24) })),
+					React.createElement(
+						React.StrictMode,
+						null,
+						React.createElement(Form, {
+							memberId: 'a'.repeat(24),
+							...(mode === 'edit' ? { mode, article, reloadArticle: async () => article } : {}),
+						}),
+					),
 				),
 			);
 			await act(async () => {
@@ -188,7 +223,14 @@ async function testPublicationCleanup() {
 			const resizeTimers = [...timers.keys()].filter((id) => !earlierTimers.has(id));
 			assert(resizeTimers.length > 0, 'real toolbar has a pending throttled resize before mutation completion');
 			const staleChange = editorProps.onChange;
-			await act(async () => resolveMutation({ data: { createBoardArticle: { _id: 'b'.repeat(24) } } }));
+			await act(async () =>
+				resolveMutation({
+					data:
+						mode === 'create'
+							? { createBoardArticle: { _id: 'b'.repeat(24) } }
+							: { updateBoardArticle: { _id: article._id, articleRevision: 1 } },
+				}),
+			);
 			assert.equal(mutationCount, 1);
 			assert.equal(successCount, 1);
 			assert.equal(navigationCount, 1);
@@ -208,7 +250,9 @@ async function testPublicationCleanup() {
 			console.log(
 				'PASS native Toast UI ' +
 					width +
-					'px: one confirmed create, immediate route unmount, canceled resize and inert stale callback',
+					'px: one confirmed ' +
+					mode +
+					', immediate route unmount, canceled resize and inert stale callback',
 			);
 			await act(async () => root.unmount());
 		}
