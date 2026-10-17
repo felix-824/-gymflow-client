@@ -225,7 +225,7 @@ export const ProgramPanelList = (props: ProgramPanelListType) => {
 															.filter((ele) => ele !== program.programStatus)
 															.map((status: string) => (
 																<MenuItem
-																	onClick={() => updateProgramHandler({ _id: program._id, programStatus: status })}
+																	onClick={() => updateProgramHandler({ _id: program._id, programStatus: status, expectedRevision: program.programRevision })}
 																	key={status}
 																>
 																	<Typography variant={'subtitle1'} component={'span'}>

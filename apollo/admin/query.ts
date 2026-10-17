@@ -46,6 +46,7 @@ export const GET_ALL_PROGRAMS_BY_ADMIN = gql`
 		getAllProgramsByAdmin(input: $input) {
 			list {
 				_id
+				programRevision
 				programType
 				programStatus
 				programLocation

@@ -13,6 +13,8 @@ export interface TotalCounter {
 
 export interface Program {
 	_id: string;
+	/** Selected by management documents; public documents may omit it. */
+	programRevision?: number;
 	programType: ProgramType;
 	programCategory: ProgramCategory;
 	programStatus: ProgramStatus;

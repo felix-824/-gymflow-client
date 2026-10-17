@@ -198,6 +198,7 @@ export const CREATE_PROGRAM = gql`
 	mutation CreateProgram($input: ProgramInput!) {
 		createProgram(input: $input) {
 			_id
+			programRevision
 			programType
 			programStatus
 			programLocation
@@ -226,6 +227,7 @@ export const UPDATE_PROGRAM = gql`
 	mutation UpdateProgram($input: ProgramUpdate!) {
 		updateProgram(input: $input) {
 			_id
+			programRevision
 			programType
 			programStatus
 			programLocation

@@ -23,7 +23,7 @@ module.exports = async function runFormChecks(loadTs, forms) {
 	await i18n.init({ resources, lng: 'en', ns: ['common'], defaultNS: 'common', initImmediate: false });
 	const { createRoot } = require('react-dom/client');
 	const { act, Simulate } = require('react-dom/test-utils');
-	const program = { _id: 'a'.repeat(24), programName: 'Paused strength', programType: 'PT_1ON1', programCategory: 'MUSCLE_GAIN', programLocation: 'SEOUL', programPrice: 0, programDuration: 60, programCapacity: 1, programAddress: 'Seoul gym', programImages: ['uploads/program/a.png'], programStatus: 'PAUSED' };
+	const program = { _id: 'a'.repeat(24), programRevision: 0, programName: 'Paused strength', programType: 'PT_1ON1', programCategory: 'MUSCLE_GAIN', programLocation: 'SEOUL', programPrice: 0, programDuration: 60, programCapacity: 1, programAddress: 'Seoul gym', programImages: ['uploads/program/a.png'], programStatus: 'PAUSED' };
 	const router = {
 		isReady: true,
 		query: {
@@ -44,6 +44,7 @@ module.exports = async function runFormChecks(loadTs, forms) {
 		mobile: false,
 		failLookup: false, read: null, navigation: [], success: [], scrolled: [],
 		reservationRead: null, failReservations: false, policyError: '',
+		confirmRefresh: true, confirmations: [], unknownMutation: false,
 	};
 	dom.window.HTMLElement.prototype.scrollIntoView = function () { state.scrolled.push(this); };
 	let trainer = { _id: 'b'.repeat(24), memberType: 'TRAINER' }, token = 'test-token';
@@ -69,10 +70,12 @@ module.exports = async function runFormChecks(loadTs, forms) {
 			setLoading(true); state.mutations.push({ name, ...request });
 			try {
 				if (state.waitMutation) await state.waitMutation;
-				if (state.failMutation) throw new Error('Program changed; reload and retry');
-				if (state.policyError) throw new Error(state.policyError);
-				if (state.persistMutations) state.program = { ...state.program, ...request.variables.input };
-				return { data: {} };
+				if (state.failMutation) throw Object.assign(new Error('Program has changed. Refresh and review the latest data.'), { graphQLErrors: [{ message: 'Program has changed. Refresh and review the latest data.', extensions: { reason: 'PROGRAM_REVISION_CONFLICT' } }] });
+				if (state.unknownMutation) throw new Error('Connection lost after dispatch');
+				if (state.policyError) throw Object.assign(new Error(state.policyError), { graphQLErrors: [{ message: state.policyError, extensions: { code: 'BAD_REQUEST' } }] });
+				const revision = request.variables.input.expectedRevision + 1;
+				if (state.persistMutations) state.program = { ...state.program, ...request.variables.input, programRevision: revision };
+				return { data: name === 'UPDATE_PROGRAM' ? { updateProgram: { _id: request.variables.input._id, programRevision: revision } } : {} };
 			} finally { setLoading(false); }
 		}, [name]);
 		return [mutate, { loading }];
@@ -98,7 +101,7 @@ module.exports = async function runFormChecks(loadTs, forms) {
 		'@apollo/client': { useApolloClient: () => client, useMutation, useReactiveVar: (variable) => variable() },
 		'../../../apollo/user/mutation': { CREATE_PROGRAM: 'CREATE_PROGRAM', UPDATE_PROGRAM: 'UPDATE_PROGRAM' },
 		'../../../apollo/user/query': { GET_TRAINER_PROGRAMS: 'GET_TRAINER_PROGRAMS', GET_TRAINER_RESERVATIONS: 'GET_TRAINER_RESERVATIONS' },
-		'../../sweetAlert': { sweetMixinSuccessAlert: async (message) => { state.success.push(message); } },
+		'../../sweetAlert': { sweetMixinSuccessAlert: async (message) => { state.success.push(message); }, sweetConfirmAlert: async (message) => { state.confirmations.push(message); return state.confirmRefresh; } },
 		'axios': { post: async (url, body, config) => {
 			state.authEvents.push('post');
 			const operations = JSON.parse(body.get('operations'));
@@ -138,12 +141,25 @@ module.exports = async function runFormChecks(loadTs, forms) {
 		pass('GraphQL upload failure retains existing images and uses a dynamic map');
 
 		state.failMutation = true;
-		state.program = { ...program, programName: 'Latest server values' };
+		state.program = { ...program, programRevision: 1, programName: 'Latest server values' };
 		await act(async () => Simulate.submit(document.querySelector('form')));
-		assert.equal(document.querySelector('input').value, 'Latest server values');
-		assert.ok(document.querySelector('[role=alert]').textContent.includes('review them'));
+		assert.equal(document.querySelector('input').value, 'Paused strength');
+		assert.ok(document.querySelector('[role=alert]').textContent.includes('Program has changed'));
 		assert.equal(state.mutations.length, 1);
-		pass('conflict refetches latest values and waits for manual resubmission');
+		assert.equal(state.mutations[0].variables.input.expectedRevision, 0);
+		await act(async () => Simulate.submit(document.querySelector('form')));
+		assert.equal(state.mutations.length, 1);
+		const refreshButton = () => [...document.querySelectorAll('button')].find(button => button.textContent === resources.en.common['Trainer program form']['Refresh latest']);
+		state.confirmRefresh = false;
+		await act(async () => refreshButton().click());
+		assert.equal(document.querySelector('input').value, 'Paused strength');
+		assert.equal(document.querySelector('button[type=submit]').disabled, true);
+		state.confirmRefresh = true;
+		await act(async () => refreshButton().click());
+		assert.equal(document.querySelector('input').value, 'Latest server values');
+		assert.equal(state.mutations.length, 1);
+		assert.equal(state.confirmations.length, 2);
+		pass('stale revision preserves draft and blocks SAVE; only confirmed refresh replaces fields and revision');
 
 		state.failMutation = false;
 		let release;
@@ -156,6 +172,7 @@ module.exports = async function runFormChecks(loadTs, forms) {
 		assert.equal(document.querySelector('button[type=submit]').disabled, true);
 		await act(async () => { release(); });
 		assert.equal(state.mutations[1].variables.input._id, program._id);
+		assert.equal(state.mutations[1].variables.input.expectedRevision, 1);
 		assert.equal(state.mutations[1].variables.input.programStatus, undefined);
 		assert.deepEqual(JSON.parse(state.navigation.at(-1).query.input), forms.readTrainerProgramsInquiry(router.query.input));
 		pass('pending submit is locked and sends only permitted update fields');
@@ -176,6 +193,7 @@ module.exports = async function runFormChecks(loadTs, forms) {
 			await act(async () => Simulate.submit(document.querySelector('form')));
 			assert.equal(state.success.at(-1), resources[locale].common['Trainer program form'].Updated);
 		}
+		assert.equal(state.mutations[2].variables.input.expectedRevision, 2);
 		await i18n.changeLanguage('en');
 		pass('EN/KR/RU form translations, interpolation and update success feedback resolve');
 
@@ -275,15 +293,27 @@ module.exports = async function runFormChecks(loadTs, forms) {
 		before = state.mutations.length;
 		await act(async () => Simulate.submit(document.querySelector('form')));
 		assert.equal(state.mutations.length, before + 1);
-		assert.equal(document.querySelector('form'), null);
-		assert.ok(document.querySelector('[role=alert]').textContent.includes('latest values could not be loaded'));
-		state.failLookup = false;
-		await act(async () => document.querySelector('.editor-load-state button').click());
 		assert.equal(document.querySelector('#program-name').value, 'Paused strength');
-		assert.ok(document.querySelector('.editor-error').textContent.includes('review them'));
+		await act(async () => refreshButton().click());
+		assert.ok(document.querySelector('[role=alert]').textContent.includes('draft is preserved'));
+		assert.equal(document.querySelector('button[type=submit]').disabled, true);
+		state.failLookup = false;
+		await act(async () => refreshButton().click());
+		assert.equal(document.querySelector('#program-name').value, 'Paused strength');
 		assert.equal(state.mutations.length, before + 1);
 		state.failMutation = false;
-		pass('failed conflict refresh blocks save explicitly; Retry only reloads and never retries mutation');
+		pass('failed confirmed refresh preserves draft and blocks save; read-only retry never repeats mutation');
+		state.unknownMutation = true;
+		before = state.mutations.length;
+		await act(async () => Simulate.submit(document.querySelector('form')));
+		assert.ok(document.querySelector('[role=alert]').textContent.includes('could not confirm'));
+		await act(async () => Simulate.submit(document.querySelector('form')));
+		assert.equal(state.mutations.length, before + 1);
+		assert.equal(document.querySelector('#program-name').value, 'Paused strength');
+		state.unknownMutation = false;
+		await act(async () => refreshButton().click());
+		assert.equal(state.mutations.length, before + 1);
+		pass('uncertain UPDATE preserves draft, blocks replay and requires explicit owned reconciliation');
 
 		state.read = () => ({ list: [], metaCounter: [{ total: 0 }] });
 		for (const id of ['c'.repeat(24), 'e'.repeat(24), 'f'.repeat(24)]) {
@@ -522,6 +552,23 @@ module.exports = async function runFormChecks(loadTs, forms) {
 		assert.equal(document.querySelectorAll('.editor-photo').length, 1);
 		state.uploadResult = null;
 		pass('17C obsolete logical-session response ignored; uncertain upload is never replayed and retains the draft');
+		const passthrough = ({ children }) => React.createElement('div', null, children);
+		const action = ({ children, onClick, disabled }) => React.createElement('button', { onClick, disabled }, children);
+		const adminActions = [];
+		const AdminPanel = loadTs(path.join(__dirname, '../libs/components/admin/programs/ProgramList.tsx'), {
+			'next/link': { __esModule: true, default: passthrough },
+			'@mui/material': { ...Object.fromEntries(['TableCell', 'TableHead', 'TableBody', 'TableRow', 'Table', 'TableContainer', 'Menu', 'Fade', 'Stack'].map(name => [name, passthrough])), Button: action, MenuItem: action },
+			'@mui/material/Avatar': { __esModule: true, default: () => null },
+			'@mui/material/Typography': { __esModule: true, default: passthrough },
+			'@mui/icons-material/Delete': { __esModule: true, default: () => null },
+		}).ProgramPanelList;
+		await act(async () => root.render(React.createElement(AdminPanel, {
+			programs: [{ ...program, programRevision: 7 }], anchorEl: [], menuIconClickHandler: () => {},
+			menuIconCloseHandler: () => {}, removeProgramHandler: () => {}, updateProgramHandler: input => adminActions.push(input),
+		})));
+		await act(async () => [...document.querySelectorAll('button')].find(button => button.textContent === 'ACTIVE').click());
+		assert.deepEqual(adminActions, [{ _id: program._id, programStatus: 'ACTIVE', expectedRevision: 7 }]);
+		pass('existing Admin status action submits the revision belonging to its displayed Program');
 		return checks;
 	} finally {
 		await act(async () => root.unmount());

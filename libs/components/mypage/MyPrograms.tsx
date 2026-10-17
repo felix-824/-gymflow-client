@@ -209,7 +209,13 @@ function ProgramsContent({ memberId, sessionIdentity }: { memberId: string; sess
 		let outcome = 'Saved';
 		try {
 			await updateProgram({
-				variables: { input: { _id: confirmation.program._id, programStatus: confirmation.status } },
+				variables: {
+					input: {
+						_id: confirmation.program._id,
+						programStatus: confirmation.status,
+						expectedRevision: confirmation.program.programRevision,
+					},
+				},
 				fetchPolicy: 'no-cache',
 				context: { handleErrorLocally: true },
 			});

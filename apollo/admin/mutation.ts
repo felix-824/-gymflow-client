@@ -44,6 +44,7 @@ export const UPDATE_PROGRAM_BY_ADMIN = gql`
 	mutation UpdateProgramByAdmin($input: ProgramUpdate!) {
 		updateProgramByAdmin(input: $input) {
 			_id
+			programRevision
 			programType
 			programStatus
 			programLocation

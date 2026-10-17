@@ -298,6 +298,7 @@ export const GET_TRAINER_PROGRAMS = gql`
 		getTrainerPrograms(input: $input) {
 			list {
 				_id
+				programRevision
 				programType
 				programStatus
 				programLocation

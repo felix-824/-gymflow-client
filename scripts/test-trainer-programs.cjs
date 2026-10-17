@@ -121,7 +121,7 @@ async function integration({ i18n, resources }) {
 		);
 		assert.equal(owned.data.getTrainerPrograms.metaCounter[0].total, 6);
 		assert.ok(owned.data.getTrainerPrograms.list.every((row) => row.memberId === String(trainer._id)));
-		assert.ok((await gql('UPDATE_PROGRAM', { _id: String(foreign._id), programStatus: 'DELETE' }, trainer)).errors);
+		assert.ok((await gql('UPDATE_PROGRAM', { _id: String(foreign._id), expectedRevision: 0, programStatus: 'DELETE' }, trainer)).errors);
 		pass('real resolver/service TRAINER authorization, forced ownership and foreign update denial');
 
 		const { JSDOM, VirtualConsole } = require('jsdom');

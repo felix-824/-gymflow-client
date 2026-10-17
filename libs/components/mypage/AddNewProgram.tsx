@@ -21,9 +21,11 @@ import { authReadyVar, userVar } from '../../../apollo/store';
 import { useApolloClient, useMutation, useReactiveVar } from '@apollo/client';
 import { CREATE_PROGRAM, UPDATE_PROGRAM } from '../../../apollo/user/mutation';
 import { GET_TRAINER_PROGRAMS, GET_TRAINER_RESERVATIONS } from '../../../apollo/user/query';
-import { sweetMixinSuccessAlert } from '../../sweetAlert';
+import { sweetConfirmAlert, sweetMixinSuccessAlert } from '../../sweetAlert';
 import {
 	findTrainerProgram,
+	isProgramRevision,
+	programUpdateError,
 	programFormError,
 	programPayload,
 	ProgramEditConstraints,
@@ -71,6 +73,10 @@ const AddProgram = () => {
 	const [reservationLoading, setReservationLoading] = useState(false);
 	const [reservationError, setReservationError] = useState(false);
 	const [loadedCapacity, setLoadedCapacity] = useState(1);
+	const [loadedRevision, setLoadedRevision] = useState<number | null>(null);
+	const [writeBlocked, setWriteBlocked] = useState(false);
+	const [refreshing, setRefreshing] = useState(false);
+	const refreshLock = useRef(false);
 	const inputRef = useRef<HTMLInputElement>(null);
 	const errorRef = useRef<HTMLParagraphElement>(null);
 	const lookupRequest = useRef(0);
@@ -128,9 +134,11 @@ const AddProgram = () => {
 				userVar().memberType === 'TRAINER' &&
 				userVar()._id === user._id &&
 				getAuthSessionId() === sessionIdentity;
-			setLoading(true);
-			setLoadedScope('');
-			setLoadError('');
+			if (!conflict) {
+				setLoading(true);
+				setLoadedScope('');
+				setLoadError('');
+			}
 			try {
 				if (!/^[a-f\d]{24}$/i.test(programId)) {
 					setLoadError('Invalid id');
@@ -151,23 +159,45 @@ const AddProgram = () => {
 				);
 				if (!isCurrent()) return;
 				if (!program) {
-					setLoadError('Unavailable');
+					if (conflict) setFormError('Unavailable');
+					else setLoadError('Unavailable');
 					return;
 				}
+				if (!isProgramRevision(program.programRevision)) throw new Error('Missing Program revision');
 				setInsertProgramData(programPayload(program));
 				setLoadedCapacity(program.programCapacity);
+				setLoadedRevision(program.programRevision);
 				setLoadedScope(scope);
-				setFormError(
-					conflict ? 'Program changed. The latest values have been loaded; review them before saving again.' : '',
-				);
+				setFormError('');
+				setWriteBlocked(false);
+				if (conflict) await readReservations();
 			} catch (err) {
-				if (isCurrent()) setLoadError(conflict ? 'Conflict refresh error' : 'Load error');
+				if (isCurrent()) {
+					if (conflict) setFormError('Refresh failed');
+					else setLoadError('Load error');
+				}
 			} finally {
 				if (isCurrent()) setLoading(false);
 			}
 		},
-		[client, programId, scope, sessionIdentity, user._id],
+		[client, programId, scope, sessionIdentity, user._id, readReservations],
 	);
+	const refreshProgram = async () => {
+		if (refreshLock.current || submitting.current || uploadTask.current) return;
+		refreshLock.current = true;
+		setRefreshing(true);
+		try {
+			if (
+				!(await sweetConfirmAlert(t('Trainer program form.Refresh confirmation'))) ||
+				currentScope.current !== scope || getAuthSessionId() !== sessionIdentity
+			)
+				return;
+			await lookupProgram(true);
+		} finally {
+			refreshLock.current = false;
+			if (currentScope.current === scope) setRefreshing(false);
+		}
+	};
 
 	/** LIFECYCLES **/
 	useEffect(() => {
@@ -203,6 +233,9 @@ const AddProgram = () => {
 		setLoadedScope('');
 		setLoadError('');
 		setFormError('');
+		setLoadedRevision(null);
+		setWriteBlocked(false);
+		setRefreshing(false);
 		if (!editing) {
 			setLoading(false);
 			setInsertProgramData({ ...initialValues });
@@ -297,7 +330,10 @@ const AddProgram = () => {
 	};
 	const submitHandler = async (event: React.FormEvent) => {
 		event.preventDefault();
-		if (submitting.current || uploadTask.current || uploading || (editing && (loadedScope !== scope || editConstraints?.scope !== scope)))
+		if (
+			submitting.current || refreshLock.current || uploadTask.current || uploading ||
+			(editing && (writeBlocked || !isProgramRevision(loadedRevision) || loadedScope !== scope || editConstraints?.scope !== scope))
+		)
 			return;
 		const error =
 			programFormError(insertProgramData) ||
@@ -314,27 +350,49 @@ const AddProgram = () => {
 		}
 		submitting.current = true;
 		setFormError('');
+		let confirmedUpdate = false;
 		try {
 			const payload = programPayload(insertProgramData, Boolean(programId));
-			if (programId) await updateProgram({ variables: { input: { ...payload, _id: programId } } });
-			else await createProgram({ variables: { input: payload } });
+			if (programId) {
+				const response = await updateProgram({
+					variables: { input: { ...payload, _id: programId, expectedRevision: loadedRevision } },
+					context: { handleErrorLocally: true },
+				});
+				if (currentScope.current !== scope || getAuthSessionId() !== sessionIdentity) return;
+				const updated = response.data?.updateProgram;
+				if (
+					updated?._id !== programId || !isProgramRevision(updated.programRevision) ||
+					updated.programRevision !== loadedRevision! + 1
+				)
+					throw new Error('Update outcome unconfirmed');
+				setLoadedRevision(updated.programRevision);
+				confirmedUpdate = true;
+			} else await createProgram({ variables: { input: payload } });
 			await sweetMixinSuccessAlert(t(`Trainer program form.${editing ? 'Updated' : 'Created'}`));
 			await router.push({ pathname: '/mypage', query: { category: 'myPrograms', input: JSON.stringify(inquiry) } });
 		} catch (err: any) {
-			if (editing && currentScope.current === scope && /program changed|conflict/i.test(err.message ?? '')) {
-				await lookupProgram(true);
+			if (editing) {
+				if (currentScope.current !== scope || getAuthSessionId() !== sessionIdentity) return;
+				if (confirmedUpdate) setFormError('Updated');
+				else {
+					const kind = programUpdateError(err);
+					if (kind !== 'rejected') setWriteBlocked(true);
+					const messages = { stale: 'Conflict', contention: 'Contention', unavailable: 'Unavailable', unknown: 'Uncertain update' };
+					setFormError(kind === 'rejected' ? err.message ?? 'Could not save this program.' : messages[kind]);
+					setValidationAttempt((attempt) => attempt + 1);
+				}
 			} else setFormError(err.message ?? 'Could not save this program.');
 		} finally {
 			submitting.current = false;
 		}
 	};
 
-	const busy = creating || updating || uploading;
+	const busy = creating || updating || uploading || refreshing;
 	const policyReady = !editing || editConstraints?.scope === scope;
 	const sensitiveLocked = editing && (!policyReady || Boolean(editConstraints?.values.hasProtected));
 	const capacityMinimum =
 		editing && policyReady ? Math.min(loadedCapacity, Math.max(1, editConstraints!.values.maxOccupied)) : 1;
-	const saveDisabled = busy || !policyReady;
+	const saveDisabled = busy || !policyReady || (editing && (writeBlocked || !isProgramRevision(loadedRevision)));
 	const loadBlocked = editing && (loading || loadedScope !== scope || Boolean(loadError));
 	const saveLabel = t(
 		`Trainer program form.${creating || updating ? 'Saving' : editing ? 'Save Changes' : 'Create Program'}`,
@@ -360,14 +418,15 @@ const AddProgram = () => {
 		'Image upload is busy. Please try again.': 'Upload failed',
 		'Image upload failed.': 'Upload failed',
 		'Could not save this program.': 'Save failed',
-		'Program changed. The latest values have been loaded; review them before saving again.': 'Conflict',
 		'Program type cannot be changed while upcoming reservations exist.': 'Type locked',
 		'Program duration cannot be changed while upcoming reservations exist.': 'Duration locked',
 		'Program location cannot be changed while upcoming reservations exist.': 'Location locked',
 		'Program address cannot be changed while upcoming reservations exist.': 'Address locked',
 		'Program capacity cannot be reduced below occupied session seats.': 'Capacity locked',
 	};
-	const errorMessage = messageKeys[formError] ? t('Trainer program form.' + messageKeys[formError]) : formError;
+	const errorMessage = ['Conflict', 'Contention', 'Uncertain update', 'Refresh failed', 'Unavailable', 'Updated'].includes(formError)
+		? t('Trainer program form.' + formError)
+		: messageKeys[formError] ? t('Trainer program form.' + messageKeys[formError]) : formError;
 
 	const descriptionSection = (
 		<section className="editor-section editor-description" aria-labelledby="editor-description-title">
@@ -430,11 +489,11 @@ const AddProgram = () => {
 				{loadBlocked ? (
 					<div className="editor-load-state" role={loadError ? 'alert' : 'status'}>
 						<p>{t(`Trainer program form.${loadError || 'Loading'}`)}</p>
-						{['Load error', 'Conflict refresh error'].includes(loadError) && (
+						{loadError === 'Load error' && (
 							<button
 								type="button"
 								className="editor-back"
-								onClick={() => void lookupProgram(loadError === 'Conflict refresh error')}
+								onClick={() => void lookupProgram()}
 							>
 								{t('Trainer programs.Retry')}
 							</button>
@@ -447,7 +506,7 @@ const AddProgram = () => {
 					</div>
 				) : (
 					<form id="trainer-program-form" onSubmit={submitHandler} noValidate aria-busy={busy || reservationLoading}>
-						<fieldset className="editor-columns" disabled={creating || updating}>
+						<fieldset className="editor-columns" disabled={creating || updating || refreshing}>
 							<legend className="editor-sr-only">
 								{t(`Trainer program form.${editing ? 'Edit Program' : 'Create Program'}`)}
 							</legend>
@@ -785,6 +844,11 @@ const AddProgram = () => {
 										<p className="editor-error" role="alert" tabIndex={-1} ref={errorRef}>
 											{errorMessage}
 										</p>
+									)}
+									{editing && writeBlocked && (
+										<button type="button" className="editor-back" onClick={() => void refreshProgram()} disabled={busy}>
+											{t('Trainer program form.Refresh latest')}
+										</button>
 									)}
 									<button type="submit" className="editor-save" disabled={saveDisabled}>
 										<CheckCircleOutlineRoundedIcon aria-hidden="true" />

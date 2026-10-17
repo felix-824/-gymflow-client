@@ -122,13 +122,13 @@ async function main() {
 	await gql('LIKE_TARGET_PROGRAM', programId, userToken);
 	assert.equal((await gql('GET_FAVORITES', { page: 1, limit: 6 }, userToken)).getFavorites.list.length, 0);
 	pass('public filters/sorting/pagination/trainers and like/unlike/favorites/history');
-	await gql('UPDATE_PROGRAM', { _id: programId, programStatus: 'PAUSED' }, trainerToken);
+	await gql('UPDATE_PROGRAM', { _id: programId, expectedRevision: 0, programStatus: 'PAUSED' }, trainerToken);
 	await gql('GET_PROGRAM', programId, trainerToken, true);
 	const management = (await gql('GET_TRAINER_PROGRAMS', { page: 1, limit: 5, search: { programStatus: 'PAUSED' } }, trainerToken)).getTrainerPrograms;
 	assert.equal(management.list[0]._id, programId);
-	await gql('UPDATE_PROGRAM', { _id: programId, programName: 'Edited while paused', programDesc: 'Description to clear' }, trainerToken);
-	assert.equal((await gql('UPDATE_PROGRAM', { _id: programId, programDesc: null }, trainerToken)).updateProgram.programDesc, null);
-	await gql('UPDATE_PROGRAM', { _id: programId, programStatus: 'ACTIVE' }, trainerToken);
+	await gql('UPDATE_PROGRAM', { _id: programId, expectedRevision: 1, programName: 'Edited while paused', programDesc: 'Description to clear' }, trainerToken);
+	assert.equal((await gql('UPDATE_PROGRAM', { _id: programId, expectedRevision: 2, programDesc: null }, trainerToken)).updateProgram.programDesc, null);
+	await gql('UPDATE_PROGRAM', { _id: programId, expectedRevision: 3, programStatus: 'ACTIVE' }, trainerToken);
 	pass('paused programs load/edit through management and resume safely');
 
 	const article = (await gql('CREATE_BOARD_ARTICLE', { articleCategory: 'FREE', articleTitle: 'Training ideas', articleContent: '<p>Share training ideas.</p>' }, userToken)).createBoardArticle;
@@ -165,11 +165,11 @@ async function main() {
 	pass('actual multipart upload documents accept 1/3/5 files and all supported targets');
 
 	await gql('REMOVE_PROGRAM_BY_ADMIN', programId, adminToken, true);
-	await gql('UPDATE_PROGRAM_BY_ADMIN', { _id: programId, programStatus: 'PAUSED' }, adminToken);
-	await gql('UPDATE_PROGRAM_BY_ADMIN', { _id: programId, programStatus: 'DELETE' }, adminToken);
+	await gql('UPDATE_PROGRAM_BY_ADMIN', { _id: programId, expectedRevision: 4, programStatus: 'PAUSED' }, adminToken);
+	await gql('UPDATE_PROGRAM_BY_ADMIN', { _id: programId, expectedRevision: 5, programStatus: 'DELETE' }, adminToken);
 	assert.ok((await gql('GET_ALL_PROGRAMS_BY_ADMIN', { page: 1, limit: 10, search: { programStatus: 'DELETE' } }, adminToken)).getAllProgramsByAdmin.list.some((program) => program._id === programId));
-	await gql('UPDATE_PROGRAM_BY_ADMIN', { _id: programId, programStatus: 'ACTIVE' }, adminToken, true);
-	await gql('UPDATE_PROGRAM', { _id: programId, programStatus: 'ACTIVE' }, trainerToken, true);
+	await gql('UPDATE_PROGRAM_BY_ADMIN', { _id: programId, expectedRevision: 6, programStatus: 'ACTIVE' }, adminToken, true);
+	await gql('UPDATE_PROGRAM', { _id: programId, expectedRevision: 6, programStatus: 'ACTIVE' }, trainerToken, true);
 	await gql('REMOVE_PROGRAM_BY_ADMIN', programId, adminToken);
 	pass('admin status management and terminal soft-delete/hard-delete sequence');
 	await members.updateOne({ _id: trainer._id }, { memberType: 'USER' });

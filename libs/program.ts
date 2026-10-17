@@ -13,6 +13,36 @@ import {
 import { seoulNow } from './my-bookings';
 import { isBookingDate } from './booking';
 
+export function isProgramRevision(value: unknown): value is number {
+	return Number.isInteger(value) && (value as number) >= 0 && (value as number) < 2147483647;
+}
+
+export function programUpdateError(error: any): 'stale' | 'contention' | 'unavailable' | 'rejected' | 'unknown' {
+	if (error?.networkError || !error?.graphQLErrors?.length) return 'unknown';
+	for (const item of error.graphQLErrors) {
+		const reason = item.extensions?.reason ?? item.extensions?.originalError?.reason;
+		if (
+			reason === 'PROGRAM_REVISION_CONFLICT' ||
+			item.message === 'Program has changed. Refresh and review the latest data.'
+		)
+			return 'stale';
+		if (
+			reason === 'PROGRAM_WRITE_CONTENTION' ||
+			item.message === 'Program is busy. Review the latest data before saving again.'
+		)
+			return 'contention';
+		if ((item.extensions?.code ?? item.code) === 'NOT_FOUND' || item.message === 'Editable program not found')
+			return 'unavailable';
+	}
+	return error.graphQLErrors.some(
+		(item: any) =>
+			(item.extensions?.code ?? item.code) === 'INTERNAL_SERVER_ERROR' ||
+			item.extensions?.originalError?.statusCode >= 500,
+	)
+		? 'unknown'
+		: 'rejected';
+}
+
 export interface ProgramEditConstraints {
 	hasProtected: boolean;
 	maxOccupied: number;
