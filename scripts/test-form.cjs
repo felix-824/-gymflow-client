@@ -30,7 +30,7 @@ module.exports = async function runFormChecks(loadTs, forms) {
 			programId: program._id,
 			input: JSON.stringify({ page: 2, limit: 5, search: { programStatus: 'PAUSED' } }),
 		},
-		push: async (url) => { state.navigation.push(url); },
+		push: async (url) => { state.navigation.push(url); if (state.navigationError) throw new Error('Navigation failed'); },
 	};
 	const state = {
 		program,
@@ -44,8 +44,10 @@ module.exports = async function runFormChecks(loadTs, forms) {
 		mobile: false,
 		failLookup: false, read: null, navigation: [], success: [], scrolled: [],
 		reservationRead: null, failReservations: false, policyError: '',
-		confirmRefresh: true, confirmations: [], unknownMutation: false,
+		confirmRefresh: true, confirmations: [], unknownMutation: false, feedbackError: false, navigationError: false,
+		generatedKeys: [], createError: null, createMalformed: false,
 	};
+	Object.defineProperty(dom.window, 'crypto', { value: { randomUUID: () => { const key = require('node:crypto').randomUUID(); state.generatedKeys.push(key); return key; } } });
 	dom.window.HTMLElement.prototype.scrollIntoView = function () { state.scrolled.push(this); };
 	let trainer = { _id: 'b'.repeat(24), memberType: 'TRAINER' }, token = 'test-token';
 	const variables = { userVar: () => trainer, authReadyVar: () => true };
@@ -70,12 +72,14 @@ module.exports = async function runFormChecks(loadTs, forms) {
 			setLoading(true); state.mutations.push({ name, ...request });
 			try {
 				if (state.waitMutation) await state.waitMutation;
+				if (name === 'CREATE_PROGRAM' && state.createError) throw state.createError;
+				if (name === 'CREATE_PROGRAM' && state.createMalformed) return { data: {} };
 				if (state.failMutation) throw Object.assign(new Error('Program has changed. Refresh and review the latest data.'), { graphQLErrors: [{ message: 'Program has changed. Refresh and review the latest data.', extensions: { reason: 'PROGRAM_REVISION_CONFLICT' } }] });
 				if (state.unknownMutation) throw new Error('Connection lost after dispatch');
 				if (state.policyError) throw Object.assign(new Error(state.policyError), { graphQLErrors: [{ message: state.policyError, extensions: { code: 'BAD_REQUEST' } }] });
 				const revision = request.variables.input.expectedRevision + 1;
 				if (state.persistMutations) state.program = { ...state.program, ...request.variables.input, programRevision: revision };
-				return { data: name === 'UPDATE_PROGRAM' ? { updateProgram: { _id: request.variables.input._id, programRevision: revision } } : {} };
+				return { data: name === 'UPDATE_PROGRAM' ? { updateProgram: { _id: request.variables.input._id, programRevision: revision } } : { createProgram: { _id: program._id, memberId: trainer._id, programRevision: 0 } } };
 			} finally { setLoading(false); }
 		}, [name]);
 		return [mutate, { loading }];
@@ -101,7 +105,7 @@ module.exports = async function runFormChecks(loadTs, forms) {
 		'@apollo/client': { useApolloClient: () => client, useMutation, useReactiveVar: (variable) => variable() },
 		'../../../apollo/user/mutation': { CREATE_PROGRAM: 'CREATE_PROGRAM', UPDATE_PROGRAM: 'UPDATE_PROGRAM' },
 		'../../../apollo/user/query': { GET_TRAINER_PROGRAMS: 'GET_TRAINER_PROGRAMS', GET_TRAINER_RESERVATIONS: 'GET_TRAINER_RESERVATIONS' },
-		'../../sweetAlert': { sweetMixinSuccessAlert: async (message) => { state.success.push(message); }, sweetConfirmAlert: async (message) => { state.confirmations.push(message); return state.confirmRefresh; } },
+		'../../sweetAlert': { sweetMixinSuccessAlert: async (message) => { state.success.push(message); if (router.query.programId === undefined) assert.equal(forms.readProgramCreateEnvelope(trainer._id)?.status, 'confirmed'); if (state.feedbackError) throw new Error('Feedback failed'); }, sweetConfirmAlert: async (message) => { state.confirmations.push(message); return state.confirmRefresh; } },
 		'axios': { post: async (url, body, config) => {
 			state.authEvents.push('post');
 			const operations = JSON.parse(body.get('operations'));
@@ -249,8 +253,10 @@ module.exports = async function runFormChecks(loadTs, forms) {
 		await chooseFile();
 		assert.equal(document.querySelectorAll('.editor-photo').length, 1);
 		assert.equal(document.querySelector('.editor-photo small').textContent, 'Primary image');
+		const newCreate = () => [...document.querySelectorAll('button')].find(button => Object.values(resources).some(resource => button.textContent === resource.common['Trainer program form']['New create']));
 		for (const locale of ['en', 'kr', 'ru']) {
 			await i18n.changeLanguage(locale);
+			if (newCreate()) await act(async () => newCreate().click());
 			await act(async () => Simulate.submit(document.querySelector('form')));
 			assert.equal(state.success.at(-1), resources[locale].common['Trainer program form'].Created);
 		}
@@ -261,6 +267,7 @@ module.exports = async function runFormChecks(loadTs, forms) {
 		assert.equal(state.mutations.at(-1).variables.input.programStatus, undefined);
 		pass('file format and total-image limit, primary image, and create payload without client-owned status');
 
+		await act(async () => newCreate().click());
 		await act(async () => document.querySelector('.editor-remove-photo').click());
 		assert.equal(document.querySelectorAll('.editor-photo').length, 0);
 		await act(async () => Simulate.change(document.querySelector('input[value="ONLINE"]')));
@@ -272,6 +279,111 @@ module.exports = async function runFormChecks(loadTs, forms) {
 		assert.equal(state.mutations.at(-1).variables.input.programLocation, 'ONLINE');
 		assert.equal(state.mutations.at(-1).variables.input.programAddress, undefined);
 		pass('image removal and online create omit physical address while preserving capacity');
+
+		// Create recovery models a committed-but-lost response: explicit retry only, original envelope.
+		await act(async () => newCreate().click());
+		state.unknownMutation = true;
+		const keysBefore = state.generatedKeys.length, createsBefore = state.mutations.length, uploadsBefore = state.uploads.length;
+		await act(async () => { Simulate.submit(document.querySelector('form')); Simulate.submit(document.querySelector('form')); });
+		assert.equal(state.mutations.length, createsBefore + 1);
+		assert.equal(state.generatedKeys.length, keysBefore + 1);
+		const envelope = forms.readProgramCreateEnvelope(trainer._id);
+		assert.equal(envelope.status, 'unresolved');
+		assert.equal(envelope.createRequestId, state.mutations.at(-1).variables.input.createRequestId);
+		assert.equal(state.mutations.at(-1).variables.input.expectedRevision, undefined);
+		await act(async () => Simulate.change(document.querySelector('#program-name'), { target: { value: 'Later unsent edits' } }));
+		await act(async () => Simulate.submit(document.querySelector('form')));
+		assert.equal(state.mutations.length, createsBefore + 1);
+		const recoverCreate = () => [...document.querySelectorAll('button')].find(button => button.textContent === resources.en.common['Trainer program form']['Recover create']);
+		await act(async () => recoverCreate().click());
+		assert.deepEqual(state.mutations.at(-1).variables.input, { ...envelope.payload, createRequestId: envelope.createRequestId });
+		assert.equal(state.generatedKeys.length, keysBefore + 1);
+		pass('Create key generated once; rapid submits locked; uncertain retry uses frozen payload despite draft edits');
+
+		await act(async () => root.render(React.createElement(Component, { key: 'create-f5' })));
+		assert.equal(state.mutations.length, createsBefore + 2);
+		assert.equal(document.querySelector('#program-name').value, envelope.payload.programName);
+		assert.equal(document.querySelector('button[type=submit]').disabled, true);
+		const originalTrainer = trainer;
+		trainer = { ...trainer, _id: 'c'.repeat(24) };
+		await act(async () => root.render(React.createElement(Component, { key: 'create-other-owner' })));
+		assert.equal(document.querySelector('#program-name').value, '');
+		assert.equal(recoverCreate(), undefined);
+		trainer = originalTrainer;
+		await act(async () => root.render(React.createElement(Component, { key: 'create-original-owner' })));
+		assert.equal(document.querySelector('#program-name').value, envelope.payload.programName);
+		assert.equal(state.mutations.length, createsBefore + 2);
+		pass('F5/remount restores same-owner unresolved payload without retry; another owner cannot restore it');
+
+		state.unknownMutation = false; state.feedbackError = true;
+		await act(async () => recoverCreate().click());
+		assert.equal(forms.readProgramCreateEnvelope(trainer._id).status, 'confirmed');
+		assert.equal(document.querySelector('button[type=submit]').disabled, true);
+		assert.equal(recoverCreate(), undefined);
+		assert.equal(document.querySelector('[role=alert]').textContent, resources.en.common['Trainer program form'].Created);
+		await act(async () => Simulate.submit(document.querySelector('form')));
+		assert.equal(state.mutations.length, createsBefore + 3);
+		state.feedbackError = false;
+		await act(async () => root.render(React.createElement(Component, { key: 'confirmed-f5' })));
+		await act(async () => Simulate.submit(document.querySelector('form')));
+		assert.equal(state.mutations.length, createsBefore + 3);
+		assert.equal(state.uploads.length, uploadsBefore);
+		pass('confirmed Create is marked before feedback; feedback failure/F5 cannot create again or replay uploads');
+
+		state.confirmRefresh = false;
+		await act(async () => newCreate().click());
+		assert.equal(forms.readProgramCreateEnvelope(trainer._id).status, 'confirmed');
+		state.confirmRefresh = true;
+		await act(async () => newCreate().click());
+		state.navigationError = true;
+		await act(async () => Simulate.submit(document.querySelector('form')));
+		assert.notEqual(state.mutations.at(-1).variables.input.createRequestId, envelope.createRequestId);
+		assert.equal(forms.readProgramCreateEnvelope(trainer._id).status, 'confirmed');
+		await act(async () => Simulate.submit(document.querySelector('form')));
+		assert.equal(state.mutations.length, createsBefore + 4);
+		state.navigationError = false;
+		pass('deliberate new submission requires confirmation/new key; navigation failure preserves confirmed state');
+		forms.clearProgramCreateEnvelope(trainer._id);
+		forms.storeProgramCreateEnvelope({ ...envelope, accessToken: 'excluded', payload: { ...envelope.payload, password: 'excluded' } });
+		assert.equal(window.sessionStorage.getItem('gymflow:program-create:' + trainer._id).includes('excluded'), false);
+		await act(async () => root.render(React.createElement(Component, { key: 'malformed-create-response' })));
+		state.createMalformed = true;
+		await act(async () => recoverCreate().click());
+		assert.equal(forms.readProgramCreateEnvelope(trainer._id).status, 'unresolved');
+		state.createMalformed = false;
+		state.createError = { graphQLErrors: [{ message: 'This create request belongs to a different Program submission.' }] };
+		await act(async () => recoverCreate().click());
+		assert.equal(recoverCreate(), undefined);
+		assert.ok(document.querySelector('[role=alert]').textContent.includes('different Program submission'));
+		state.createError = null;
+		pass('envelope stores only whitelisted business data; malformed response stays unresolved and payload conflict cannot reuse key');
+
+		await act(async () => newCreate().click());
+		const setItem = dom.window.Storage.prototype.setItem;
+		dom.window.Storage.prototype.setItem = () => { throw new Error('Storage disabled'); };
+		const writesBeforeStorageFailure = state.mutations.length;
+		await act(async () => Simulate.submit(document.querySelector('form')));
+		assert.equal(state.mutations.length, writesBeforeStorageFailure);
+		assert.equal(document.querySelector('button[type=submit]').disabled, true);
+		dom.window.Storage.prototype.setItem = setItem;
+		await act(async () => newCreate().click());
+		pass('unrecoverable storage failure prevents Create dispatch until deliberate restart');
+
+		forms.storeProgramCreateEnvelope(envelope);
+		await act(async () => root.render(React.createElement(Component, { key: 'pending-create-account-change' })));
+		let resolveCreate;
+		state.waitMutation = new Promise(resolve => { resolveCreate = resolve; });
+		await act(async () => recoverCreate().click());
+		trainer = { ...trainer, _id: 'd'.repeat(24) };
+		await act(async () => root.render(React.createElement(Component, { key: 'pending-create-other-owner' })));
+		const navigationBefore = state.navigation.length;
+		await act(async () => resolveCreate());
+		assert.equal(state.navigation.length, navigationBefore);
+		assert.equal(forms.readProgramCreateEnvelope(originalTrainer._id).status, 'unresolved');
+		assert.equal(forms.readProgramCreateEnvelope(trainer._id), null);
+		state.waitMutation = null; trainer = originalTrainer;
+		forms.clearProgramCreateEnvelope(trainer._id);
+		pass('obsolete Create completion cannot confirm/navigate another owner or clear the original recovery envelope');
 
 		const render = async (key) => act(async () => { root.render(React.createElement(Component, { key })); });
 		router.query = { programId: program._id };

@@ -97,7 +97,7 @@ async function main() {
 	assert.equal(profile.memberFullName, 'Test Trainer');
 	pass('self-profile updates exclude administrative fields');
 
-	const input = programPayload({ programName: 'Strength session', programType: 'PT_1ON1', programCategory: 'MUSCLE_GAIN', programLocation: 'SEOUL', programAddress: 'Seoul gym', programPrice: 0, programDuration: 60, programCapacity: 1, programImages: ['uploads/program/test.png'] });
+	const input = { createRequestId: require('node:crypto').randomUUID(), ...programPayload({ programName: 'Strength session', programType: 'PT_1ON1', programCategory: 'MUSCLE_GAIN', programLocation: 'SEOUL', programAddress: 'Seoul gym', programPrice: 0, programDuration: 60, programCapacity: 1, programImages: ['uploads/program/test.png'] }) };
 	await gql('CREATE_PROGRAM', input, undefined, true);
 	await gql('CREATE_PROGRAM', input, userToken, true);
 	const created = (await gql('CREATE_PROGRAM', input, trainerToken)).createProgram;
@@ -108,7 +108,7 @@ async function main() {
 	}
 	await gql('UPDATE_PROGRAM', { _id: programId, programName: 'Forbidden' }, other.accessToken, true);
 	pass('program creation, free pricing, numeric/domain validation and ownership');
-	const online = (await gql('CREATE_PROGRAM', programPayload({ ...input, programName: 'Online yoga', programType: 'ONLINE', programLocation: 'ONLINE', programCategory: 'YOGA', programAddress: '', programCapacity: 5 }), trainerToken)).createProgram;
+	const online = (await gql('CREATE_PROGRAM', { createRequestId: require('node:crypto').randomUUID(), ...programPayload({ ...input, programName: 'Online yoga', programType: 'ONLINE', programLocation: 'ONLINE', programCategory: 'YOGA', programAddress: '', programCapacity: 5 }) }, trainerToken)).createProgram;
 	const inquiry = { page: 1, limit: 1, sort: 'programPrice', direction: 'ASC', search: { memberId: trainer._id } };
 	const catalog = (await gql('GET_PROGRAMS', inquiry)).getPrograms;
 	assert.equal(catalog.list.length, 1); assert.equal(catalog.metaCounter[0].total, 2);

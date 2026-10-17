@@ -14,6 +14,10 @@ export interface ProgramInput {
 	programDesc?: string | null;
 }
 
+export interface ProgramCreateInput extends ProgramInput {
+	createRequestId: string;
+}
+
 export interface ProgramSearch {
 	memberId?: string;
 	locationList?: ProgramLocation[];

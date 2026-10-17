@@ -12,7 +12,7 @@ import AddPhotoAlternateOutlinedIcon from '@mui/icons-material/AddPhotoAlternate
 import DeleteOutlineRoundedIcon from '@mui/icons-material/DeleteOutlineRounded';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import { ProgramCategory, ProgramLocation, ProgramType } from '../../enums/program.enum';
-import { ProgramInput } from '../../types/program/program.input';
+import { ProgramCreateInput, ProgramInput } from '../../types/program/program.input';
 import { Programs } from '../../types/program/program';
 import { TrainerReservations } from '../../types/reservation/trainer-reservation';
 import axios from 'axios';
@@ -24,6 +24,11 @@ import { GET_TRAINER_PROGRAMS, GET_TRAINER_RESERVATIONS } from '../../../apollo/
 import { sweetConfirmAlert, sweetMixinSuccessAlert } from '../../sweetAlert';
 import {
 	findTrainerProgram,
+	ProgramCreateEnvelope,
+	readProgramCreateEnvelope,
+	storeProgramCreateEnvelope,
+	clearProgramCreateEnvelope,
+	programCreateError,
 	isProgramRevision,
 	programUpdateError,
 	programFormError,
@@ -77,6 +82,11 @@ const AddProgram = () => {
 	const [writeBlocked, setWriteBlocked] = useState(false);
 	const [refreshing, setRefreshing] = useState(false);
 	const refreshLock = useRef(false);
+	const [createEnvelope, setCreateEnvelope] = useState<ProgramCreateEnvelope | null>(null);
+	const createEnvelopeRef = useRef<ProgramCreateEnvelope | null>(null);
+	const [createReadyScope, setCreateReadyScope] = useState('');
+	const [createStorageError, setCreateStorageError] = useState(false);
+	const [createTerminal, setCreateTerminal] = useState(false);
 	const inputRef = useRef<HTMLInputElement>(null);
 	const errorRef = useRef<HTMLParagraphElement>(null);
 	const lookupRequest = useRef(0);
@@ -199,6 +209,84 @@ const AddProgram = () => {
 		}
 	};
 
+	const submitCreate = async (payload?: ProgramInput) => {
+		if (submitting.current || uploadTask.current || refreshLock.current ||
+			currentScope.current !== scope || getAuthSessionId() !== sessionIdentity ||
+			!authReadyVar() || userVar().memberType !== 'TRAINER' || userVar()._id !== user._id ||
+			createReadyScope !== scope || createStorageError || createTerminal) return;
+		let envelope = createEnvelopeRef.current;
+		if (envelope?.status === 'confirmed' || (!envelope && !payload)) return;
+		submitting.current = true;
+		const epoch = draftEpoch.current;
+		const isCurrent = () => currentScope.current === scope && draftEpoch.current === epoch &&
+			getAuthSessionId() === sessionIdentity && userVar()._id === user._id;
+		try {
+			if (!envelope) {
+				envelope = {
+					ownerId: user._id, createRequestId: window.crypto.randomUUID(),
+					payload: programPayload(payload!), status: 'unresolved',
+				};
+				// Persist before dispatch. A storage failure must never dispatch an unrecoverable Create.
+				storeProgramCreateEnvelope(envelope);
+				createEnvelopeRef.current = envelope;
+				setCreateEnvelope(envelope);
+			}
+			setFormError('');
+			const input: ProgramCreateInput = { ...envelope.payload, createRequestId: envelope.createRequestId };
+			const response = await createProgram({
+				variables: { input },
+				context: { handleErrorLocally: true },
+			});
+			if (!isCurrent()) return;
+			const created = response.data?.createProgram;
+			if (!/^[a-f\d]{24}$/i.test(created?._id ?? '') || created.memberId !== user._id ||
+				!isProgramRevision(created.programRevision)) throw new Error('Create outcome unconfirmed');
+			const confirmed: ProgramCreateEnvelope = { ...envelope, status: 'confirmed', programId: created._id };
+			// Confirm synchronously before any feedback/navigation; failure cannot unlock a fresh Create.
+			createEnvelopeRef.current = confirmed;
+			setCreateEnvelope(confirmed);
+			try { storeProgramCreateEnvelope(confirmed); } catch { /* The unresolved disk receipt still recovers the same key. */ }
+			setFormError('Created');
+			await sweetMixinSuccessAlert(t('Trainer program form.Created'));
+			if (isCurrent()) await router.push({ pathname: '/mypage', query: { category: 'myPrograms', input: JSON.stringify(inquiry) } });
+		} catch (err) {
+			if (!isCurrent()) return;
+			if (createEnvelopeRef.current?.status === 'confirmed') setFormError('Created');
+			else if (createEnvelopeRef.current) {
+				const kind = programCreateError(err);
+				setCreateTerminal(kind !== 'unknown');
+				setFormError(kind === 'payload' ? 'Create payload conflict' : kind === 'unavailable' ? 'Create unavailable' : 'Uncertain create');
+			} else {
+				setCreateStorageError(true);
+				setFormError('Create storage failed');
+			}
+			setValidationAttempt((attempt) => attempt + 1);
+		} finally {
+			submitting.current = false;
+		}
+	};
+	const startNewCreate = async () => {
+		if (submitting.current || refreshLock.current || uploadTask.current) return;
+		refreshLock.current = true;
+		setRefreshing(true);
+		try {
+			if (!(await sweetConfirmAlert(t('Trainer program form.New create confirmation'))) ||
+				currentScope.current !== scope || getAuthSessionId() !== sessionIdentity) return;
+			clearProgramCreateEnvelope(user._id);
+			createEnvelopeRef.current = null;
+			setCreateEnvelope(null);
+			setCreateStorageError(false);
+			setCreateTerminal(false);
+			setCreateReadyScope(scope);
+			setFormError('');
+		} catch {
+			if (currentScope.current === scope) setFormError('Create storage failed');
+		} finally {
+			refreshLock.current = false;
+			if (currentScope.current === scope) setRefreshing(false);
+		}
+	};
+
 	/** LIFECYCLES **/
 	useEffect(() => {
 		draftEpoch.current++;
@@ -236,14 +324,34 @@ const AddProgram = () => {
 		setLoadedRevision(null);
 		setWriteBlocked(false);
 		setRefreshing(false);
+		createEnvelopeRef.current = null;
+		setCreateEnvelope(null);
+		setCreateReadyScope('');
+		setCreateStorageError(false);
+		setCreateTerminal(false);
 		if (!editing) {
 			setLoading(false);
 			setInsertProgramData({ ...initialValues });
+			if (router.isReady && authReady && user.memberType === 'TRAINER') {
+				try {
+					const envelope = readProgramCreateEnvelope(user._id);
+					createEnvelopeRef.current = envelope;
+					setCreateEnvelope(envelope);
+					if (envelope) {
+						setInsertProgramData(envelope.payload);
+						setFormError(envelope.status === 'confirmed' ? 'Created' : 'Uncertain create');
+					}
+					setCreateReadyScope(scope);
+				} catch {
+					setCreateStorageError(true);
+					setFormError('Create storage failed');
+				}
+			}
 		} else if (router.isReady && authReady && user.memberType === 'TRAINER') void lookupProgram();
 		return () => {
 			lookupRequest.current += 1;
 		};
-	}, [editing, router.isReady, authReady, user.memberType, lookupProgram]);
+	}, [editing, router.isReady, authReady, user.memberType, user._id, scope, lookupProgram]);
 
 	useEffect(() => {
 		if (!validationAttempt) return;
@@ -268,7 +376,7 @@ const AddProgram = () => {
 	};
 	const uploadImages = async () => {
 		const uploadSession = getAuthSessionId();
-		if (uploadTask.current || submitting.current || !inputRef.current?.files?.length) return;
+		if (uploadTask.current || submitting.current || refreshLock.current || (!editing && createEnvelopeRef.current) || !inputRef.current?.files?.length) return;
 		const task = { controller: new AbortController(), scope, epoch: draftEpoch.current };
 		uploadTask.current = task;
 		const sameDraft = () => currentScope.current === task.scope && draftEpoch.current === task.epoch && getAuthSessionId() === uploadSession;
@@ -335,6 +443,7 @@ const AddProgram = () => {
 			(editing && (writeBlocked || !isProgramRevision(loadedRevision) || loadedScope !== scope || editConstraints?.scope !== scope))
 		)
 			return;
+		if (!editing && createEnvelopeRef.current) return;
 		const error =
 			programFormError(insertProgramData) ||
 			(editing &&
@@ -346,6 +455,10 @@ const AddProgram = () => {
 		if (error) {
 			setFormError(error);
 			setValidationAttempt((attempt) => attempt + 1);
+			return;
+		}
+		if (!editing) {
+			await submitCreate(programPayload(insertProgramData));
 			return;
 		}
 		submitting.current = true;
@@ -367,7 +480,7 @@ const AddProgram = () => {
 					throw new Error('Update outcome unconfirmed');
 				setLoadedRevision(updated.programRevision);
 				confirmedUpdate = true;
-			} else await createProgram({ variables: { input: payload } });
+			}
 			await sweetMixinSuccessAlert(t(`Trainer program form.${editing ? 'Updated' : 'Created'}`));
 			await router.push({ pathname: '/mypage', query: { category: 'myPrograms', input: JSON.stringify(inquiry) } });
 		} catch (err: any) {
@@ -392,7 +505,8 @@ const AddProgram = () => {
 	const sensitiveLocked = editing && (!policyReady || Boolean(editConstraints?.values.hasProtected));
 	const capacityMinimum =
 		editing && policyReady ? Math.min(loadedCapacity, Math.max(1, editConstraints!.values.maxOccupied)) : 1;
-	const saveDisabled = busy || !policyReady || (editing && (writeBlocked || !isProgramRevision(loadedRevision)));
+	const createHeld = !editing && Boolean(createEnvelope || createStorageError);
+	const saveDisabled = busy || !policyReady || (!editing && (createHeld || createReadyScope !== scope)) || (editing && (writeBlocked || !isProgramRevision(loadedRevision)));
 	const loadBlocked = editing && (loading || loadedScope !== scope || Boolean(loadError));
 	const saveLabel = t(
 		`Trainer program form.${creating || updating ? 'Saving' : editing ? 'Save Changes' : 'Create Program'}`,
@@ -424,7 +538,7 @@ const AddProgram = () => {
 		'Program address cannot be changed while upcoming reservations exist.': 'Address locked',
 		'Program capacity cannot be reduced below occupied session seats.': 'Capacity locked',
 	};
-	const errorMessage = ['Conflict', 'Contention', 'Uncertain update', 'Refresh failed', 'Unavailable', 'Updated'].includes(formError)
+	const errorMessage = ['Conflict', 'Contention', 'Uncertain update', 'Refresh failed', 'Unavailable', 'Updated', 'Created', 'Uncertain create', 'Create payload conflict', 'Create unavailable', 'Create storage failed'].includes(formError)
 		? t('Trainer program form.' + formError)
 		: messageKeys[formError] ? t('Trainer program form.' + messageKeys[formError]) : formError;
 
@@ -781,7 +895,7 @@ const AddProgram = () => {
 												<button
 													type="button"
 													className="editor-remove-photo"
-													disabled={busy}
+													disabled={busy || createHeld}
 													aria-label={t('Trainer program form.Remove image', { index: index + 1 })}
 													onClick={() =>
 														setInsertProgramData(previous => ({
@@ -799,7 +913,7 @@ const AddProgram = () => {
 										<button
 											type="button"
 											className="editor-add-photo"
-											disabled={busy || insertProgramData.programImages.length >= 5}
+											disabled={busy || createHeld || insertProgramData.programImages.length >= 5}
 											onClick={() => inputRef.current?.click()}
 										>
 											<AddPhotoAlternateOutlinedIcon aria-hidden="true" />
@@ -823,7 +937,7 @@ const AddProgram = () => {
 										type="file"
 										accept={IMAGE_UPLOAD_ACCEPT}
 										multiple
-										disabled={busy}
+										disabled={busy || createHeld}
 										onChange={uploadImages}
 										aria-label={t('Trainer program form.Add photos')}
 										tabIndex={-1}
@@ -848,6 +962,16 @@ const AddProgram = () => {
 									{editing && writeBlocked && (
 										<button type="button" className="editor-back" onClick={() => void refreshProgram()} disabled={busy}>
 											{t('Trainer program form.Refresh latest')}
+										</button>
+									)}
+									{!editing && createEnvelope?.status === 'unresolved' && !createTerminal && (
+										<button type="button" className="editor-back" onClick={() => void submitCreate()} disabled={busy}>
+											{t('Trainer program form.Recover create')}
+										</button>
+									)}
+									{createHeld && (
+										<button type="button" className="editor-back" onClick={() => void startNewCreate()} disabled={busy}>
+											{t('Trainer program form.New create')}
 										</button>
 									)}
 									<button type="submit" className="editor-save" disabled={saveDisabled}>

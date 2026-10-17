@@ -13,6 +13,55 @@ import {
 import { seoulNow } from './my-bookings';
 import { isBookingDate } from './booking';
 
+export interface ProgramCreateEnvelope {
+	ownerId: string;
+	createRequestId: string;
+	payload: ProgramInput;
+	status: 'unresolved' | 'confirmed';
+	programId?: string;
+}
+
+export function readProgramCreateEnvelope(ownerId: string): ProgramCreateEnvelope | null {
+	const value = window.sessionStorage.getItem('gymflow:program-create:' + ownerId);
+	if (!value) return null;
+	const stored = JSON.parse(value) as ProgramCreateEnvelope;
+	if (
+		stored.ownerId !== ownerId || !/^[a-f\d]{24}$/i.test(ownerId) ||
+		!/^[a-f\d]{8}-[a-f\d]{4}-4[a-f\d]{3}-[89ab][a-f\d]{3}-[a-f\d]{12}$/i.test(stored.createRequestId) ||
+		!['unresolved', 'confirmed'].includes(stored.status) || programFormError(stored.payload) ||
+		(stored.status === 'confirmed' && !/^[a-f\d]{24}$/i.test(stored.programId ?? ''))
+	)
+		throw new Error('Invalid saved Program submission');
+	return {
+		ownerId, createRequestId: stored.createRequestId, payload: programPayload(stored.payload),
+		status: stored.status, ...(stored.status === 'confirmed' ? { programId: stored.programId } : {}),
+	};
+}
+
+export function storeProgramCreateEnvelope(envelope: ProgramCreateEnvelope): void {
+	// Whitelist the business payload; never persist auth/session metadata.
+	window.sessionStorage.setItem('gymflow:program-create:' + envelope.ownerId, JSON.stringify({
+		ownerId: envelope.ownerId, createRequestId: envelope.createRequestId,
+		payload: programPayload(envelope.payload), status: envelope.status,
+		...(envelope.status === 'confirmed' ? { programId: envelope.programId } : {}),
+	}));
+}
+
+export function clearProgramCreateEnvelope(ownerId: string): void {
+	window.sessionStorage.removeItem('gymflow:program-create:' + ownerId);
+}
+
+export function programCreateError(error: any): 'payload' | 'unavailable' | 'unknown' {
+	for (const item of error?.graphQLErrors ?? []) {
+		const reason = item.extensions?.reason ?? item.extensions?.originalError?.reason;
+		if (reason === 'PROGRAM_CREATE_PAYLOAD_CONFLICT' || item.message === 'This create request belongs to a different Program submission.')
+			return 'payload';
+		if (reason === 'PROGRAM_CREATE_UNAVAILABLE' || item.message === 'This create request was already used. The original Program is unavailable.')
+			return 'unavailable';
+	}
+	return 'unknown';
+}
+
 export function isProgramRevision(value: unknown): value is number {
 	return Number.isInteger(value) && (value as number) >= 0 && (value as number) < 2147483647;
 }
