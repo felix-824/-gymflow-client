@@ -52,6 +52,40 @@ check('trainer URL search keeps only allowed fields', () => {
 	const result = forms.readTrainersInquiry({ page: -1, sort: 'memberProperties', search: { text: ' trainer ', memberType: 'ADMIN' } }, { page: 1, limit: 9, sort: 'createdAt', search: {} });
 	assert.equal(result.page, 1); assert.equal(result.sort, 'createdAt'); assert.deepEqual(JSON.parse(JSON.stringify(result.search)), { text: 'trainer' });
 });
+check('Trainer search preserves literal text and bounds normalized queries', () => {
+	const fallback = { page: 1, limit: 9, search: {} };
+	assert.equal(forms.readTrainersInquiry({ search: { text: ' gym.* ' } }, fallback).search.text, 'gym.*');
+	assert.equal(forms.readTrainersInquiry({ search: { text: 'x'.repeat(101) } }, fallback).search.text.length, 100);
+	assert.equal(Object.hasOwn(forms.readTrainersInquiry({ search: { text: '   ' } }, fallback).search, 'text'), false);
+});
+const trainerPageSource = fs.readFileSync(path.join(__dirname, '../pages/trainer/index.tsx'), 'utf8');
+const adminPageSource = fs.readFileSync(path.join(__dirname, '../pages/_admin/users/index.tsx'), 'utf8');
+check('existing Trainer and Admin search inputs expose a native 100-character bound', () => {
+	assert.match(trainerPageSource, /type=\{'search'\}\s+maxLength=\{100\}/);
+	assert.match(adminPageSource, /<OutlinedInput\s+inputProps=\{\{ maxLength: 100 \}\}/);
+});
+check('Admin member dispatch trims literal text and omits blanks without changing filters', () => {
+	const source = ts.createSourceFile('admin-users.tsx', adminPageSource, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
+	let handler;
+	const visit = (node) => {
+		if (ts.isVariableDeclaration(node) && node.name.getText(source) === 'searchTextHandler') handler = node.initializer.getText(source);
+		ts.forEachChild(node, visit);
+	};
+	visit(source);
+	assert.ok(handler, 'exercise the actual Admin dispatch handler');
+	const output = ts.transpileModule('(' + handler + ')()', { compilerOptions: { target: ts.ScriptTarget.ES2019 } }).outputText;
+	for (const [searchText, expected] of [[' gym.* ', 'gym.*'], ['gym  studio', 'gym  studio'], ['   ', undefined], ['', undefined]]) {
+		const original = { page: 2, limit: 10, search: { text: 'previous', memberType: 'TRAINER', memberStatus: 'ACTIVE' } };
+		let dispatched;
+		vm.runInNewContext(output, { searchText, membersInquiry: original, setMembersInquiry: (value) => { dispatched = value; }, console });
+		assert.equal(dispatched.search.text, expected);
+		assert.equal(Object.hasOwn(dispatched.search, 'text'), expected !== undefined);
+		assert.equal(dispatched.search.memberType, 'TRAINER');
+		assert.equal(dispatched.search.memberStatus, 'ACTIVE');
+		assert.equal(dispatched.page, original.page);
+		assert.equal(original.search.text, 'previous');
+	}
+});
 check('a free program is valid', () => assert.equal(forms.programFormError(valid), ''));
 check('numeric fields reject fractions, overflow and missing values', () => {
 	for (const patch of [{ programPrice: -1 }, { programPrice: 1.2 }, { programPrice: NaN }, { programDuration: 0 }, { programCapacity: 0 }, { programDuration: 2147483648 }]) assert.ok(forms.programFormError({ ...valid, ...patch }));

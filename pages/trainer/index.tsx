@@ -195,6 +195,7 @@ const TrainerList: NextPage = ({ initialInput }: any) => {
 							<SearchRoundedIcon aria-hidden={'true'} />
 							<input
 								type={'search'}
+								maxLength={100}
 								aria-label={t('Trainer discovery.Search placeholder')}
 								placeholder={t('Trainer discovery.Search placeholder')}
 								value={searchText}

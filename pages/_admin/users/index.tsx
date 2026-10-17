@@ -127,12 +127,13 @@ const {
 
 	const searchTextHandler = () => {
 		try {
+			const search = { ...membersInquiry.search };
+			const text = searchText.trim();
+			if (text) search.text = text;
+			else delete search.text;
 			setMembersInquiry({
 				...membersInquiry,
-				search: {
-					...membersInquiry.search,
-					text: searchText,
-				},
+				search,
 			});
 		} catch (err: any) {
 			console.log('searchTextHandler: ', err.message);
@@ -204,6 +205,7 @@ const {
 							<Divider />
 							<Stack className={'search-area'} sx={{ m: '24px' }}>
 								<OutlinedInput
+									inputProps={{ maxLength: 100 }}
 									value={searchText}
 									onChange={(e: any) => textHandler(e.target.value)}
 									sx={{ width: '100%' }}
@@ -219,14 +221,11 @@ const {
 													style={{ cursor: 'pointer' }}
 													onClick={async () => {
 														setSearchText('');
-														setMembersInquiry({
-															...membersInquiry,
-															search: {
-																...membersInquiry.search,
-																text: '',
-															},
-														});
-														await getAllMembersRefetch({ input: membersInquiry });
+														const search = { ...membersInquiry.search };
+														delete search.text;
+														const input = { ...membersInquiry, search };
+														setMembersInquiry(input);
+														await getAllMembersRefetch({ input });
 													}}
 												/>
 											)}
