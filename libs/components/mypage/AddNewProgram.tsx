@@ -16,7 +16,7 @@ import { ProgramInput } from '../../types/program/program.input';
 import { Programs } from '../../types/program/program';
 import { TrainerReservations } from '../../types/reservation/trainer-reservation';
 import axios from 'axios';
-import { getJwtToken, invalidateSession, isAuthenticationError } from '../../auth';
+import { ensureAccessToken, getAuthSessionId, invalidateSession, isAuthenticationError } from '../../auth';
 import { authReadyVar, userVar } from '../../../apollo/store';
 import { useApolloClient, useMutation, useReactiveVar } from '@apollo/client';
 import { CREATE_PROGRAM, UPDATE_PROGRAM } from '../../../apollo/user/mutation';
@@ -55,8 +55,8 @@ const AddProgram = () => {
 	const client = useApolloClient();
 	const editing = router.query.programId !== undefined;
 	const programId = typeof router.query.programId === 'string' ? router.query.programId.toLowerCase() : '';
-	const token = getJwtToken();
-	const scope = `${authReady}:${user.memberType}:${user._id}:${token}:${programId}`;
+	const sessionIdentity = getAuthSessionId();
+	const scope = `${authReady}:${user.memberType}:${user._id}:${sessionIdentity}:${programId}`;
 	const inquiry = readTrainerProgramsInquiry(router.query.input);
 	const [insertProgramData, setInsertProgramData] = useState<ProgramInput>({ ...initialValues });
 	const [loadedScope, setLoadedScope] = useState('');
@@ -90,7 +90,7 @@ const AddProgram = () => {
 			authReadyVar() &&
 			userVar().memberType === 'TRAINER' &&
 			userVar()._id === user._id &&
-			getJwtToken() === token;
+			getAuthSessionId() === sessionIdentity;
 		setEditConstraints(null);
 		setReservationLoading(true);
 		setReservationError(false);
@@ -114,7 +114,7 @@ const AddProgram = () => {
 		} finally {
 			if (isCurrent()) setReservationLoading(false);
 		}
-	}, [client, programId, scope, token, user._id]);
+	}, [client, programId, scope, sessionIdentity, user._id]);
 
 	const lookupProgram = useCallback(
 		async (conflict = false) => {
@@ -125,7 +125,7 @@ const AddProgram = () => {
 				authReadyVar() &&
 				userVar().memberType === 'TRAINER' &&
 				userVar()._id === user._id &&
-				getJwtToken() === token;
+				getAuthSessionId() === sessionIdentity;
 			setLoading(true);
 			setLoadedScope('');
 			setLoadError('');
@@ -164,7 +164,7 @@ const AddProgram = () => {
 				if (isCurrent()) setLoading(false);
 			}
 		},
-		[client, programId, scope, token, user._id],
+		[client, programId, scope, sessionIdentity, user._id],
 	);
 
 	/** LIFECYCLES **/
@@ -213,6 +213,7 @@ const AddProgram = () => {
 		});
 	};
 	const uploadImages = async () => {
+		const uploadSession = getAuthSessionId();
 		if (uploading || !inputRef.current?.files?.length) return;
 		setUploading(true);
 		setFormError('');
@@ -237,13 +238,16 @@ const AddProgram = () => {
 			});
 			formData.append('map', JSON.stringify(map));
 			files.forEach((file, index) => formData.append(String(index), file));
+			const accessToken = await ensureAccessToken(true);
+			if (getAuthSessionId() !== uploadSession) return;
 			const response = await axios.post(
 				process.env.REACT_APP_API_GRAPHQL_URL ?? 'http://localhost:3007/graphql',
 				formData,
 				{
-					headers: { 'apollo-require-preflight': 'true', Authorization: 'Bearer ' + getJwtToken() },
+					headers: { 'apollo-require-preflight': 'true', Authorization: 'Bearer ' + accessToken },
 				},
 			);
+			if (getAuthSessionId() !== uploadSession) return;
 			if (response.data.errors?.length) {
 				if (isAuthenticationError({ graphQLErrors: response.data.errors })) invalidateSession();
 				throw new Error(response.data.errors[0].message);
@@ -252,6 +256,7 @@ const AddProgram = () => {
 			if (!Array.isArray(images) || images.length !== files.length) throw new Error('Image upload failed.');
 			setInsertProgramData((previous) => ({ ...previous, programImages: [...previous.programImages, ...images] }));
 		} catch (err: any) {
+			if (getAuthSessionId() !== uploadSession) return;
 			if (isAuthenticationError(err)) invalidateSession();
 			setFormError(err.message ?? 'Image upload failed.');
 		} finally {

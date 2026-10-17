@@ -1,80 +1,64 @@
 import { useMemo } from 'react';
-import { ApolloClient, ApolloLink, HttpLink, InMemoryCache, from, NormalizedCacheObject } from '@apollo/client';
+import { ApolloClient, ApolloLink, HttpLink, InMemoryCache, from, NormalizedCacheObject, Observable } from '@apollo/client';
 import createUploadLink from 'apollo-upload-client/public/createUploadLink.js';
 import { onError } from '@apollo/client/link/error';
-import { getJwtToken, invalidateSession, updateUserInfo } from '../libs/auth';
-import { TokenRefreshLink } from 'apollo-link-token-refresh';
+import { ensureAccessToken, getAuthGeneration, getJwtToken, invalidateSession, isAuthenticationError, updateUserInfo } from '../libs/auth';
 import { sweetErrorAlert } from '../libs/sweetAlert';
 let apolloClient: ApolloClient<NormalizedCacheObject>;
 
-//getHeaders() — JWT tokenni requestga qo‘shadi
-function getHeaders() {
-	const headers = {} as HeadersInit;
-	const token = getJwtToken();
-	// @ts-ignore
-	if (token) headers['Authorization'] = `Bearer ${token}`;
-	return headers;
-}
-
-//access token eskirganda yangilash uchun
-const tokenRefreshLink = new TokenRefreshLink({
-	accessTokenField: 'accessToken',
-	isTokenValidOrUndefined: () => {
-		return true;
-	}, // @ts-ignore
-	fetchAccessToken: () => {
-		// execute refresh token
-		return null;
-	},
-});
-
 function createIsomorphicLink() {
-	if (typeof window !== 'undefined') {
-		const authLink = new ApolloLink((operation, forward) => {
-			operation.setContext(({ headers = {} }) => ({
-				authToken: getJwtToken(),
-				headers: {
-					...headers,
-					...getHeaders(),
-				},
-			}));
-			return forward(operation);
-		});
-
-		// @ts-ignore
-		//Query/Mutation + file upload uchun HTTP
-		const link = new createUploadLink({
-			uri: process.env.REACT_APP_API_GRAPHQL_URL,
-		});
-
-		const errorLink = onError(({ graphQLErrors, networkError, operation }) => {
-			const currentSession = operation.getContext().authToken === getJwtToken();
-			if (
-				currentSession &&
-				(graphQLErrors?.some(
-					(error) =>
-						error.extensions?.code === 'UNAUTHENTICATED' ||
-						(error.extensions?.originalError as any)?.statusCode === 401 ||
-						error.message === 'Unauthorized',
-				) ||
-					(networkError as any)?.statusCode === 401)
-			) {
-				invalidateSession();
-			} else if (currentSession && graphQLErrors?.some((error) => error.extensions?.code === 'FORBIDDEN')) {
-				void updateUserInfo(getJwtToken());
-			}
-			if (graphQLErrors) {
-				graphQLErrors.map(({ message, locations, path, extensions }) => {
-					console.log(`[GraphQL error]: Message: ${message}, Location: ${locations}, Path: ${path}`);
-					if (!operation.getContext().handleErrorLocally && !message.includes('input')) sweetErrorAlert(message);
+	if (typeof window === 'undefined')
+		return new HttpLink({ uri: process.env.REACT_APP_API_GRAPHQL_URL ?? 'http://localhost:3007/graphql' });
+	const authLink = new ApolloLink((operation, forward) => new Observable((observer) => {
+		const generation = getAuthGeneration();
+		let stopped = false;
+		let subscription: { unsubscribe(): void } | undefined;
+		const current = () => !stopped && generation === getAuthGeneration();
+		void (async () => {
+			try {
+				const token = operation.getContext().skipAuth ? '' : operation.getContext().skipRefresh
+					? getJwtToken() : await ensureAccessToken();
+				if (!current()) throw new Error('Authentication session changed');
+				operation.setContext(({ headers = {} }) => ({
+					authGeneration: generation,
+					headers: {
+						...Object.fromEntries(Object.entries(headers).filter(([name]) => name.toLowerCase() !== 'authorization')),
+						'Apollo-Require-Preflight': 'true', ...(token ? { Authorization: 'Bearer ' + token } : {}),
+					},
+				}));
+				subscription = forward(operation).subscribe({
+					next: (result) => {
+						if (!current()) { observer.error(new Error('Authentication session changed')); return; }
+						if (!operation.getContext().skipAuth && isAuthenticationError({ graphQLErrors: result.errors })) {
+							void invalidateSession();
+							observer.error(Object.assign(new Error('Please sign in again'), { graphQLErrors: result.errors }));
+							return;
+						}
+						// Fence before Apollo sees the result, including cache-writing mutations.
+						if (current()) observer.next(result);
+					},
+					error: (error) => {
+						if (!current()) { observer.error(new Error('Authentication session changed')); return; }
+						if (!operation.getContext().skipAuth && isAuthenticationError({ networkError: error })) void invalidateSession();
+						observer.error(error);
+					},
+					complete: () => observer.complete(),
 				});
-			}
-			if (networkError) console.log(`[Network error]: ${networkError}`);
-		});
-
-		return from([errorLink, tokenRefreshLink, authLink.concat(link)]);
-	}
-	return new HttpLink({ uri: process.env.REACT_APP_API_GRAPHQL_URL ?? 'http://localhost:3007/graphql' });
+			} catch (error) { if (!stopped) observer.error(error); }
+		})();
+		return () => { stopped = true; subscription?.unsubscribe(); };
+	}));
+	const errorLink = onError(({ graphQLErrors, operation }) => {
+		if (operation.getContext().authGeneration !== getAuthGeneration()) return;
+		if (graphQLErrors?.some((error: any) => (error.extensions?.code ?? error.code) === 'FORBIDDEN'))
+			void updateUserInfo();
+		for (const error of graphQLErrors ?? []) {
+			if (!operation.getContext().handleErrorLocally && !error.message.includes('input')) sweetErrorAlert(error.message);
+		}
+	});
+	// @ts-ignore
+	const uploadLink = new createUploadLink({ uri: process.env.REACT_APP_API_GRAPHQL_URL, credentials: 'include' });
+	return from([errorLink, authLink, uploadLink]);
 }
 
 function createApolloClient() {

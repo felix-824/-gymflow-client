@@ -259,12 +259,12 @@ async function integration() {
 		const first = await record();
 		router.query = { reservationId: String(first._id), page: '1' };
 		router.asPath = '/mypage/review?reservationId=' + first._id;
-		localStorage.setItem('accessToken', fixture.token(fixture.user));
+		auth.setJwtToken(fixture.token(fixture.user));
 		store.authReadyVar(false);
 		render(LeaveReview);
 		await until(() => text().includes(resources.en.common.MyBookings.initializing));
 		assert.equal(requests.length, 0);
-		await auth.updateUserInfo(localStorage.getItem('accessToken'));
+		await auth.updateUserInfo();
 		await until(() => document.querySelector('#review-content'));
 		assert(store.authReadyVar());
 		assert.equal(store.userVar()._id, String(fixture.user._id));

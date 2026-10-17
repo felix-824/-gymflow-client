@@ -119,7 +119,7 @@ async function integration() {
 						throw new Error('Private connection details must not be displayed');
 					const response = await fetch(url, {
 						...options,
-						headers: { ...options.headers, Authorization: 'Bearer ' + window.localStorage.getItem('accessToken') },
+						headers: { ...options.headers, Authorization: 'Bearer ' + auth.getJwtToken() },
 					});
 					if (body.operationName === 'UpdateMember') {
 						lastReceipt = (await response.clone().json()).data?.updateMember;
@@ -160,7 +160,7 @@ async function integration() {
 				post: async (url, form, options) => {
 					assert.equal(url, uri);
 					assert.equal(options.headers['apollo-require-preflight'], true);
-					assert.equal(options.headers.Authorization, 'Bearer ' + window.localStorage.getItem('accessToken'));
+					assert.equal(options.headers.Authorization, 'Bearer ' + auth.getJwtToken());
 					const body = new NativeFormData();
 					for (const [key, value] of form.entries()) {
 						if (typeof value === 'string') body.append(key, value);
@@ -291,8 +291,9 @@ async function integration() {
 			});
 		const writes = () => requests.filter((request) => request.operationName === 'UpdateMember');
 		const signIn = async (member) => {
+			await auth.invalidateSession();
 			const jwtToken = token(member);
-			auth.updateStorage({ jwtToken });
+			auth.setJwtToken(jwtToken);
 			await auth.updateUserInfo(jwtToken, { ...member.toObject(), _id: String(member._id) });
 		};
 		store.authReadyVar(false);
@@ -380,8 +381,9 @@ async function integration() {
 		assert.equal(saved.memberPhone, '010-test-123');
 		assert.equal(saved.memberAddress, 'Updated training address');
 		assert.equal(store.userVar().memberFullName, saved.memberFullName);
-		assert.equal(window.localStorage.getItem('accessToken'), lastReceipt.accessToken);
-		assert.ok(window.localStorage.getItem('login'));
+		assert.equal(window.localStorage.getItem('accessToken'), null);
+		assert.equal(lastReceipt.accessToken, null);
+		assert.ok(auth.getAuthSessionId());
 		input('memberFullName', '');
 		click('.trainer-profile-save-button');
 		await until(() => store.userVar().memberFullName === '');
@@ -500,13 +502,13 @@ async function integration() {
 		await signIn(user);
 		render();
 		await until(() => !document.querySelector('#trainer-profile-page'));
-		const userToken = window.localStorage.getItem('accessToken');
+		const userToken = auth.getJwtToken();
 		holdSave = false;
 		releaseSave();
 		releaseSave = undefined;
 		await new Promise((resolve) => setTimeout(resolve, 80));
 		assert.equal(store.userVar()._id, String(user._id));
-		assert.equal(window.localStorage.getItem('accessToken'), userToken);
+		assert.equal(auth.getJwtToken(), userToken);
 		pass('late save response after account change cannot replace the current member or token');
 		await signIn(otherTrainer);
 		render();

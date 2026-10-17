@@ -20,6 +20,7 @@ require.extensions['.ts'] = (module, filename) => {
 	module._compile(output, filename);
 };
 backendRequire('reflect-metadata');
+require(path.join(backend, 'apps/gymflow-api/test/auth-session.fixture.ts'));
 process.env.MONGOMS_RUNTIME_DOWNLOAD = 'false';
 const { Test } = backendRequire('@nestjs/testing');
 const { ValidationPipe } = backendRequire('@nestjs/common');
@@ -45,7 +46,7 @@ console.log = () => {}; // Backend resolver debug output can contain test access
 function pass(name) { checks++; realLog('PASS ' + name); }
 async function gql(name, input, token, allowErrors = false) {
 	if (!operations[name]) throw new Error('Unknown frontend operation ' + name);
-	const req = request(app.getHttpServer()).post('/graphql');
+	const req = request(app.getHttpServer()).post('/graphql').set('Apollo-Require-Preflight', 'true');
 	if (token) req.set('Authorization', 'Bearer ' + token);
 	const response = await req.send({ query: operations[name], variables: input === undefined ? {} : { input } });
 	assert.ok([200, 400].includes(response.status), 'Unexpected HTTP status ' + response.status);
@@ -62,7 +63,7 @@ async function main() {
 		imports: [
 			MongooseModule.forRoot(mongo.getUri(), { serverSelectionTimeoutMS: 5000 }),
 			ComponentsModule,
-			GraphQLModule.forRoot({ driver: ApolloDriver, autoSchemaFile: true, context: ({ req }) => ({ req }) }),
+			GraphQLModule.forRoot({ driver: ApolloDriver, autoSchemaFile: true, context: ({ req, res }) => ({ req, res }) }),
 		],
 	}).overrideProvider(JwtService).useValue(new JwtService({ secret: 'frontend-disposable-test', signOptions: { expiresIn: '1h' } })).compile();
 	app = module.createNestApplication({ logger: false });

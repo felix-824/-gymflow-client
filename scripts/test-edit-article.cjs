@@ -178,7 +178,7 @@ function load(file, mocks, cache = new Map()) {
 			UPDATE_BOARD_ARTICLE: 'UPDATE_BOARD_ARTICLE',
 		},
 		'../../auth': {
-			getJwtToken: () => token,
+			getJwtToken: () => token, getAuthSessionId: () => token, ensureAccessToken: async () => token,
 			isAuthenticationError: () => false,
 			invalidateSession: () => {
 				user = { ...user, _id: '' };

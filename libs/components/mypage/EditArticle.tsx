@@ -7,7 +7,7 @@ import { useRouter } from 'next/router';
 import { useTranslation } from 'next-i18next';
 import { GET_MY_BOARD_ARTICLE } from '../../../apollo/user/query';
 import { authErrorVar, authReadyVar, userVar } from '../../../apollo/store';
-import { getJwtToken, invalidateSession, updateUserInfo } from '../../auth';
+import { getAuthSessionId, invalidateSession, updateUserInfo } from '../../auth';
 import { articleUpdateError, OwnedArticle, readOwnedArticle } from '../../article';
 
 const TuiEditor = dynamic(() => import('../community/Teditor'), { ssr: false });
@@ -20,11 +20,11 @@ const EditArticle = () => {
 	const authReady = useReactiveVar(authReadyVar);
 	const authError = useReactiveVar(authErrorVar);
 	const articleId = typeof router.query.articleId === 'string' ? router.query.articleId.toLowerCase() : '';
-	const token = getJwtToken();
+	const sessionIdentity = getAuthSessionId();
 	const ready = Boolean(
-		authReady && router.isReady && !authError && user._id && user.memberStatus === 'ACTIVE' && token,
+		authReady && router.isReady && !authError && user._id && user.memberStatus === 'ACTIVE' && sessionIdentity,
 	);
-	const scope = `${ready}:${user._id}:${token}:${articleId}`;
+	const scope = `${ready}:${user._id}:${sessionIdentity}:${articleId}`;
 	const currentScope = useRef(scope);
 	currentScope.current = scope;
 	const request = useRef(0);
@@ -50,7 +50,7 @@ const EditArticle = () => {
 		const isCurrent = () =>
 			attempt === request.current &&
 			currentScope.current === scope &&
-			getJwtToken() === token &&
+			getAuthSessionId() === sessionIdentity &&
 			authReadyVar() &&
 			!authErrorVar() &&
 			userVar()._id === user._id &&
@@ -65,7 +65,7 @@ const EditArticle = () => {
 			if (kind === 'auth') void invalidateSession();
 			else setLoaded({ scope, state: kind === 'unavailable' ? 'unavailable' : 'error' });
 		}
-	}, [queryArticle, scope, token, user._id]);
+	}, [queryArticle, scope, sessionIdentity, user._id]);
 
 	useEffect(() => {
 		if (ready) void loadArticle();
@@ -104,7 +104,7 @@ const EditArticle = () => {
 							)}
 						</p>
 						{authError ? (
-							<button type="button" onClick={() => void updateUserInfo(getJwtToken())}>
+							<button type="button" onClick={() => void updateUserInfo()}>
 								{t('Write article.Retry')}
 							</button>
 						) : (

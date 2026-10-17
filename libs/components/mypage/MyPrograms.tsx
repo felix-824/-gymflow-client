@@ -18,7 +18,7 @@ import { useTranslation } from 'next-i18next';
 import { GET_TRAINER_PROGRAMS } from '../../../apollo/user/query';
 import { UPDATE_PROGRAM } from '../../../apollo/user/mutation';
 import { authErrorVar, authReadyVar, userVar } from '../../../apollo/store';
-import { getJwtToken } from '../../auth';
+import { getAuthSessionId } from '../../auth';
 import { REACT_APP_API_URL } from '../../config';
 import { ProgramStatus } from '../../enums/program.enum';
 import { readTrainerProgramsInquiry } from '../../program';
@@ -47,7 +47,7 @@ function ManagementProgramImage({ program }: { program: Program }) {
 	);
 }
 
-function ProgramsContent({ memberId, sessionToken }: { memberId: string; sessionToken: string }) {
+function ProgramsContent({ memberId, sessionIdentity }: { memberId: string; sessionIdentity: string }) {
 	const { t } = useTranslation('common');
 	const router = useRouter();
 	const client = useApolloClient();
@@ -79,8 +79,8 @@ function ProgramsContent({ memberId, sessionToken }: { memberId: string; session
 			userVar()._id === memberId &&
 			userVar().memberType === 'TRAINER' &&
 			userVar().memberStatus === 'ACTIVE' &&
-			getJwtToken() === sessionToken,
-		[memberId, sessionToken],
+			getAuthSessionId() === sessionIdentity,
+		[memberId, sessionIdentity],
 	);
 
 	/** APOLLO REQUESTS **/
@@ -457,7 +457,7 @@ const MyPrograms = () => {
 	return (
 		<div className="trainer-programs-workspace">
 			{access === 'ready' ? (
-				<ProgramsContent key={`${user._id}:${getJwtToken()}`} memberId={user._id} sessionToken={getJwtToken()} />
+				<ProgramsContent key={`${user._id}:${getAuthSessionId()}`} memberId={user._id} sessionIdentity={getAuthSessionId()} />
 			) : (
 				<div
 					id="trainer-programs-page"

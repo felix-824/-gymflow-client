@@ -2,7 +2,7 @@ import type { AppProps } from 'next/app';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import { CssBaseline } from '@mui/material';
 import React, { useEffect, useState } from 'react';
-import { getJwtToken, updateUserInfo } from '../libs/auth';
+import { handleAuthStorage, updateUserInfo } from '../libs/auth';
 import { light } from '../scss/MaterialTheme';
 import { ApolloProvider } from '@apollo/client';
 import { useApollo } from '../apollo/client';
@@ -16,12 +16,12 @@ const App = ({ Component, pageProps }: AppProps) => {
 	const [theme, setTheme] = useState(createTheme(light));
 	const client = useApollo(pageProps.initialApolloState);
 	useEffect(() => {
-		const restore = () => { void updateUserInfo(getJwtToken()); };
+		const restore = () => { void updateUserInfo(); };
 		restore();
-		window.addEventListener('storage', restore);
+		window.addEventListener('storage', handleAuthStorage);
 		window.addEventListener('focus', restore);
 		return () => {
-			window.removeEventListener('storage', restore);
+			window.removeEventListener('storage', handleAuthStorage);
 			window.removeEventListener('focus', restore);
 		};
 	}, []);

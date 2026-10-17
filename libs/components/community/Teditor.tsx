@@ -13,7 +13,7 @@ import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
 import { CREATE_BOARD_ARTICLE, UPDATE_BOARD_ARTICLE } from '../../../apollo/user/mutation';
 import { authErrorVar, authReadyVar, userVar } from '../../../apollo/store';
 import { BoardArticleCategory } from '../../enums/board-article.enum';
-import { getJwtToken, invalidateSession, isAuthenticationError } from '../../auth';
+import { ensureAccessToken, getAuthSessionId, invalidateSession, isAuthenticationError } from '../../auth';
 import { REACT_APP_API_URL } from '../../config';
 import {
 	articleCharacterCount,
@@ -68,7 +68,7 @@ const TuiEditor = (props: EditorProps) => {
 	const pendingPublication = useRef(false);
 	const confirmed = useRef(false);
 	const uploadTask = useRef<{ controller: AbortController; epoch: number; kind: 'cover' | 'inline' } | null>(null);
-	const token = useRef(getJwtToken()).current;
+	const sessionIdentity = useRef(getAuthSessionId()).current;
 	const [category, setCategory] = useState(article.current?.articleCategory ?? BoardArticleCategory.FREE);
 	const [title, setTitle] = useState(initial.current.title);
 	const [story, setStory] = useState('');
@@ -91,8 +91,8 @@ const TuiEditor = (props: EditorProps) => {
 		!authErrorVar() &&
 		userVar()._id === memberId &&
 		userVar().memberStatus === 'ACTIVE' &&
-		getJwtToken() === token &&
-		Boolean(token);
+		getAuthSessionId() === sessionIdentity &&
+		Boolean(sessionIdentity);
 	const currentAccount = () => !away.current && sameAccount();
 	const currentRequest = (requestEpoch: number) => currentAccount() && requestEpoch === epoch.current;
 
@@ -250,9 +250,11 @@ const TuiEditor = (props: EditorProps) => {
 			);
 			data.append('map', JSON.stringify({ '0': ['variables.file'] }));
 			data.append('0', file);
+			const accessToken = await ensureAccessToken(true);
+			if (uploadTask.current !== task || !currentRequest(task.epoch)) return;
 			const response = await axios.post(process.env.REACT_APP_API_GRAPHQL_URL as string, data, {
 				signal: task.controller.signal,
-				headers: { 'apollo-require-preflight': true, Authorization: `Bearer ${token}` },
+				headers: { 'apollo-require-preflight': true, Authorization: `Bearer ${accessToken}` },
 			});
 			if (uploadTask.current !== task || !currentRequest(task.epoch)) return;
 			if (response.data.errors?.length) {

@@ -6,7 +6,7 @@ import { useReactiveVar } from '@apollo/client';
 import { useRouter } from 'next/router';
 import { useTranslation } from 'next-i18next';
 import { authErrorVar, authReadyVar, userVar } from '../../../apollo/store';
-import { getJwtToken, updateUserInfo } from '../../auth';
+import { getAuthSessionId, updateUserInfo } from '../../auth';
 
 const TuiEditor = dynamic(() => import('../community/Teditor'), { ssr: false });
 
@@ -35,7 +35,7 @@ const WriteArticle = () => {
 					<p>{t('Write article.Intro')}</p>
 				</header>
 				{ready ? (
-					<TuiEditor key={`${user._id}:${getJwtToken()}`} memberId={user._id} />
+					<TuiEditor key={`${user._id}:${getAuthSessionId()}`} memberId={user._id} />
 				) : (
 					<div className="write-auth-state" role={authError ? 'alert' : 'status'}>
 						<p>
@@ -46,7 +46,7 @@ const WriteArticle = () => {
 							)}
 						</p>
 						{authError ? (
-							<button type="button" onClick={() => void updateUserInfo(getJwtToken())}>
+							<button type="button" onClick={() => void updateUserInfo()}>
 								{t('Write article.Retry')}
 							</button>
 						) : (

@@ -78,59 +78,71 @@ check('update payload uses null to clear optional fields', () => {
 
 const createVar = (initial) => { let state = initial; return (...args) => { if (args.length) state = args[0]; return state; }; };
 function authHarness() {
-	const storage = new Map();
+	const storage = new Map(), calls = [], refreshCalls = [];
 	const store = { emptyUser: { _id: '', memberType: '' }, userVar: createVar({ _id: '', memberType: '' }), authReadyVar: createVar(false), authErrorVar: createVar('') };
-	const calls = [];
-	const client = { clearStore: async () => {}, query: async (request) => { calls.push(request); return client.respond(request); }, respond: async (request) => request.query === 'CHECK_AUTH' ? { data: { checkAuth: 'ok' } } : { data: { getMyMember: member } }, mutate: async () => ({ data: { login: member, signup: member } }) };
 	const member = { _id: 'a'.repeat(24), memberNick: 'trainer', memberType: 'TRAINER', memberStatus: 'ACTIVE', memberPrograms: 2, memberImage: null };
-	const token = JSON.stringify({ sub: member._id, exp: Math.floor(Date.now() / 1000) + 3600 });
+	const token = JSON.stringify({ sub: member._id, sid: 'b'.repeat(24), purpose: 'access', exp: Math.floor(Date.now() / 1000) + 900 });
 	member.accessToken = token;
-	global.window = { location: { reload() {} } };
+	const client = { clearStore: async () => {}, query: async (request) => { calls.push(request); return client.respond(request); }, respond: async () => ({ data: { getMyMember: member } }), mutate: async () => ({ data: { login: member, signup: member } }) };
+	global.window = { location: { reload() {}, replace() {} } };
 	global.localStorage = { getItem: (key) => storage.get(key) ?? null, setItem: (key, value) => storage.set(key, value), removeItem: (key) => storage.delete(key) };
+	const refresh = { guest: false, failure: false };
+	global.fetch = async (...args) => {
+		refreshCalls.push(args);
+		if (refresh.failure) throw new Error('Network unavailable');
+		return { ok: true, json: async () => refresh.guest ? { errors: [{ code: 'UNAUTHENTICATED' }] } : { data: { refreshSession: { accessToken: token } } } };
+	};
 	const auth = loadTs(path.join(__dirname, '../libs/auth/index.ts'), {
-		'jwt-decode': (value) => JSON.parse(value), '../../apollo/client': { initializeApollo: () => client },
-		'../../apollo/store': store, '../../apollo/user/mutation': { LOGIN: 'LOGIN', SIGN_UP: 'SIGN_UP' }, '../../apollo/user/query': { CHECK_AUTH: 'CHECK_AUTH', GET_MY_MEMBER: 'GET_MY_MEMBER' },
+		'jwt-decode': (value) => JSON.parse(value), 'graphql': { print: (value) => value }, '../../apollo/client': { initializeApollo: () => client },
+		'../../apollo/store': store, '../../apollo/user/mutation': { LOGIN: 'LOGIN', SIGN_UP: 'SIGN_UP', REFRESH_SESSION: 'REFRESH_SESSION', LOGOUT_SESSION: 'LOGOUT_SESSION' }, '../../apollo/user/query': { GET_MY_MEMBER: 'GET_MY_MEMBER' },
 	});
-	return { auth, storage, store, client, calls, member, token };
+	return { auth, storage, store, client, calls, member, token, refresh, refreshCalls };
 }
 async function authChecks() {
-	let h = authHarness();
-	await h.auth.logIn('trainer', 'password');
-	check('login reads Member response instead of JWT profile claims', () => { assert.equal(h.store.userVar().memberNick, 'trainer'); assert.equal(h.store.userVar().memberPrograms, 2); assert.equal(h.storage.get('accessToken'), h.token); });
-	await assert.rejects(h.auth.signUp('a', 'b', 'c', 'ADMIN'));
-	check('signup rejects administrative escalation', () => assert.equal(h.store.userVar().memberType, 'TRAINER'));
-	h = authHarness(); h.storage.set('accessToken', h.token);
-	const first = h.auth.updateUserInfo(h.token);
-	const duplicate = h.auth.updateUserInfo(h.token);
-	assert.equal(first, duplicate); await first;
-	check('restore deduplicates and checks auth before loading current profile', () => {
-		assert.deepEqual(h.calls.map((call) => call.query), ['CHECK_AUTH', 'GET_MY_MEMBER']);
-		assert.equal(h.calls[1].variables, undefined); assert.equal(h.store.authReadyVar(), true);
-		assert.equal(h.calls[1].fetchPolicy, 'no-cache');
-		assert.equal(h.calls[1].context.queryDeduplication, false);
-	});
-	h = authHarness(); const expired = JSON.stringify({ sub: h.member._id, exp: 1 }); h.storage.set('accessToken', expired); await h.auth.updateUserInfo(expired);
-	check('expired token resets identity without API calls', () => { assert.equal(h.storage.has('accessToken'), false); assert.equal(h.calls.length, 0); assert.equal(h.store.userVar()._id, ''); });
-	h = authHarness(); h.storage.set('accessToken', 'broken'); await h.auth.updateUserInfo('broken');
-	check('malformed token resets identity', () => assert.equal(h.storage.has('accessToken'), false));
-	h = authHarness(); h.storage.set('accessToken', h.token); h.client.respond = async () => { throw new Error('Network unavailable'); }; await h.auth.updateUserInfo(h.token);
-	check('network failure preserves token and exposes retry state', () => { assert.equal(h.storage.get('accessToken'), h.token); assert.ok(h.store.authErrorVar()); });
-	h = authHarness(); h.storage.set('accessToken', h.token); h.client.respond = async () => { throw { graphQLErrors: [{ extensions: { code: 'UNAUTHENTICATED' } }] }; }; await h.auth.updateUserInfo(h.token);
-	check('unauthenticated session clears token and profile', () => { assert.equal(h.storage.has('accessToken'), false); assert.equal(h.store.userVar()._id, ''); });
-	h = authHarness(); h.storage.set('accessToken', h.token); h.member.memberStatus = 'BLOCK'; await h.auth.updateUserInfo(h.token);
-	check('blocked member clears the session', () => assert.equal(h.storage.has('accessToken'), false));
-	h = authHarness(); h.storage.set('accessToken', h.token); h.member.memberType = 'USER'; await h.auth.updateUserInfo(h.token);
-	check('restoration applies current server role', () => assert.equal(h.store.userVar().memberType, 'USER'));
-	check('ownership and role denial do not mean logout', () => { assert.equal(h.auth.isAuthenticationError({ graphQLErrors: [{ extensions: { code: 'FORBIDDEN' } }] }), false); });
-	h = authHarness(); h.storage.set('accessToken', h.token);
-	let resume;
-	h.client.respond = () => new Promise((resolve) => { resume = resolve; });
-	const pending = h.auth.updateUserInfo(h.token);
-	h.storage.set('accessToken', 'different-session');
-	resume({ data: { checkAuth: 'ok' } });
-	await pending;
-	check('stale restoration cannot replace another session profile', () => assert.equal(h.store.userVar()._id, ''));
-	delete global.window; delete global.localStorage;
+	const previousFetch = global.fetch;
+	try {
+		let h = authHarness();
+		await h.auth.logIn('trainer', 'password');
+		check('login applies owner receipt and keeps credentials only in memory', () => {
+			assert.equal(h.store.userVar().memberNick, 'trainer'); assert.equal(h.store.userVar().memberPrograms, 2);
+			assert.equal(h.auth.getJwtToken(), h.token); assert.equal(h.storage.has('accessToken'), false);
+		});
+		await assert.rejects(h.auth.signUp('a', 'b', 'c', 'ADMIN'));
+		check('signup rejects administrative escalation', () => assert.equal(h.store.userVar().memberType, 'TRAINER'));
+		h = authHarness(); h.storage.set('accessToken', 'obsolete-long-lived-token');
+		const first = h.auth.updateUserInfo(), duplicate = h.auth.updateUserInfo();
+		assert.equal(first, duplicate); await first;
+		check('bootstrap deduplicates cookie refresh then loads the owner without caching', () => {
+			assert.equal(h.refreshCalls.length, 1); assert.deepEqual(h.calls.map((call) => call.query), ['GET_MY_MEMBER']);
+			assert.equal(h.calls[0].variables, undefined); assert.equal(h.calls[0].fetchPolicy, 'no-cache');
+			assert.equal(h.calls[0].context.queryDeduplication, false); assert.equal(h.store.authReadyVar(), true);
+			assert.equal(h.storage.has('accessToken'), false);
+		});
+		h = authHarness(); h.storage.set('accessToken', 'expired-legacy-token'); h.refresh.guest = true; await h.auth.updateUserInfo();
+		check('legacy storage is removed and absent refresh session resolves as guest', () => {
+			assert.equal(h.storage.has('accessToken'), false); assert.equal(h.calls.length, 0);
+			assert.equal(h.store.userVar()._id, ''); assert.equal(h.store.authErrorVar(), '');
+		});
+		h = authHarness(); h.refresh.failure = true; await h.auth.updateUserInfo();
+		check('temporary bootstrap failure exposes Retry without storing credentials', () => {
+			assert.equal(h.storage.has('accessToken'), false); assert.ok(h.store.authErrorVar());
+		});
+		h = authHarness(); h.client.respond = async () => { throw { graphQLErrors: [{ code: 'UNAUTHENTICATED' }] }; }; await h.auth.updateUserInfo();
+		check('actual flattened unauthenticated response clears memory and owner state', () => {
+			assert.equal(h.auth.getJwtToken(), ''); assert.equal(h.store.userVar()._id, '');
+		});
+		h = authHarness(); h.member.memberStatus = 'BLOCK'; await h.auth.updateUserInfo();
+		check('blocked owner cannot restore', () => assert.equal(h.store.userVar()._id, ''));
+		h = authHarness(); h.member.memberType = 'USER'; await h.auth.updateUserInfo();
+		check('restoration applies current server role', () => assert.equal(h.store.userVar().memberType, 'USER'));
+		check('ownership and role denial do not mean logout', () => assert.equal(h.auth.isAuthenticationError({ graphQLErrors: [{ code: 'FORBIDDEN' }] }), false));
+		h = authHarness(); let resume;
+		h.client.respond = () => new Promise((resolve) => { resume = resolve; });
+		const pending = h.auth.updateUserInfo();
+		while (!resume) await new Promise((resolve) => setTimeout(resolve, 0));
+		await h.auth.invalidateSession(); resume({ data: { getMyMember: h.member } }); await pending;
+		check('obsolete owner response cannot restore a logged-out generation', () => assert.equal(h.store.userVar()._id, ''));
+	} finally { global.fetch = previousFetch; delete global.window; delete global.localStorage; }
 }
 const watchdog = setTimeout(() => { console.error('Migration unit tests did not settle'); process.exitCode = 1; }, 60000);
 authChecks().then(async () => {

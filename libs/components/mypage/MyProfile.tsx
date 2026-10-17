@@ -7,8 +7,8 @@ import { authErrorVar, authReadyVar, userVar } from '../../../apollo/store';
 import { MemberSelfUpdate } from '../../types/member/member.update';
 import { useMutation, useReactiveVar } from '@apollo/client';
 import {
-	getJwtToken,
-	updateStorage,
+	getAuthSessionId,
+	ensureAccessToken,
 	updateUserInfo,
 	invalidateSession,
 	isAuthenticationError,
@@ -38,7 +38,7 @@ const MyProfile: NextPage<{ initialValues?: MemberSelfUpdate; trainerWorkspace?:
 }) => {
 	const device = useDeviceDetect();
 	const { t } = useTranslation('common');
-	const token = getJwtToken();
+	const sessionIdentity = getAuthSessionId();
 	const user = useReactiveVar(userVar);
 	const ready = useReactiveVar(authReadyVar);
 	const authError = useReactiveVar(authErrorVar);
@@ -61,6 +61,7 @@ const MyProfile: NextPage<{ initialValues?: MemberSelfUpdate; trainerWorkspace?:
 	const [brokenImage, setBrokenImage] = useState('');
 	const imageInput = useRef<HTMLInputElement>(null);
 	const mounted = useRef(true);
+	const profileScope = useRef('');
 	const writeLock = useRef(false);
 	const logoutLock = useRef(false);
 	const activeAccount = useCallback(
@@ -72,8 +73,8 @@ const MyProfile: NextPage<{ initialValues?: MemberSelfUpdate; trainerWorkspace?:
 				userVar()._id === user._id &&
 				userVar().memberType === expectedRole &&
 				userVar().memberStatus === 'ACTIVE' &&
-				getJwtToken() === token),
-		[managedProfile, expectedRole, user._id, token],
+				getAuthSessionId() === sessionIdentity),
+		[managedProfile, expectedRole, user._id, sessionIdentity],
 	);
 
 	/** APOLLO REQUESTS **/
@@ -90,6 +91,9 @@ const MyProfile: NextPage<{ initialValues?: MemberSelfUpdate; trainerWorkspace?:
 		};
 	}, []);
 	useEffect(() => {
+		const scope = `${managedProfile}:${user._id}:${sessionIdentity}`;
+		if (profileScope.current === scope) return;
+		profileScope.current = scope;
 		setUpdateData((previous) => ({
 			...previous,
 			memberNick: user.memberNick,
@@ -98,7 +102,7 @@ const MyProfile: NextPage<{ initialValues?: MemberSelfUpdate; trainerWorkspace?:
 			memberImage: user.memberImage,
 			...(managedProfile ? { memberFullName: user.memberFullName ?? '' } : {}),
 		}));
-	}, [user, managedProfile]);
+	}, [user, managedProfile, sessionIdentity]);
 
 	/** HANDLERS **/
 	const uploadImage = async (e: any) => {
@@ -134,11 +138,13 @@ const MyProfile: NextPage<{ initialValues?: MemberSelfUpdate; trainerWorkspace?:
 			);
 			formData.append('0', image);
 
+			const accessToken = await ensureAccessToken(true);
+			if (!activeAccount()) return;
 			const response = await axios.post(`${process.env.REACT_APP_API_GRAPHQL_URL}`, formData, {
 				headers: {
 					'Content-Type': 'multipart/form-data',
 					'apollo-require-preflight': true,
-					Authorization: `Bearer ${token}`,
+					Authorization: `Bearer ${accessToken}`,
 				},
 			});
 			if (!activeAccount()) return;
@@ -191,19 +197,18 @@ const MyProfile: NextPage<{ initialValues?: MemberSelfUpdate; trainerWorkspace?:
 			if (!activeAccount()) return;
 
 			const member = result.data?.updateMember;
-			const jwtToken = member?.accessToken;
-			if (!member || !jwtToken) throw new Error('Invalid profile receipt');
+			if (!member) throw new Error('Invalid profile receipt');
 			if (
 				managedProfile &&
 				(member._id !== user._id || member.memberType !== expectedRole || member.memberStatus !== 'ACTIVE')
 			)
 				throw new Error('Invalid profile receipt');
 
-			await updateStorage({ jwtToken });
-			await updateUserInfo(jwtToken, member);
+			if (updateData.memberPassword) { await logOut(); return; }
+			await updateUserInfo(undefined, member);
 
 			if (managedProfile) {
-				if (mounted.current && userVar()._id === user._id && getJwtToken() === jwtToken) setFeedback('Saved');
+				if (mounted.current && userVar()._id === user._id && getAuthSessionId() === sessionIdentity) setFeedback('Saved');
 			} else await sweetMixinSuccessAlert('information updated successfully.');
 		} catch (err: any) {
 			if (!activeAccount()) return;
@@ -214,7 +219,7 @@ const MyProfile: NextPage<{ initialValues?: MemberSelfUpdate; trainerWorkspace?:
 		} finally {
 			writeLock.current = false;
 		}
-	}, [updateData, saving, uploading, user._id, updateMember, managedProfile, expectedRole, activeAccount]);
+	}, [updateData, saving, uploading, user._id, updateMember, managedProfile, expectedRole, activeAccount, sessionIdentity]);
 
 	const logoutHandler = async () => {
 		if (saving || uploading || writeLock.current || logoutLock.current || !activeAccount()) return;

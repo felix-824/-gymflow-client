@@ -125,6 +125,8 @@ async function logoutContract() {
 		'../../apollo/user/query': loadTs(path.join(__dirname, '../apollo/user/query.ts')),
 	};
 	vm.runInNewContext('(function(require,module,exports){' + code + '\n})', {
+		process,
+		fetch: async () => ({ ok: true, json: async () => ({ data: { logoutSession: true } }) }),
 		window: { location: { replace: (href) => navigation.push(href), reload: () => navigation.push('reload') } },
 		localStorage: {
 			getItem: (key) => storage.get(key) ?? null,
@@ -146,7 +148,7 @@ async function logoutContract() {
 		});
 	const pending = auth.logOut();
 	assert.equal(storage.has('accessToken'), false);
-	assert.ok(storage.has('logout'));
+	assert.ok(storage.has('gymflow.auth'));
 	assert.equal(store.userVar()._id, '');
 	assert.equal(store.authReadyVar(), true);
 	assert.deepEqual(navigation, []);
@@ -162,7 +164,7 @@ async function logoutContract() {
 		['USER', ''],
 	]) {
 		authenticate(memberType, id);
-		assert.equal(auth.logOut(), undefined);
+		assert.equal(await auth.logOut(), true);
 		assert.deepEqual(navigation, ['reload']);
 		assert.equal(storage.has('accessToken'), false);
 		assert.equal(store.userVar()._id, '');
@@ -182,11 +184,14 @@ async function integration() {
 	const temporary = fs.mkdtempSync(path.join(os.tmpdir(), 'gymflow-auth-test-'));
 	const previousCwd = process.cwd(),
 		previousLog = console.log;
+	const previousFetch = global.fetch, previousGraphql = process.env.REACT_APP_API_GRAPHQL_URL;
 	let fixture, root, client, dom;
 	try {
 		console.log = () => {};
 		process.chdir(temporary);
 		fixture = await require('./test-trainer-reservations.cjs').createFixture();
+		process.env.REACT_APP_API_GRAPHQL_URL = fixture.uri;
+		global.fetch = fixture.sessionFetch;
 		const { JSDOM } = require('jsdom');
 		dom = new JSDOM('<div id="test-root"></div>', { url: 'http://localhost/account/join' });
 		Object.assign(global, {
@@ -220,7 +225,7 @@ async function integration() {
 					if (offline) throw new Error('private connection details');
 					const response = await fetch(url, {
 						...options,
-						headers: { ...options.headers, Authorization: 'Bearer ' + window.localStorage.getItem('accessToken') },
+						headers: { ...options.headers, Authorization: 'Bearer ' + auth.getJwtToken() },
 					});
 					if (hold)
 						await new Promise((resolve) => {
@@ -438,11 +443,11 @@ async function integration() {
 		assert.equal(store.userVar()._id, String(fixture.user._id));
 		assert.equal(store.authReadyVar(), true);
 		assert.equal(store.authErrorVar(), '');
-		assert.ok(requests.some((request) => request.operationName === 'CheckAuth'));
+		assert.ok(!requests.some((request) => request.operationName === 'CheckAuth'));
 		assert.ok(requests.some((request) => request.operationName === 'GetMyMember'));
 		assert.ok(!requests.some((request) => request.operationName === 'GetMember'));
 		assert.equal(store.userVar().memberPhone, fixture.user.memberPhone);
-		pass('real login preserves return context, token persistence and server-authoritative session restoration');
+		pass('real login preserves return context, memory-only credentials and server-authoritative session restoration');
 		const inquiry = { page: 1, limit: 5, search: { period: 'UPCOMING' } };
 		const { GET_MY_RESERVATIONS } = loadTs(path.join(__dirname, '../apollo/user/query.ts'));
 		const bookings = await client.query({
@@ -471,6 +476,8 @@ async function integration() {
 		assert.ok(!select('.auth-submit').disabled);
 		pass('connection failure returns the form to a retryable state without exposing connection details');
 	} finally {
+		global.fetch = previousFetch;
+		if (previousGraphql === undefined) delete process.env.REACT_APP_API_GRAPHQL_URL; else process.env.REACT_APP_API_GRAPHQL_URL = previousGraphql;
 		console.log = previousLog;
 		root?.unmount();
 		client?.stop();

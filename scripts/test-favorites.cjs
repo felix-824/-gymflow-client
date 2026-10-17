@@ -192,9 +192,9 @@ async function integration({ i18n, resources }) {
 					const response = await fixtureFetch(url, {
 						agent: fixtureAgent,
 						...options,
-						headers: { ...options.headers, Authorization: 'Bearer ' + window.localStorage.getItem('accessToken') },
+						headers: { ...options.headers, Authorization: 'Bearer ' + auth.getJwtToken() },
 					});
-					if (body.operationName === 'CheckAuth' && holdAuth)
+					if (body.operationName === 'GetMyMember' && holdAuth)
 						await new Promise((resolve) => {
 							releaseAuth = resolve;
 						});
@@ -332,7 +332,8 @@ async function integration({ i18n, resources }) {
 			flushSync(() => element.click());
 		};
 		const signIn = async (member) => {
-			auth.updateStorage({ jwtToken: token(member) });
+			await auth.invalidateSession();
+			auth.setJwtToken(token(member));
 			await auth.updateUserInfo(auth.getJwtToken(), { ...member.toObject(), _id: String(member._id) });
 		};
 		const remount = async (member = user) => {
@@ -342,8 +343,8 @@ async function integration({ i18n, resources }) {
 			await until(settled);
 		};
 
-		// Actual auth restoration must finish CheckAuth and GetMember before a private Favorites read.
-		auth.updateStorage({ jwtToken: token(user) });
+		// Actual auth restoration must finish getMyMember before a private Favorites read.
+		auth.setJwtToken(token(user));
 		holdAuth = true;
 		const restore = auth.updateUserInfo(auth.getJwtToken());
 		render();
@@ -358,7 +359,7 @@ async function integration({ i18n, resources }) {
 		assert.equal(count(), '9 saved programs');
 		assert.ok(
 			requests.findIndex((r) => r.operationName === 'GetFavorites') >
-				requests.findIndex((r) => r.operationName === 'GetMember'),
+				requests.findIndex((r) => r.operationName === 'GetMyMember'),
 		);
 		pass('no private read before actual auth restoration; real rows and metaCounter total independent of page length');
 		assert.ok(document.querySelector('.programs-header, .user-favorites-layout'));

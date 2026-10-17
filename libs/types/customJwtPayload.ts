@@ -2,6 +2,8 @@ import { JwtPayload } from 'jwt-decode';
 
 export interface CustomJwtPayload extends JwtPayload {
 	sub: string;
+	sid: string;
+	purpose: 'access';
 }
 
 // Profiles come from Member responses, never from JWT profile claims.

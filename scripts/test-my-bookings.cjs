@@ -182,6 +182,7 @@ async function integration() {
 			filename,
 		);
 	backendRequire('reflect-metadata');
+const { fixtureAccessToken } = require(path.join(backend, 'apps/gymflow-api/test/auth-session.fixture.ts'));
 	const { Test } = backendRequire('@nestjs/testing');
 	const { ValidationPipe } = backendRequire('@nestjs/common');
 	const { MongooseModule, getConnectionToken } = backendRequire('@nestjs/mongoose');
@@ -210,7 +211,7 @@ async function integration() {
 			imports: [
 				MongooseModule.forRoot(mongo.getUri()),
 				ComponentsModule,
-				GraphQLModule.forRoot({ driver: ApolloDriver, autoSchemaFile: true, context: ({ req }) => ({ req }) }),
+				GraphQLModule.forRoot({ driver: ApolloDriver, autoSchemaFile: true, context: ({ req, res }) => ({ req, res }) }),
 			],
 		})
 			.overrideProvider(JwtService)
@@ -265,7 +266,8 @@ async function integration() {
 			programName: 'Online fixture',
 			programAddress: 'Must not render',
 		});
-		const token = (member) => module.get(JwtService).sign({ sub: member._id.toString() });
+		const sessionTokens = new Map(await Promise.all((await members.find().exec()).map(async (member) => [String(member._id), await fixtureAccessToken(member, app)])));
+		const token = (member) => sessionTokens.get(String(member._id));
 		const tomorrow = booking.addBookingDays(booking.seoulToday(), 1),
 			yesterday = booking.addBookingDays(booking.seoulToday(), -1);
 		const base = {

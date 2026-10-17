@@ -194,7 +194,7 @@ function load(file, mocks, cache = new Map()) {
 		'../../../apollo/user/query': { GET_MY_BOARD_ARTICLES: 'GET_MY_BOARD_ARTICLES' },
 		'../../../apollo/user/mutation': { UPDATE_BOARD_ARTICLE: 'UPDATE_BOARD_ARTICLE' },
 		'../../auth': {
-			getJwtToken: () => token,
+			getJwtToken: () => token, getAuthSessionId: () => token, ensureAccessToken: async () => token,
 			invalidateSession: () => {
 				state.invalidations++;
 				user = { ...user, _id: '' };

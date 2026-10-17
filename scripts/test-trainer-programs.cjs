@@ -246,7 +246,7 @@ async function integration({ i18n, resources }) {
 		);
 		const noop = { __esModule: true, default: () => null };
 		const auth = {
-			getJwtToken: () => session,
+			getJwtToken: () => session, getAuthSessionId: () => session, ensureAccessToken: async () => session,
 			updateUserInfo: async () => {},
 			invalidateSession: () => {},
 			isAuthenticationError: () => false,

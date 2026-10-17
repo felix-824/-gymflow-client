@@ -170,6 +170,7 @@ async function createFixture(options = {}) {
 			filename,
 		);
 	backRequire('reflect-metadata');
+	const { fixtureAccessToken } = require(path.join(backend, 'apps/gymflow-api/test/auth-session.fixture.ts'));
 	const { Test } = backRequire('@nestjs/testing');
 	const { ValidationPipe } = backRequire('@nestjs/common');
 	const { MongooseModule, getConnectionToken } = backRequire('@nestjs/mongoose');
@@ -203,7 +204,7 @@ async function createFixture(options = {}) {
 			imports: [
 				MongooseModule.forRoot(mongoUri),
 				ComponentsModule,
-				GraphQLModule.forRoot({ driver: ApolloDriver, autoSchemaFile: true, context: ({ req }) => ({ req }) }),
+				GraphQLModule.forRoot({ driver: ApolloDriver, autoSchemaFile: true, context: ({ req, res }) => ({ req, res }) }),
 			],
 		})
 			.overrideProvider(JwtService)
@@ -217,7 +218,7 @@ async function createFixture(options = {}) {
 		app = module.createNestApplication({ logger: false });
 		app.useGlobalPipes(new ValidationPipe());
 		if (options.multipart) app.use(backRequire('graphql-upload').graphqlUploadExpress({ maxFileSize: 15000000, maxFiles: 1 }));
-		if (options.origin) app.enableCors({ origin: options.origin });
+		if (options.origin) app.enableCors({ origin: options.origin, credentials: true });
 		await app.listen(options.port ?? 0, '127.0.0.1');
 		const uri = (await app.getUrl()) + '/graphql',
 			db = module.get(getConnectionToken());
@@ -281,19 +282,33 @@ async function createFixture(options = {}) {
 				.collectDocuments()
 				.map((d) => [d.name, d.query]),
 		);
-		const token = (member) => module.get(JwtService).sign({ sub: String(member._id) }, { expiresIn: '1h' });
+		const tokens = new Map(await Promise.all([trainer, otherTrainer, user, admin].map(async (member) => [String(member._id), await fixtureAccessToken(member, app)])));
+		const token = (member) => tokens.get(String(member._id));
 		const fetch = global.fetch;
-		const gql = async (name, input, member = trainer) =>
-			(
+		let refreshCookie = '';
+		const sessionFetch = async (url, options = {}) => {
+			const headers = new Headers(options.headers);
+			if (options.credentials === 'include' && refreshCookie) headers.set('Cookie', refreshCookie);
+			headers.set('Apollo-Require-Preflight', 'true');
+			const response = await fetch(url, { ...options, headers });
+			if (options.credentials === 'include' && response.headers.get('set-cookie'))
+				refreshCookie = response.headers.get('set-cookie').split(';')[0];
+			return response;
+		};
+		const gql = async (name, input, member = trainer) => {
+			if (member && !tokens.has(String(member._id))) tokens.set(String(member._id), await fixtureAccessToken(member, app));
+			return (
 				await fetch(uri, {
 					method: 'POST',
 					headers: {
 						'Content-Type': 'application/json',
+						'Apollo-Require-Preflight': 'true',
 						...(member ? { Authorization: 'Bearer ' + token(member) } : {}),
 					},
 					body: JSON.stringify({ query: operations[name], variables: { input } }),
 				})
 			).json();
+		};
 		const tomorrow = booking.addBookingDays(booking.seoulToday(), 1),
 			yesterday = booking.addBookingDays(booking.seoulToday(), -1);
 		const pending = [];
@@ -335,6 +350,7 @@ async function createFixture(options = {}) {
 		});
 		await reservations.create({ ...base, trainerId: otherTrainer._id, reservationDate: tomorrow });
 		return {
+			sessionFetch,
 			app,
 			stop,
 			uri,

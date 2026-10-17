@@ -81,7 +81,7 @@ async function main() {
 		global.fetch = async (url, options) => {
 			const body = JSON.parse(options.body);
 			requests.push(body);
-			const response = await nativeFetch(url, options);
+			const response = await fixture.sessionFetch(url, options);
 			if (holdSelf && body.operationName === 'GetMyMember') {
 				holdSelf = false;
 				held = true;
@@ -94,7 +94,10 @@ async function main() {
 		let auth;
 		const clientModule = loadTs(path.join(__dirname, '../apollo/client.ts'), {
 			'../libs/auth': {
-				getJwtToken: () => storage.get('accessToken') ?? '',
+				getJwtToken: () => auth.getJwtToken(),
+				getAuthGeneration: () => auth.getAuthGeneration(),
+				ensureAccessToken: (...args) => auth.ensureAccessToken(...args),
+				isAuthenticationError: (...args) => auth.isAuthenticationError(...args),
 				invalidateSession: () => auth.invalidateSession(),
 				updateUserInfo: (...args) => auth.updateUserInfo(...args),
 			},
@@ -115,6 +118,7 @@ async function main() {
 		assert.ok(!Object.hasOwn(guest.data.getMember, 'memberPhone'));
 		assert.ok(!Object.hasOwn(guest.data.getMember, 'memberAddress'));
 		pass('guest public Trainer identity loads through the real narrowed frontend document');
+		const ownerRequestsStart = requests.length;
 		await auth.logIn(fixture.user.memberNick, fixture.password);
 		assert.equal(store.userVar().memberPhone, fixture.user.memberPhone);
 		await fixture.members.updateOne({ _id: fixture.user._id }, { memberAddress: 'Owned private address' });
@@ -125,7 +129,7 @@ async function main() {
 		assert.equal(await fixture.db.model('View').countDocuments({}), viewsBefore);
 		const selfRead = requests.find((request) => request.operationName === 'GetMyMember');
 		assert.deepEqual(selfRead.variables, {});
-		assert.ok(!requests.slice(1).some((request) => request.operationName === 'GetMember'));
+		assert.ok(!requests.slice(ownerRequestsStart).some((request) => request.operationName === 'GetMember'));
 		pass('USER restoration uses argument-free owner read, retains contacts and has no public view side effect');
 		const assertPrivateCacheEmpty = () => {
 			const cache = JSON.stringify(client.cache.extract());
@@ -134,6 +138,7 @@ async function main() {
 		assertPrivateCacheEmpty();
 		const userToken = auth.getJwtToken();
 		const trainerToken = fixture.token(fixture.trainer);
+		await auth.invalidateSession();
 		auth.setJwtToken(trainerToken);
 		await auth.updateUserInfo(trainerToken);
 		assert.equal(store.userVar().memberPhone, fixture.trainer.memberPhone);
@@ -141,12 +146,14 @@ async function main() {
 		assertPrivateCacheEmpty();
 		pass('TRAINER restoration and account switching retain only the current owner profile');
 		holdSelf = true;
+		await auth.invalidateSession();
 		auth.setJwtToken(userToken);
 		const obsolete = auth.updateUserInfo(userToken);
 		for (let attempt = 0; !held; attempt++) {
 			assert.ok(attempt < 500, 'owner response was not held');
 			await new Promise((resolve) => setTimeout(resolve, 10));
 		}
+		await auth.invalidateSession();
 		auth.setJwtToken(trainerToken);
 		await Promise.race([
 			auth.updateUserInfo(trainerToken),

@@ -145,7 +145,7 @@ async function testPublicationCleanup() {
 			authErrorVar: () => '',
 			userVar: () => ({ _id: 'a'.repeat(24), memberStatus: 'ACTIVE' }),
 		},
-		'../../auth': { getJwtToken: () => 'test-token', isAuthenticationError: () => false },
+		'../../auth': { getAuthSessionId: () => 'test-session', ensureAccessToken: async () => 'test-token', isAuthenticationError: () => false },
 		'../../sweetAlert': {
 			// The real async helper starts Toast.fire but does not await its 700ms timer.
 			sweetTopSmallSuccessAlert: async (message) => {

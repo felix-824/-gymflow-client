@@ -128,7 +128,7 @@ async function integration() {
 						throw new Error('Private connection details must not be displayed');
 					const response = await fetch(url, {
 						...options,
-						headers: { ...options.headers, Authorization: 'Bearer ' + window.localStorage.getItem('accessToken') },
+						headers: { ...options.headers, Authorization: 'Bearer ' + auth.getJwtToken() },
 					});
 					if (body.operationName === 'UpdateMember') {
 						lastReceipt = (await response.clone().json()).data?.updateMember;
@@ -189,7 +189,7 @@ async function integration() {
 				post: async (url, form, options) => {
 					assert.equal(url, uri);
 					assert.equal(options.headers['apollo-require-preflight'], true);
-					assert.equal(options.headers.Authorization, 'Bearer ' + window.localStorage.getItem('accessToken'));
+					assert.equal(options.headers.Authorization, 'Bearer ' + auth.getJwtToken());
 					const body = new NativeFormData();
 					for (const [key, value] of form.entries()) {
 						if (typeof value === 'string') body.append(key, value);
@@ -340,8 +340,9 @@ async function integration() {
 			});
 		const writes = () => requests.filter((request) => request.operationName === 'UpdateMember');
 		const signIn = async (member) => {
+			await auth.invalidateSession();
 			const jwtToken = token(member);
-			auth.updateStorage({ jwtToken });
+			auth.setJwtToken(jwtToken);
 			await auth.updateUserInfo(jwtToken, { ...member.toObject(), _id: String(member._id) });
 		};
 		store.authReadyVar(false);
@@ -357,7 +358,7 @@ async function integration() {
 		store.authErrorVar('');
 		const login = await fixture.gql('LOGIN', { memberNick: user.memberNick, memberPassword: fixture.password }, null);
 		assert.ok(!login.errors, JSON.stringify(login.errors));
-		auth.updateStorage({ jwtToken: login.data.login.accessToken });
+		auth.setJwtToken(login.data.login.accessToken);
 		await auth.updateUserInfo(login.data.login.accessToken);
 		await until(() => document.querySelector('#user-profile-page'));
 		pass('auth restoration gates fields and mutations; real login plus authenticated member restoration');
@@ -436,13 +437,14 @@ async function integration() {
 		assert.equal(saved.memberPhone, '010-owned-user');
 		assert.equal(saved.memberAddress, 'Owned test address');
 		assert.equal(store.userVar().memberFullName, saved.memberFullName);
-		assert.equal(window.localStorage.getItem('accessToken'), lastReceipt.accessToken);
-		assert.ok(window.localStorage.getItem('login'));
+		assert.equal(window.localStorage.getItem('accessToken'), null);
+		assert.equal(lastReceipt.accessToken, null);
+		assert.ok(auth.getAuthSessionId());
 		assert.deepEqual(
 			Object.keys(writes().at(-1).variables.input).sort(),
 			['memberImage', 'memberNick', 'memberFullName', 'memberPhone', 'memberAddress'].sort(),
 		);
-		pass('five-field real update, duplicate lock, authoritative token receipt and reactive account/header refresh');
+		pass('five-field real update, duplicate lock, owner receipt without renewal and reactive account/header refresh');
 		input('memberFullName', '');
 		input('memberAddress', '');
 		click('.user-profile-save-button');
@@ -631,13 +633,13 @@ async function integration() {
 		render();
 		await until(() => document.querySelector('#trainer-profile-page'));
 		assert.ok(document.querySelector('.trainer-profile-layout'));
-		const trainerToken = window.localStorage.getItem('accessToken');
+		const trainerToken = auth.getJwtToken();
 		holdSave = false;
 		releaseSave();
 		releaseSave = undefined;
 		await new Promise((resolve) => setTimeout(resolve, 80));
 		assert.equal(store.userVar()._id, String(trainer._id));
-		assert.equal(window.localStorage.getItem('accessToken'), trainerToken);
+		assert.equal(auth.getJwtToken(), trainerToken);
 		pass('late USER save cannot replace current TRAINER identity/token or workspace presentation');
 		await signIn(await members.findById(user._id));
 		render();

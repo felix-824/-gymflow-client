@@ -210,7 +210,7 @@ async function integration() {
 			'next/image': { __esModule: true, default: (props) => React.createElement('img', props) },
 			'next-i18next': { useTranslation: () => ({ t }) },
 			'../../../apollo/store': store,
-			'../../auth': { getJwtToken: () => '', updateUserInfo: async () => {} },
+			'../../auth': { getAuthSessionId: () => '', updateUserInfo: async () => {} },
 		};
 		const Page = loadTs(path.join(__dirname, '../libs/components/mypage/TrainerDashboard.tsx'), mocks).default;
 		root = createRoot(document.getElementById('test-root'));

@@ -14,7 +14,7 @@ import { useTranslation } from 'next-i18next';
 import { GET_MY_BOARD_ARTICLES } from '../../../apollo/user/query';
 import { UPDATE_BOARD_ARTICLE } from '../../../apollo/user/mutation';
 import { authErrorVar, authReadyVar, userVar } from '../../../apollo/store';
-import { getJwtToken, invalidateSession, updateUserInfo } from '../../auth';
+import { getAuthSessionId, invalidateSession, updateUserInfo } from '../../auth';
 import { articleUpdateError, readOwnedArticle } from '../../article';
 import { sanitizeArticleHtml } from '../../article-html';
 import { BoardArticleCategory, BoardArticleStatus } from '../../enums/board-article.enum';
@@ -133,7 +133,7 @@ function ArticleRow({
 	);
 }
 
-function ArticlesContent({ memberId, token, page }: { memberId: string; token: string; page: number }) {
+function ArticlesContent({ memberId, sessionIdentity, page }: { memberId: string; sessionIdentity: string; page: number }) {
 	const { t } = useTranslation('common');
 	const router = useRouter();
 	const client = useApolloClient();
@@ -161,9 +161,9 @@ function ArticlesContent({ memberId, token, page }: { memberId: string; token: s
 			userVar()._id === memberId &&
 			userVar().memberStatus === 'ACTIVE' &&
 			authorRoles.includes(userVar().memberType) &&
-			getJwtToken() === token &&
-			Boolean(token),
-		[memberId, token],
+			getAuthSessionId() === sessionIdentity &&
+			Boolean(sessionIdentity),
+		[memberId, sessionIdentity],
 	);
 	const pageHref = useCallback(
 		(value: number) => ({
@@ -454,7 +454,7 @@ const MyArticles = () => {
 	const user = useReactiveVar(userVar);
 	const authReady = useReactiveVar(authReadyVar);
 	const authError = useReactiveVar(authErrorVar);
-	const token = getJwtToken();
+	const sessionIdentity = getAuthSessionId();
 	const ready =
 		authReady &&
 		router.isReady &&
@@ -462,7 +462,7 @@ const MyArticles = () => {
 		user._id &&
 		user.memberStatus === 'ACTIVE' &&
 		authorRoles.includes(user.memberType) &&
-		token;
+		sessionIdentity;
 	const value =
 		typeof router.query.page === 'string' && /^\d+$/.test(router.query.page) ? Number(router.query.page) : 1;
 	const page = Number.isInteger(value) && value > 0 && value <= 2147483647 ? value : 1;
@@ -485,7 +485,7 @@ const MyArticles = () => {
 				</Link>
 			</header>
 			{ready ? (
-				<ArticlesContent key={`${user._id}:${token}`} memberId={user._id} token={token} page={page} />
+				<ArticlesContent key={`${user._id}:${sessionIdentity}`} memberId={user._id} sessionIdentity={sessionIdentity} page={page} />
 			) : (
 				<div className="my-articles-state" role={authError ? 'alert' : 'status'}>
 					<p>
@@ -496,7 +496,7 @@ const MyArticles = () => {
 						)}
 					</p>
 					{authError ? (
-						<button type="button" onClick={() => void updateUserInfo(getJwtToken())}>
+						<button type="button" onClick={() => void updateUserInfo()}>
 							{t('My articles.Retry')}
 						</button>
 					) : (

@@ -91,7 +91,7 @@ module.exports = async function runFormChecks(loadTs, forms) {
 		'./TrainerWorkspaceNavigation': { TrainerWorkspaceHeader: () => null, TrainerWorkspaceNavigation: () => null },
 		'@mui/material': { useMediaQuery: () => state.mobile },
 		'../../program': forms,
-		'../../auth': { getJwtToken: () => token, invalidateSession: () => {}, isAuthenticationError: () => false },
+		'../../auth': { getJwtToken: () => token, getAuthSessionId: () => token, ensureAccessToken: async () => token, invalidateSession: () => {}, isAuthenticationError: () => false },
 		'../../../apollo/store': variables,
 		'@apollo/client': { useApolloClient: () => client, useMutation, useReactiveVar: (variable) => variable() },
 		'../../../apollo/user/mutation': { CREATE_PROGRAM: 'CREATE_PROGRAM', UPDATE_PROGRAM: 'UPDATE_PROGRAM' },

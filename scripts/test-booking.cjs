@@ -68,6 +68,7 @@ async function integration() {
 		fileName:filename,compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2021,esModuleInterop:true,experimentalDecorators:true,emitDecoratorMetadata:true},
 	}).outputText,filename);
 	backendRequire('reflect-metadata');
+	const { fixtureAccessToken } = require(path.join(backend, 'apps/gymflow-api/test/auth-session.fixture.ts'));
 	const { Test } = backendRequire('@nestjs/testing');
 	const { ValidationPipe } = backendRequire('@nestjs/common');
 	const { MongooseModule,getConnectionToken } = backendRequire('@nestjs/mongoose');
@@ -85,7 +86,7 @@ async function integration() {
 		process.env.MONGOMS_RUNTIME_DOWNLOAD='false';
 		mongo = await MongoMemoryReplSet.create({replSet:{count:1,storageEngine:'wiredTiger'},instanceOpts:[{ip:'127.0.0.1'}],binary:{version:'8.2.6',downloadDir:path.join(backend,'.tmp/mongodb-binaries')}});
 		const module = await Test.createTestingModule({imports:[MongooseModule.forRoot(mongo.getUri()),ComponentsModule,
-			GraphQLModule.forRoot({driver:ApolloDriver,autoSchemaFile:true,context:({req})=>({req})})]})
+			GraphQLModule.forRoot({driver:ApolloDriver,autoSchemaFile:true,context:({req,res})=>({req,res})})]})
 			.overrideProvider(JwtService).useValue(new JwtService({secret:'booking-disposable-test',signOptions:{expiresIn:'1h'}})).compile();
 		app = module.createNestApplication({logger:false}); app.useGlobalPipes(new ValidationPipe()); await app.listen(0,'127.0.0.1');
 		const uri = (await app.getUrl())+'/graphql', db = module.get(getConnectionToken());
@@ -95,7 +96,8 @@ async function integration() {
 		const user=await members.create({memberNick:'Booking user',memberPhone:'test101',memberPassword:'fixture',memberType:'USER'});
 		const other=await members.create({memberNick:'Other user',memberPhone:'test102',memberPassword:'fixture',memberType:'USER'});
 		const admin=await members.create({memberNick:'Booking admin',memberPhone:'test103',memberPassword:'fixture',memberType:'ADMIN'});
-		const token=m=>module.get(JwtService).sign({sub:m._id.toString()});
+		const sessionTokens = new Map(await Promise.all((await members.find().exec()).map(async (member) => [String(member._id), await fixtureAccessToken(member, app)])));
+		const token = (member) => sessionTokens.get(String(member._id));
 		const common={memberId:trainer._id,programCategory:'MUSCLE_GAIN',programLocation:'SEOUL',programAddress:'Fixture training room',programPrice:0,programDuration:60,programCapacity:1,programImages:['uploads/program/missing-fixture.jpg'],programDesc:'Real disposable program description'};
 		const pt=await programs.create({...common,programName:'Fixture PT session',programType:'PT_1ON1'});
 		await programs.collection.updateOne({_id:pt._id},{$set:{programImages:[]}}); // Legacy missing-image presentation case, isolated fixture only.
