@@ -7,7 +7,7 @@ import EditOutlinedIcon from '@mui/icons-material/EditOutlined';
 import ArticleOutlinedIcon from '@mui/icons-material/ArticleOutlined';
 import { useTranslation } from 'next-i18next';
 import { serverSideTranslations } from 'next-i18next/serverSideTranslations';
-import { useMutation, useQuery } from '@apollo/client';
+import { useMutation, useQuery, useReactiveVar } from '@apollo/client';
 import withLayoutBasic from '../../libs/components/layout/LayoutBasic';
 import CommunityStory from '../../libs/components/community/CommunityStory';
 import { BoardArticle } from '../../libs/types/board-article/board-article';
@@ -17,6 +17,7 @@ import { Direction } from '../../libs/enums/common.enum';
 import { T } from '../../libs/types/common';
 import { GET_BOARD_ARTICLES } from '../../apollo/user/query';
 import { LIKE_TARGET_BOARD_ARTICLE } from '../../apollo/user/mutation';
+import { authErrorVar, authReadyVar, userVar } from '../../apollo/store';
 import { Messages } from '../../libs/config';
 import { sweetMixinErrorAlert, sweetTopSmallSuccessAlert } from '../../libs/sweetAlert';
 
@@ -27,6 +28,12 @@ export const getStaticProps = async ({ locale }: any) => ({
 const Community: NextPage = () => {
 	const router = useRouter();
 	const { t, i18n } = useTranslation('common');
+	const user = useReactiveVar(userVar);
+	const authReady = useReactiveVar(authReadyVar);
+	const authError = useReactiveVar(authErrorVar);
+	const canManageArticles =
+		authReady && !authError && user._id && user.memberStatus === 'ACTIVE' &&
+		['USER', 'TRAINER', 'ADMIN'].includes(user.memberType);
 	const categoryNavigation = useRef<HTMLElement>(null);
 	const categoryValue = router.query.articleCategory;
 	const category = Object.values(BoardArticleCategory).find((value) => value === categoryValue);
@@ -116,10 +123,18 @@ const Community: NextPage = () => {
 						<h1>{t('Community discovery.Title')}</h1>
 						<p>{t('Community discovery.Description')}</p>
 					</div>
-					<Link href="/mypage?category=writeArticle" passHref className="community-write-link">
-						<EditOutlinedIcon aria-hidden={true} />
-						{t('Community discovery.Write article')}
-					</Link>
+					<div className="community-author-actions">
+						<Link href="/mypage?category=writeArticle" passHref className="community-write-link">
+							<EditOutlinedIcon aria-hidden={true} />
+							{t('Community discovery.Write article')}
+						</Link>
+						{canManageArticles && (
+							<Link href="/mypage?category=myArticles" passHref className="community-my-articles-link">
+								<ArticleOutlinedIcon aria-hidden={true} />
+								{t('My articles.Title')}
+							</Link>
+						)}
+					</div>
 				</header>
 				<nav ref={categoryNavigation} className="community-categories" aria-label={t('Community discovery.Categories')}>
 					{categories.map((value) => (

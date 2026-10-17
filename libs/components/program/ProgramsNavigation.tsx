@@ -26,7 +26,7 @@ const programDestinations = [
 ];
 
 const isDestinationActive = (pathname: string, href: string, category?: string | string[]) =>
-	pathname === '/mypage' && (category === 'writeArticle' || category === 'editArticle') ? href === '/community?articleCategory=FREE' :
+	pathname === '/mypage' && (category === 'writeArticle' || category === 'editArticle' || category === 'myArticles') ? href === '/community?articleCategory=FREE' :
 	pathname === href || (pathname === '/trainer/detail' && href === '/trainer') ||
 	(pathname === '/program/booking' && href === '/program') ||
 	(pathname === '/mypage/review' && href === '/mypage');

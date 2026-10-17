@@ -48,6 +48,35 @@
 			font-size: 16px;
 		}
 	}
+	.community-author-actions {
+		display: flex;
+		align-items: center;
+		justify-content: flex-end;
+		flex-wrap: wrap;
+		flex-shrink: 0;
+		gap: 12px;
+		max-width: 100%;
+	}
+	.community-my-articles-link {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		gap: 8px;
+		min-height: 44px;
+		padding: 10px 4px;
+		color: #17191f;
+		font-size: 14px;
+		font-weight: 600;
+		text-decoration: underline;
+		text-underline-offset: 4px;
+		svg {
+			width: 19px;
+			height: 19px;
+		}
+		&:hover {
+			color: #a53425;
+		}
+	}
 	.community-write-link {
 		display: inline-flex;
 		flex-shrink: 0;
@@ -370,6 +399,9 @@
 		.community-write-link {
 			min-height: 44px;
 			padding: 10px 16px;
+		}
+		.community-author-actions {
+			justify-content: flex-start;
 		}
 		.community-categories {
 			gap: 24px;

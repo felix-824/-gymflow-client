@@ -399,7 +399,8 @@ async function integration() {
 						'#user-profile-page [autocomplete="username"], #user-profile-page input[type="password"]',
 					),
 				);
-				assert.equal(document.querySelectorAll('.user-account-navigation a').length, 3);
+				assert.equal(document.querySelectorAll('.user-account-navigation a').length, 4);
+				assert.equal(select('.user-account-navigation a:nth-child(3)').getAttribute('href'), '/mypage?category=myArticles');
 				assert.ok(select('.user-account-navigation a[aria-current="page"]').href.includes('myProfile'));
 				assert.equal(document.querySelectorAll('.programs-bottom-navigation a').length, 5);
 				assert.ok(select('.programs-bottom-navigation a[aria-current="page"]').href.endsWith('/mypage'));
