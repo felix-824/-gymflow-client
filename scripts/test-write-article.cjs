@@ -178,7 +178,7 @@ check('counter measures submitted code points including formatting', () =>
 			},
 			updateUserInfo: async () => {},
 		},
-		'../../config': { REACT_APP_API_URL: 'http://localhost:3007' },
+		'../../config': { ...load('libs/config.ts'), REACT_APP_API_URL: 'http://localhost:3007' },
 		'../../article-html': { sanitizeArticleHtml: (html) => html, articleHtmlPlugin: () => ({}) },
 		'../../sweetAlert': { sweetTopSmallSuccessAlert: async (message) => state.success.push(message) },
 		axios: {
@@ -228,8 +228,7 @@ check('counter measures submitted code points including formatting', () =>
 			await tick();
 		});
 	}
-	async function upload() {
-		const file = new dom.window.File(['png'], 'photo.png', { type: 'image/png' });
+	async function upload(file = new dom.window.File(['png'], 'photo.png', { type: 'image/png' })) {
 		await act(async () => {
 			Simulate.change(document.querySelector('input[type=file]'), { target: { files: [file], value: 'photo.png' } });
 			await tick();
@@ -318,6 +317,16 @@ check('counter measures submitted code points including formatting', () =>
 		assert.equal(JSON.parse(upload.data.get('operations')).variables.target, 'article');
 		assert.deepEqual(JSON.parse(upload.data.get('map')), { 0: ['variables.file'] });
 		assert(document.querySelector('.write-cover img').src.endsWith('/uploads/article/cover.png'));
+	});
+	await upload(new dom.window.File(['webp'], 'photo.webp', { type: 'image/webp' }));
+	check('WebP cover uses the existing independent article upload flow', () => assert.equal(state.uploads.length, 2));
+	const oversizedCover = new dom.window.File(['png'], 'large.png', { type: 'image/png' });
+	Object.defineProperty(oversizedCover, 'size', { value: 5 * 1024 * 1024 + 1 });
+	await upload(oversizedCover);
+	check('cover above 5 MiB is rejected before upload and preserves the existing cover', () => {
+		assert.equal(state.uploads.length, 2);
+		assert(rootElement.textContent.includes('5 MiB'));
+		assert(document.querySelector('.write-cover img'));
 	});
 	state.uploadResult = async () => ({ data: { data: { imageUploader: 'uploads/article/replacement.png' } } });
 	await upload();

@@ -138,7 +138,9 @@ async function main() {
 		const data = new FormData();
 		data.append('operations', JSON.stringify({ query: 'mutation Upload($file:Upload!,$target:String!){imageUploader(file:$file,target:$target)}', variables: { file: null, target: 'member' } }));
 		data.append('map', JSON.stringify({ 0: ['variables.file'] }));
-		data.append('0', new Blob([Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jZ1kAAAAASUVORK5CYII=', 'base64')], { type: 'image/png' }), 'session.png');
+		const sharp = require('node:module').createRequire(path.join(__dirname, '../../gymflow/package.json'))('sharp');
+		const fixturePng = await sharp({ create: { width: 2, height: 2, channels: 3, background: 'red' } }).png().toBuffer();
+		data.append('0', new Blob([fixturePng], { type: 'image/png' }), 'session.png');
 		const upload = await global.fetch(fixture.uri, { method: 'POST', headers: { Authorization: 'Bearer ' + uploadToken, 'Apollo-Require-Preflight': 'true' }, body: data });
 		assert(!(await upload.json()).errors); assert.equal(h.auth.getAuthSessionId(), uploadIdentity);
 		pass('multipart upload dispatches once using refreshed access while logical upload identity remains stable');

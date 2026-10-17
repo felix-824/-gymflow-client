@@ -16,7 +16,7 @@ import {
 } from '../../auth';
 import { UPDATE_MEMBER } from '../../../apollo/user/mutation';
 import { sweetConfirmAlert, sweetErrorHandling, sweetMixinSuccessAlert } from '../../sweetAlert';
-import { Messages, REACT_APP_API_URL } from '../../config';
+import { IMAGE_UPLOAD_ACCEPT, IMAGE_UPLOAD_MAX_BYTES, IMAGE_UPLOAD_TYPES, Messages, REACT_APP_API_URL } from '../../config';
 import { OwnerMember } from '../../types/member/member';
 import { useTranslation } from 'next-i18next';
 import Link from 'next/link';
@@ -115,7 +115,8 @@ const MyProfile: NextPage<{ initialValues?: MemberSelfUpdate; trainerWorkspace?:
 		setUploading(true);
 		try {
 			const image = e.target.files[0];
-			if (!['image/jpeg', 'image/png'].includes(image.type)) throw new Error(Messages.error5);
+			if (!IMAGE_UPLOAD_TYPES.includes(image.type) || !/\.(jpe?g|png|webp)$/i.test(image.name)) throw new Error('Image format');
+			if (image.size > IMAGE_UPLOAD_MAX_BYTES) throw new Error('Image size');
 
 			const formData = new FormData();
 			formData.append(
@@ -158,11 +159,12 @@ const MyProfile: NextPage<{ initialValues?: MemberSelfUpdate; trainerWorkspace?:
 			setUpdateData((previous) => ({ ...previous, memberImage: responseImage }));
 
 			return `${REACT_APP_API_URL}/${responseImage}`;
-		} catch (err) {
+		} catch (err: any) {
 			if (!activeAccount()) return;
 			if (isAuthenticationError(err)) invalidateSession();
-			if (managedProfile) setFeedback('Upload error');
-			else await sweetErrorHandling(err);
+			const validation = ['Image format', 'Image size'].includes(err.message);
+			if (managedProfile) setFeedback(validation ? err.message : 'Upload error');
+			else await sweetErrorHandling(validation ? new Error(t(`User profile.${err.message}`)) : err);
 		} finally {
 			if (mounted.current) {
 				setUploading(false);
@@ -294,7 +296,7 @@ const MyProfile: NextPage<{ initialValues?: MemberSelfUpdate; trainerWorkspace?:
 								id="user-profile-image"
 								type="file"
 								hidden
-								accept="image/jpeg,image/png"
+								accept={IMAGE_UPLOAD_ACCEPT}
 								onChange={uploadImage}
 								disabled={saving || uploading}
 							/>
@@ -480,7 +482,7 @@ const MyProfile: NextPage<{ initialValues?: MemberSelfUpdate; trainerWorkspace?:
 								id="trainer-profile-image"
 								type="file"
 								hidden
-								accept="image/jpeg,image/png"
+								accept={IMAGE_UPLOAD_ACCEPT}
 								onChange={uploadImage}
 								disabled={saving || uploading}
 							/>
@@ -637,12 +639,12 @@ const MyProfile: NextPage<{ initialValues?: MemberSelfUpdate; trainerWorkspace?:
 									hidden
 									id="hidden-input"
 									onChange={uploadImage}
-									accept="image/jpg, image/jpeg, image/png"
+									accept={IMAGE_UPLOAD_ACCEPT}
 								/>
 								<label htmlFor="hidden-input" className="labeler">
 									<Typography>Upload Profile Image</Typography>
 								</label>
-								<Typography className="upload-text">A photo must be in JPG, JPEG or PNG format!</Typography>
+								<Typography className="upload-text">{t('User profile.Image format')}</Typography>
 							</Stack>
 						</Stack>
 					</Stack>

@@ -596,11 +596,13 @@
 		"Uploading": "Uploading…",
 		"Saved": "Profile saved successfully.",
 		"Save error": "Could not confirm your changes. Please reload your profile before trying again.",
-		"Upload error": "Could not upload this image. Please choose a JPEG or PNG image and try again.",
+		"Upload error": "Could not upload this image. Please choose a valid JPEG, PNG or WebP image up to 5 MiB and try again.",
 		"Account Session": "Account Session",
 		"Session description": "Sign out from your active trainer session on this browser",
 		"Log out": "Log out",
-		"Logout confirmation": "Do you want to log out?"
+		"Logout confirmation": "Do you want to log out?",
+		"Image format": "Choose a JPEG, PNG or WebP image.",
+		"Image size": "Choose an image no larger than 5 MiB."
 	},
 	"Auth": {
 		"Back to main": "Back to main",
@@ -748,11 +750,13 @@
 		"Uploading": "Uploading…",
 		"Saved": "Changes saved successfully.",
 		"Save error": "Could not confirm your changes. Please reload your profile before trying again.",
-		"Upload error": "Could not upload this image. Please choose a JPEG or PNG image and try again.",
+		"Upload error": "Could not upload this image. Please choose a valid JPEG, PNG or WebP image up to 5 MiB and try again.",
 		"Account Session": "Account Session",
 		"Session description": "Sign out from your active GymFlow session on this browser.",
 		"Log out": "Log out",
-		"Logout confirmation": "Do you want to log out?"
+		"Logout confirmation": "Do you want to log out?",
+		"Image format": "Choose a JPEG, PNG or WebP image.",
+		"Image size": "Choose an image no larger than 5 MiB."
 	},
 	"Trainer program form": {
 		"Back": "Back to Programs",
@@ -791,7 +795,7 @@
 		"Online note": "Online sessions use the Online location. A physical address is not required.",
 		"Photos": "Program Photos",
 		"Mobile photos": "4. Photos",
-		"Photos intro": "Upload 1 to 5 photos in JPG, JPEG or PNG format.",
+		"Photos intro": "Upload 1 to 5 JPEG, PNG or WebP photos, up to 5 MiB each.",
 		"Photo count": "{{count}} / 5 uploaded",
 		"Image alt": "Program image {{index}}",
 		"Remove image": "Remove program image {{index}}",
@@ -818,7 +822,7 @@
 		"Invalid description": "Description must contain 5–500 characters, or be empty.",
 		"Image required": "Upload at least one program image.",
 		"Image maximum": "Maximum 5 images.",
-		"Image format": "Only JPEG and PNG images are allowed.",
+		"Image format": "Choose a JPEG, PNG or WebP image.",
 		"Upload failed": "Image upload failed.",
 		"Save failed": "Could not save this program.",
 		"Conflict": "Program changed. The latest values have been loaded; review them before saving again.",
@@ -835,7 +839,9 @@
 		"Duration locked": "Duration cannot change while upcoming or ongoing reservations exist.",
 		"Location locked": "Location cannot change while upcoming or ongoing reservations exist.",
 		"Address locked": "Address cannot change while upcoming or ongoing reservations exist.",
-		"Capacity locked": "Capacity cannot be reduced below the occupied seats of an existing session."
+		"Capacity locked": "Capacity cannot be reduced below the occupied seats of an existing session.",
+		"Image size": "Choose an image no larger than 5 MiB.",
+		"Image animation": "Choose a still image; animated images are not supported."
 	},
 	"Write article": {
 		"Context": "Community authoring",
@@ -871,8 +877,8 @@
 		"Publishing": "Publishing…",
 		"Title error": "Enter a meaningful title of 3–50 characters.",
 		"Story error": "Enter meaningful story text using 3–5,000 submitted characters, including formatting.",
-		"Image format": "Choose a JPEG or PNG image.",
-		"Image size": "Choose an image smaller than 15 MB.",
+		"Image format": "Choose a JPEG, PNG or WebP image.",
+		"Image size": "Choose an image no larger than 5 MiB.",
 		"Upload failed": "Image upload failed. Your draft is preserved. Please try again.",
 		"Published": "Article published successfully.",
 		"Unconfirmed": "Publication could not be confirmed. Your draft is preserved. Check My Articles before trying again.",

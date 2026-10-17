@@ -185,7 +185,7 @@ function load(file, mocks, cache = new Map()) {
 			},
 			updateUserInfo: async () => {},
 		},
-		'../../config': { REACT_APP_API_URL: 'http://localhost:3007' },
+		'../../config': { ...load('libs/config.ts', {}), REACT_APP_API_URL: 'http://localhost:3007' },
 		'../../sweetAlert': {
 			sweetTopSmallSuccessAlert: async (message) => state.success.push(message),
 			sweetConfirmAlert: async (message) => {

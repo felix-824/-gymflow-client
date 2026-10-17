@@ -30,7 +30,7 @@ import {
 	readProgramEditConstraints,
 	readTrainerProgramsInquiry,
 } from '../../program';
-import { REACT_APP_API_URL } from '../../config';
+import { IMAGE_UPLOAD_ACCEPT, IMAGE_UPLOAD_MAX_BYTES, IMAGE_UPLOAD_TYPES, REACT_APP_API_URL } from '../../config';
 import { TrainerWorkspaceHeader, TrainerWorkspaceNavigation } from './TrainerWorkspaceNavigation';
 
 const initialValues: ProgramInput = {
@@ -78,6 +78,8 @@ const AddProgram = () => {
 	const currentScope = useRef(scope);
 	currentScope.current = scope;
 	const submitting = useRef(false);
+	const uploadTask = useRef<{ controller: AbortController; scope: string; epoch: number } | null>(null);
+	const draftEpoch = useRef(0);
 	const [createProgram, { loading: creating }] = useMutation(CREATE_PROGRAM);
 	const [updateProgram, { loading: updating }] = useMutation(UPDATE_PROGRAM);
 
@@ -169,6 +171,25 @@ const AddProgram = () => {
 
 	/** LIFECYCLES **/
 	useEffect(() => {
+		draftEpoch.current++;
+		setUploading(false);
+		const cancel = () => {
+			draftEpoch.current++;
+			uploadTask.current?.controller.abort();
+			uploadTask.current = null;
+		};
+		const leave = () => {
+			cancel();
+			setUploading(false);
+		};
+		router.events?.on('routeChangeStart', leave);
+		return () => {
+			router.events?.off('routeChangeStart', leave);
+			cancel();
+		};
+	}, [scope, router.events]);
+
+	useEffect(() => {
 		setEditConstraints(null);
 		setReservationError(false);
 		setReservationLoading(false);
@@ -214,15 +235,20 @@ const AddProgram = () => {
 	};
 	const uploadImages = async () => {
 		const uploadSession = getAuthSessionId();
-		if (uploading || !inputRef.current?.files?.length) return;
+		if (uploadTask.current || submitting.current || !inputRef.current?.files?.length) return;
+		const task = { controller: new AbortController(), scope, epoch: draftEpoch.current };
+		uploadTask.current = task;
+		const sameDraft = () => currentScope.current === task.scope && draftEpoch.current === task.epoch && getAuthSessionId() === uploadSession;
+		const isCurrent = () => uploadTask.current === task && sameDraft();
 		setUploading(true);
 		setFormError('');
 		try {
 			const files = Array.from(inputRef.current.files);
 			if (files.length + insertProgramData.programImages.length > 5)
 				throw new Error('Cannot upload more than 5 images.');
-			if (files.some((file) => !['image/jpeg', 'image/png', 'image/jpg'].includes(file.type)))
-				throw new Error('Only JPEG and PNG images are allowed.');
+			if (files.some((file) => !IMAGE_UPLOAD_TYPES.includes(file.type) || !/\.(jpe?g|png|webp)$/i.test(file.name)))
+				throw new Error('Only JPEG, PNG and WebP images are allowed.');
+			if (files.some((file) => file.size > IMAGE_UPLOAD_MAX_BYTES)) throw new Error('Image exceeds the 5 MiB limit.');
 			const formData = new FormData();
 			formData.append(
 				'operations',
@@ -239,34 +265,39 @@ const AddProgram = () => {
 			formData.append('map', JSON.stringify(map));
 			files.forEach((file, index) => formData.append(String(index), file));
 			const accessToken = await ensureAccessToken(true);
-			if (getAuthSessionId() !== uploadSession) return;
+			if (!isCurrent()) return;
 			const response = await axios.post(
 				process.env.REACT_APP_API_GRAPHQL_URL ?? 'http://localhost:3007/graphql',
 				formData,
 				{
+					signal: task.controller.signal,
 					headers: { 'apollo-require-preflight': 'true', Authorization: 'Bearer ' + accessToken },
 				},
 			);
-			if (getAuthSessionId() !== uploadSession) return;
+			if (!isCurrent()) return;
 			if (response.data.errors?.length) {
 				if (isAuthenticationError({ graphQLErrors: response.data.errors })) invalidateSession();
 				throw new Error(response.data.errors[0].message);
 			}
 			const images: string[] = response.data.data?.imagesUploader;
-			if (!Array.isArray(images) || images.length !== files.length) throw new Error('Image upload failed.');
-			setInsertProgramData((previous) => ({ ...previous, programImages: [...previous.programImages, ...images] }));
+			if (!Array.isArray(images) || images.length !== files.length || images.some(image => typeof image !== 'string' || !image.trim()))
+				throw new Error('Image upload failed.');
+			setInsertProgramData((previous) => sameDraft() ? ({ ...previous, programImages: [...previous.programImages, ...images] }) : previous);
 		} catch (err: any) {
-			if (getAuthSessionId() !== uploadSession) return;
+			if (!isCurrent()) return;
 			if (isAuthenticationError(err)) invalidateSession();
 			setFormError(err.message ?? 'Image upload failed.');
 		} finally {
-			setUploading(false);
-			if (inputRef.current) inputRef.current.value = '';
+			if (uploadTask.current === task) {
+				uploadTask.current = null;
+				setUploading(false);
+				if (inputRef.current) inputRef.current.value = '';
+			}
 		}
 	};
 	const submitHandler = async (event: React.FormEvent) => {
 		event.preventDefault();
-		if (submitting.current || uploading || (editing && (loadedScope !== scope || editConstraints?.scope !== scope)))
+		if (submitting.current || uploadTask.current || uploading || (editing && (loadedScope !== scope || editConstraints?.scope !== scope)))
 			return;
 		const error =
 			programFormError(insertProgramData) ||
@@ -322,7 +353,11 @@ const AddProgram = () => {
 		'Description must contain 5–500 characters, or be empty.': 'Invalid description',
 		'Upload at least one program image.': 'Image required',
 		'Cannot upload more than 5 images.': 'Image maximum',
-		'Only JPEG and PNG images are allowed.': 'Image format',
+		'Only JPEG, PNG and WebP images are allowed.': 'Image format',
+		'Image format does not match its filename or MIME type.': 'Image format',
+		'Image exceeds the 5 MiB limit.': 'Image size',
+		'Animated images are not allowed.': 'Image animation',
+		'Image upload is busy. Please try again.': 'Upload failed',
 		'Image upload failed.': 'Upload failed',
 		'Could not save this program.': 'Save failed',
 		'Program changed. The latest values have been loaded; review them before saving again.': 'Conflict',
@@ -673,7 +708,7 @@ const AddProgram = () => {
 									</div>
 									<div className="editor-photo-grid">
 										{insertProgramData.programImages.map((image, index) => (
-											<div className="editor-photo" key={image}>
+											<div className="editor-photo" key={`${image}:${index}`}>
 												<img
 													src={REACT_APP_API_URL + '/' + image}
 													alt={t('Trainer program form.Image alt', { index: index + 1 })}
@@ -690,12 +725,12 @@ const AddProgram = () => {
 													disabled={busy}
 													aria-label={t('Trainer program form.Remove image', { index: index + 1 })}
 													onClick={() =>
-														setInsertProgramData({
-															...insertProgramData,
-															programImages: insertProgramData.programImages.filter(
+														setInsertProgramData(previous => ({
+															...previous,
+															programImages: previous.programImages.filter(
 																(_, position) => position !== index,
 															),
-														})
+														}))
 													}
 												>
 													<DeleteOutlineRoundedIcon aria-hidden="true" />
@@ -720,14 +755,14 @@ const AddProgram = () => {
 													}`,
 												)}
 											</span>
-											<small>JPG / JPEG / PNG</small>
+											<small>JPEG / PNG / WebP</small>
 										</button>
 									</div>
 									<input
 										ref={inputRef}
 										className="editor-sr-only"
 										type="file"
-										accept="image/jpeg,image/png"
+										accept={IMAGE_UPLOAD_ACCEPT}
 										multiple
 										disabled={busy}
 										onChange={uploadImages}

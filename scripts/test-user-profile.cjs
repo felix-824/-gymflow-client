@@ -67,6 +67,8 @@ async function locales() {
 	pass('EN/KR/RU Profile JSON, matching keys and actual i18next resolution');
 }
 async function integration() {
+	const sharp = require('node:module').createRequire(path.join(__dirname, '../../gymflow/package.json'))('sharp');
+	const fixturePng = await sharp({ create: { width: 2, height: 2, channels: 3, background: 'red' } }).png().toBuffer();
 	const previousLog = console.log,
 		previousCwd = process.cwd();
 	const previousGraphql = process.env.REACT_APP_API_GRAPHQL_URL;
@@ -329,13 +331,14 @@ async function integration() {
 				Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set.call(field, value);
 				field.dispatchEvent(new window.Event('input', { bubbles: true }));
 			});
-		const upload = (name, type = 'image/png') =>
+		const upload = (name, type = 'image/png', size) =>
 			flushSync(() => {
 				const field = select('#user-profile-image');
 				Object.defineProperty(field, 'files', {
 					configurable: true,
-					value: [new window.File(['owned-profile-image'], name, { type })],
+					value: [new window.File([fixturePng], name, { type })],
 				});
+				if (size) Object.defineProperty(field.files[0], 'size', { value: size });
 				field.dispatchEvent(new window.Event('change', { bubbles: true }));
 			});
 		const writes = () => requests.filter((request) => request.operationName === 'UpdateMember');
@@ -466,14 +469,17 @@ async function integration() {
 		failSave = false;
 		pass('failed save preserves draft, sanitizes errors and cannot claim success');
 		upload('bad.svg', 'image/svg+xml');
-		await until(() => document.body.textContent.includes(texts['User profile']['Upload error']));
+		await until(() => document.body.textContent.includes(texts['User profile']['Image format']));
+		assert.equal(uploads.length, 0);
+		upload('large.png', 'image/png', 5 * 1024 * 1024 + 1);
+		await until(() => document.body.textContent.includes(texts['User profile']['Image size']));
 		assert.equal(uploads.length, 0);
 		upload('owned.png');
 		await until(() => uploads.length === 1 && !select('.user-profile-save-button').disabled);
 		assert.equal(uploads[0].errors, undefined, JSON.stringify(uploads[0].errors));
 		const uploaded = uploads[0].data.imageUploader;
 		assert.ok(uploaded.startsWith('uploads/member/'));
-		assert.equal(fs.readFileSync(path.join(temporary, uploaded), 'utf8'), 'owned-profile-image');
+		assert.equal((await sharp(fs.readFileSync(path.join(temporary, uploaded))).metadata()).format, 'png');
 		assert.ok(select('.user-profile-image img').src.includes(uploaded));
 		assert.notEqual(store.userVar().memberImage, uploaded);
 		assert.notEqual((await members.findById(user._id)).memberImage, uploaded);

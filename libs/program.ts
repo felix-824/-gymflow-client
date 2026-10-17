@@ -221,6 +221,7 @@ export function programFormError(input: ProgramInput): string {
 	const description = input.programDesc?.trim();
 	if (description && (description.length < 5 || description.length > 500))
 		return 'Description must contain 5–500 characters, or be empty.';
+	if (input.programImages.length > 5) return 'Cannot upload more than 5 images.';
 	if (!input.programImages.length || input.programImages.some((path) => !path.trim() || path.length > 2048))
 		return 'Upload at least one program image.';
 	return '';

@@ -55,6 +55,7 @@ async function gql(name, input, token, allowErrors = false) {
 	return response.body.data;
 }
 async function main() {
+	const fixturePng = await backendRequire('sharp')({ create: { width: 2, height: 2, channels: 3, background: 'red' } }).png().toBuffer();
 	mongo = await MongoMemoryServer.create({
 		instance: { ip: '127.0.0.1', dbName: 'gymflow_frontend_test' },
 		binary: { version: '8.2.6', downloadDir: path.join(backend, '.tmp/mongodb-binaries') },
@@ -147,7 +148,7 @@ async function main() {
 		const map = Object.fromEntries(Array.from({ length: size }, (_, index) => [String(index), ['variables.files.' + index]]));
 		let req = request(app.getHttpServer()).post('/graphql').set('Authorization', 'Bearer ' + trainerToken).set('apollo-require-preflight', 'true')
 			.field('operations', JSON.stringify({ query: uploadDocument.query, variables })).field('map', JSON.stringify(map));
-		for (let index = 0; index < size; index++) req = req.attach(String(index), Buffer.from('test-image'), { filename: 'image' + index + '.png', contentType: 'image/png' });
+		for (let index = 0; index < size; index++) req = req.attach(String(index), fixturePng, { filename: 'image' + index + '.png', contentType: 'image/png' });
 		const response = await req;
 		assert.equal(response.body.errors, undefined, JSON.stringify(response.body.errors));
 		assert.equal(response.body.data.imagesUploader.length, size);
@@ -157,7 +158,7 @@ async function main() {
 	for (const target of ['member', 'article']) {
 		const response = await request(app.getHttpServer()).post('/graphql').set('Authorization', 'Bearer ' + userToken).set('apollo-require-preflight', 'true')
 			.field('operations', JSON.stringify({ query: singleUpload.query, variables: { file: null, target } })).field('map', JSON.stringify({ '0': ['variables.file'] }))
-			.attach('0', Buffer.from('test-image'), { filename: 'profile.png', contentType: 'image/png' });
+			.attach('0', fixturePng, { filename: 'profile.png', contentType: 'image/png' });
 		assert.equal(response.body.errors, undefined, JSON.stringify(response.body.errors));
 		assert.ok(response.body.data.imageUploader.startsWith('uploads/' + target + '/'));
 	}

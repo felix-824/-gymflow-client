@@ -14,7 +14,7 @@ import { CREATE_BOARD_ARTICLE, UPDATE_BOARD_ARTICLE } from '../../../apollo/user
 import { authErrorVar, authReadyVar, userVar } from '../../../apollo/store';
 import { BoardArticleCategory } from '../../enums/board-article.enum';
 import { ensureAccessToken, getAuthSessionId, invalidateSession, isAuthenticationError } from '../../auth';
-import { REACT_APP_API_URL } from '../../config';
+import { IMAGE_UPLOAD_ACCEPT, IMAGE_UPLOAD_MAX_BYTES, IMAGE_UPLOAD_TYPES, REACT_APP_API_URL } from '../../config';
 import {
 	articleCharacterCount,
 	articleUpdateError,
@@ -226,11 +226,11 @@ const TuiEditor = (props: EditorProps) => {
 		if (!currentAccount() || uploadTask.current || submitLock.current || reloadLock.current || unavailableRef.current)
 			return;
 		const field = kind === 'cover' ? 'cover' : 'story';
-		if (!['image/jpeg', 'image/png'].includes(file.type) || !/\.(jpe?g|png)$/i.test(file.name)) {
+		if (!IMAGE_UPLOAD_TYPES.includes(file.type) || !/\.(jpe?g|png|webp)$/i.test(file.name)) {
 			setErrors((previous) => ({ ...previous, [field]: 'Image format' }));
 			return;
 		}
-		if (file.size > 15000000) {
+		if (file.size > IMAGE_UPLOAD_MAX_BYTES) {
 			setErrors((previous) => ({ ...previous, [field]: 'Image size' }));
 			return;
 		}
@@ -459,7 +459,7 @@ const TuiEditor = (props: EditorProps) => {
 					ref={coverRef}
 					type="file"
 					className="write-file-input"
-					accept="image/jpeg,image/png,.jpg,.jpeg,.png"
+					accept={IMAGE_UPLOAD_ACCEPT}
 					aria-label={t('Write article.Upload cover')}
 					disabled={busy || confirmed.current}
 					onChange={(event) => {

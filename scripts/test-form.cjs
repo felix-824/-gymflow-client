@@ -40,6 +40,7 @@ module.exports = async function runFormChecks(loadTs, forms) {
 		uploadError: false,
 		uploads: [],
 		waitMutation: null,
+		uploadResult: null, persistMutations: false, authEvents: [],
 		mobile: false,
 		failLookup: false, read: null, navigation: [], success: [], scrolled: [],
 		reservationRead: null, failReservations: false, policyError: '',
@@ -70,6 +71,7 @@ module.exports = async function runFormChecks(loadTs, forms) {
 				if (state.waitMutation) await state.waitMutation;
 				if (state.failMutation) throw new Error('Program changed; reload and retry');
 				if (state.policyError) throw new Error(state.policyError);
+				if (state.persistMutations) state.program = { ...state.program, ...request.variables.input };
 				return { data: {} };
 			} finally { setLoading(false); }
 		}, [name]);
@@ -91,15 +93,18 @@ module.exports = async function runFormChecks(loadTs, forms) {
 		'./TrainerWorkspaceNavigation': { TrainerWorkspaceHeader: () => null, TrainerWorkspaceNavigation: () => null },
 		'@mui/material': { useMediaQuery: () => state.mobile },
 		'../../program': forms,
-		'../../auth': { getJwtToken: () => token, getAuthSessionId: () => token, ensureAccessToken: async () => token, invalidateSession: () => {}, isAuthenticationError: () => false },
+		'../../auth': { getJwtToken: () => token, getAuthSessionId: () => token, ensureAccessToken: async () => { state.authEvents.push('ensure'); return token; }, invalidateSession: () => {}, isAuthenticationError: () => false },
 		'../../../apollo/store': variables,
 		'@apollo/client': { useApolloClient: () => client, useMutation, useReactiveVar: (variable) => variable() },
 		'../../../apollo/user/mutation': { CREATE_PROGRAM: 'CREATE_PROGRAM', UPDATE_PROGRAM: 'UPDATE_PROGRAM' },
 		'../../../apollo/user/query': { GET_TRAINER_PROGRAMS: 'GET_TRAINER_PROGRAMS', GET_TRAINER_RESERVATIONS: 'GET_TRAINER_RESERVATIONS' },
 		'../../sweetAlert': { sweetMixinSuccessAlert: async (message) => { state.success.push(message); } },
-		'axios': { post: async (url, body) => {
-			state.uploads.push({ operations: JSON.parse(body.get('operations')), map: JSON.parse(body.get('map')) });
-			return state.uploadError ? { data: { errors: [{ message: 'Upload rejected' }] } } : { data: { data: { imagesUploader: ['uploads/program/new.png'] } } };
+		'axios': { post: async (url, body, config) => {
+			state.authEvents.push('post');
+			const operations = JSON.parse(body.get('operations'));
+			state.uploads.push({ operations, map: JSON.parse(body.get('map')), config });
+			if (state.uploadResult) return await state.uploadResult();
+			return state.uploadError ? { data: { errors: [{ message: 'Upload rejected' }] } } : { data: { data: { imagesUploader: operations.variables.files.map((_, index) => 'uploads/program/new-' + state.uploads.length + '-' + index + '.png') } } };
 		} },
 	}).default;
 	const root = createRoot(document.getElementById('root'));
@@ -430,6 +435,93 @@ module.exports = async function runFormChecks(loadTs, forms) {
 		assert.equal(document.querySelector('#programCapacity').value, '1');
 		assert.equal(state.queries.length, before);
 		pass('15C ignores terminal/ended history and does not query or restrict create mode');
+
+		state.persistMutations = true; state.reservationRead = null;
+		const five = Array.from({ length: 5 }, (_, index) => 'uploads/program/persisted-' + (index + 1) + '.png');
+		state.program = { ...program, programImages: five };
+		router.query = { programId: program._id };
+		await render('five-persisted');
+		assert.equal(document.querySelectorAll('.editor-photo').length, 5);
+		assert.equal(document.querySelector('.editor-add-photo').disabled, true);
+		await act(async () => document.querySelectorAll('.editor-remove-photo')[3].click());
+		const retained = [five[0], five[1], five[2], five[4]];
+		await act(async () => Simulate.submit(document.querySelector('form')));
+		assert.deepEqual(state.mutations.at(-1).variables.input.programImages, retained);
+		await render('reopen-four');
+		assert.deepEqual(state.program.programImages, retained);
+		assert.equal(document.querySelectorAll('.editor-photo').length, 4);
+		await chooseFile();
+		await act(async () => Simulate.submit(document.querySelector('form')));
+		const replaced = state.mutations.at(-1).variables.input.programImages;
+		assert.deepEqual(replaced.slice(0, 4), retained); assert.equal(replaced.length, 5);
+		await render('reopen-five');
+		assert.deepEqual(state.program.programImages, replaced);
+		assert.equal(document.querySelectorAll('.editor-photo').length, 5);
+		pass('17C five persisted images: remove only #4, save/reopen, append one replacement, save/reopen preserves the retained four paths and order');
+		await act(async () => document.querySelector('.editor-remove-photo').click());
+		await act(async () => Simulate.submit(document.querySelector('form')));
+		assert.deepEqual(state.program.programImages, replaced.slice(1));
+		assert.equal(document.querySelectorAll('.editor-photo small').length, 1);
+		pass('17C removing primary promotes the next retained image without reordering or a separate cover field');
+
+		state.program = { ...program, programImages: [five[0]] };
+		await render('multi-select');
+		state.authEvents = [];
+		await chooseFile('two.png', 'image/png', 2);
+		assert.deepEqual(state.uploads.at(-1).map, { 0: ['variables.files.0'], 1: ['variables.files.1'] });
+		assert.deepEqual(state.uploads.at(-1).operations.variables.files, [null, null]);
+		assert.deepEqual(state.authEvents, ['ensure', 'post']);
+		assert.equal(document.querySelectorAll('.editor-photo').length, 3);
+		await act(async () => Simulate.submit(document.querySelector('form')));
+		assert.equal(state.program.programImages[0], five[0]);
+		assert.equal(state.program.programImages.length, 3);
+		pass('17C multi-select uses ordered multipart mapping, refreshes before dispatch and appends every response path');
+		await chooseFile('photo.webp', 'image/webp');
+		assert.equal(document.querySelectorAll('.editor-photo').length, 4);
+		const sizeInput = document.querySelector('input[type=file]');
+		const oversized = new dom.window.File(['image'], 'large.jpg', { type: 'image/jpeg' });
+		Object.defineProperty(oversized, 'size', { value: 5 * 1024 * 1024 + 1 });
+		Object.defineProperty(sizeInput, 'files', { configurable: true, value: [oversized] });
+		before = state.uploads.length;
+		await act(async () => Simulate.change(sizeInput));
+		assert.equal(state.uploads.length, before);
+		assert.ok(document.querySelector('.editor-error').textContent.includes('5 MiB'));
+		pass('17C WebP accepted and oversized image rejected before dispatch');
+
+		let completeUpload;
+		state.uploadResult = () => new Promise(resolve => { completeUpload = resolve; });
+		await render('upload-race');
+		await chooseFile();
+		const pendingTask = state.uploads.at(-1);
+		before = state.mutations.length;
+		await act(async () => Simulate.submit(document.querySelector('form')));
+		assert.equal(state.mutations.length, before);
+		assert.equal(document.querySelector('button[type=submit]').disabled, true);
+		const pendingCount = state.uploads.length;
+		await chooseFile(); assert.equal(state.uploads.length, pendingCount);
+		state.program = { ...program, _id: 'c'.repeat(24), programImages: ['uploads/program/other-draft.png'] };
+		router.query = { programId: state.program._id };
+		await render('upload-race');
+		assert.equal(pendingTask.config.signal.aborted, true);
+		await act(async () => completeUpload({ data: { data: { imagesUploader: ['uploads/program/obsolete.png'] } } }));
+		assert.equal(document.querySelectorAll('.editor-photo').length, 1);
+		assert.ok(document.querySelector('.editor-photo img').src.endsWith('other-draft.png'));
+		pass('17C immediate task lock blocks duplicate upload/save; prior route response is aborted and cannot append to another owned draft');
+		state.uploadResult = () => new Promise(resolve => { completeUpload = resolve; });
+		await chooseFile();
+		const accountTask = state.uploads.at(-1);
+		token = 'fresh-logical-session';
+		await render('upload-race');
+		await act(async () => completeUpload({ data: { data: { imagesUploader: ['uploads/program/old-session.png'] } } }));
+		assert.equal(accountTask.config.signal.aborted, true);
+		assert.equal(document.querySelectorAll('.editor-photo').length, 1);
+		state.uploadResult = async () => { throw new Error('Uncertain network outcome'); };
+		before = state.uploads.length;
+		await chooseFile();
+		assert.equal(state.uploads.length, before + 1);
+		assert.equal(document.querySelectorAll('.editor-photo').length, 1);
+		state.uploadResult = null;
+		pass('17C obsolete logical-session response ignored; uncertain upload is never replayed and retains the draft');
 		return checks;
 	} finally {
 		await act(async () => root.unmount());
