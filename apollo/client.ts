@@ -4,11 +4,12 @@ import createUploadLink from 'apollo-upload-client/public/createUploadLink.js';
 import { onError } from '@apollo/client/link/error';
 import { ensureAccessToken, getAuthGeneration, getJwtToken, invalidateSession, isAuthenticationError, updateUserInfo } from '../libs/auth';
 import { sweetErrorAlert } from '../libs/sweetAlert';
+import { getApiGraphqlUrl } from '../libs/config';
 let apolloClient: ApolloClient<NormalizedCacheObject>;
 
 function createIsomorphicLink() {
 	if (typeof window === 'undefined')
-		return new HttpLink({ uri: process.env.REACT_APP_API_GRAPHQL_URL ?? 'http://localhost:3007/graphql' });
+		return new HttpLink({ uri: getApiGraphqlUrl() });
 	const authLink = new ApolloLink((operation, forward) => new Observable((observer) => {
 		const generation = getAuthGeneration();
 		let stopped = false;
@@ -57,7 +58,7 @@ function createIsomorphicLink() {
 		}
 	});
 	// @ts-ignore
-	const uploadLink = new createUploadLink({ uri: process.env.REACT_APP_API_GRAPHQL_URL, credentials: 'include' });
+	const uploadLink = new createUploadLink({ uri: getApiGraphqlUrl(), credentials: 'include' });
 	return from([errorLink, authLink, uploadLink]);
 }
 

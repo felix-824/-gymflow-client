@@ -119,6 +119,7 @@ async function logoutContract() {
 	}).outputText;
 	const module = { exports: {} };
 	const mocks = {
+		'../config': loadTs(path.join(__dirname, '../libs/config.ts')),
 		'../../apollo/client': { initializeApollo: () => client },
 		'../../apollo/store': store,
 		'../../apollo/user/mutation': loadTs(path.join(__dirname, '../apollo/user/mutation.ts')),

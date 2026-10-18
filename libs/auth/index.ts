@@ -6,6 +6,7 @@ import { CustomJwtPayload } from '../types/customJwtPayload';
 import { OwnerMember } from '../types/member/member';
 import { LOGIN, SIGN_UP, REFRESH_SESSION, LOGOUT_SESSION } from '../../apollo/user/mutation';
 import { GET_MY_MEMBER } from '../../apollo/user/query';
+import { getApiGraphqlUrl } from '../config';
 
 let accessToken = '';
 let sessionId = '';
@@ -71,7 +72,7 @@ async function withAuthLock<T>(action: () => Promise<T>): Promise<T> {
 }
 async function authRequest(operation: 'refreshSession' | 'logoutSession'): Promise<any> {
 	const query = print(operation === 'refreshSession' ? REFRESH_SESSION : LOGOUT_SESSION);
-	const response = await fetch(process.env.REACT_APP_API_GRAPHQL_URL ?? 'http://localhost:3007/graphql', {
+	const response = await fetch(getApiGraphqlUrl(), {
 		method: 'POST', credentials: 'include',
 		headers: { 'Content-Type': 'application/json', 'Apollo-Require-Preflight': 'true' },
 		body: JSON.stringify({ query }),

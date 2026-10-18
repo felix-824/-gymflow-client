@@ -149,8 +149,7 @@ async function integration({ i18n, resources }) {
 			{ flushSync } = require('react-dom');
 		const { ApolloClient, ApolloProvider, InMemoryCache, HttpLink } = require('@apollo/client');
 		const store = loadTs(path.join(__dirname, '../apollo/store.ts'));
-		const fixtureFetch = require('next/dist/compiled/node-fetch');
-		const fixtureAgent = new (require('node:http').Agent)({ keepAlive: false });
+		const fixtureFetch = global.fetch;
 		let session = '',
 			failRead = false,
 			fault = '',
@@ -178,9 +177,8 @@ async function integration({ i18n, resources }) {
 							{ headers: { 'Content-Type': 'application/json' } },
 						);
 					const response = await fixtureFetch(url, {
-						agent: fixtureAgent,
 						...options,
-						headers: { ...options.headers, Authorization: 'Bearer ' + capturedSession },
+						headers: { ...options.headers, Authorization: 'Bearer ' + capturedSession, Connection: 'close' },
 					});
 					if (write && failAfterWrite) failRead = true;
 					if (held) await new Promise((resolve) => gates.push({ resolve, read, session: capturedSession }));

@@ -164,8 +164,7 @@ async function integration({ i18n, resources }) {
 			{ flushSync } = require('react-dom');
 		const { ApolloClient, ApolloProvider, InMemoryCache, HttpLink } = require('@apollo/client');
 		// Use fresh HTTP connections, avoiding Node fetch's idle pooled sockets during JSDOM startup.
-		const fixtureFetch = require('next/dist/compiled/node-fetch');
-		const fixtureAgent = new (require('node:http').Agent)({ keepAlive: false });
+		const fixtureFetch = global.fetch;
 		const store = loadTs(path.join(__dirname, '../apollo/store.ts'));
 		const requests = [];
 		let failRead = false,
@@ -190,9 +189,8 @@ async function integration({ i18n, resources }) {
 							{ headers: { 'Content-Type': 'application/json' } },
 						);
 					const response = await fixtureFetch(url, {
-						agent: fixtureAgent,
 						...options,
-						headers: { ...options.headers, Authorization: 'Bearer ' + auth.getJwtToken() },
+						headers: { ...options.headers, Authorization: 'Bearer ' + auth.getJwtToken(), Connection: 'close' },
 					});
 					if (body.operationName === 'GetMyMember' && holdAuth)
 						await new Promise((resolve) => {

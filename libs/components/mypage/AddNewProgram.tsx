@@ -37,7 +37,7 @@ import {
 	readProgramEditConstraints,
 	readTrainerProgramsInquiry,
 } from '../../program';
-import { IMAGE_UPLOAD_ACCEPT, IMAGE_UPLOAD_MAX_BYTES, IMAGE_UPLOAD_TYPES, REACT_APP_API_URL } from '../../config';
+import { getApiGraphqlUrl, IMAGE_UPLOAD_ACCEPT, IMAGE_UPLOAD_MAX_BYTES, IMAGE_UPLOAD_TYPES, REACT_APP_API_URL } from '../../config';
 import { TrainerWorkspaceHeader, TrainerWorkspaceNavigation } from './TrainerWorkspaceNavigation';
 
 const initialValues: ProgramInput = {
@@ -408,7 +408,7 @@ const AddProgram = () => {
 			const accessToken = await ensureAccessToken(true);
 			if (!isCurrent()) return;
 			const response = await axios.post(
-				process.env.REACT_APP_API_GRAPHQL_URL ?? 'http://localhost:3007/graphql',
+				getApiGraphqlUrl(),
 				formData,
 				{
 					signal: task.controller.signal,
