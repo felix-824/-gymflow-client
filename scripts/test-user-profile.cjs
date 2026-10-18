@@ -19,7 +19,7 @@ function loadTs(file, mocks = {}, cache = new Map(), browserWindow = global.wind
 		compilerOptions: {
 			module: ts.ModuleKind.CommonJS,
 			target: ts.ScriptTarget.ES2021,
-			jsx: ts.JsxEmit.React,
+			jsx: ts.JsxEmit.ReactJSX,
 			esModuleInterop: true,
 		},
 	}).outputText;
@@ -65,6 +65,158 @@ async function locales() {
 			assert.ok(i18n.getFixedT(locale)('User profile.' + key) !== 'User profile.' + key);
 	}
 	pass('EN/KR/RU Profile JSON, matching keys and actual i18next resolution');
+}
+function legacyNavigation() {
+	const previousGlobals = Object.fromEntries(
+		['window', 'document', 'HTMLElement', 'DocumentFragment', 'navigator'].map((name) => [
+			name,
+			Object.getOwnPropertyDescriptor(global, name),
+		]),
+	);
+	const { JSDOM } = require('jsdom');
+	const dom = new JSDOM('<div id="navigation-root"></div>', { url: 'http://localhost/community' });
+	Object.assign(global, {
+		window: dom.window,
+		document: dom.window.document,
+		HTMLElement: dom.window.HTMLElement,
+		DocumentFragment: dom.window.DocumentFragment,
+	});
+	Object.defineProperty(global, 'navigator', { value: dom.window.navigator, configurable: true });
+	const React = require('react');
+	const { createRoot } = require('react-dom/client');
+	const { flushSync } = require('react-dom');
+	const root = createRoot(document.getElementById('navigation-root'));
+	let mobile = false;
+	let mobileDevice = false;
+	let user = { _id: 'owner', memberType: 'USER' };
+	const router = { pathname: '/community', query: {}, locale: 'en' };
+	const store = { userVar: () => user };
+	const link = React.forwardRef(({ href, children, passHref, scroll, ...props }, ref) =>
+		React.createElement(
+			'a',
+			{
+				...props,
+				ref,
+				href: typeof href === 'string' ? href : href.pathname + '?' + new URLSearchParams(href.query),
+			},
+			children,
+		),
+	);
+	const mocks = {
+		'@mui/material': { ...require('@mui/material'), useMediaQuery: (query) => query.includes('max-width') && mobile },
+		'@apollo/client': { useReactiveVar: (variable) => variable() },
+		'next/router': { useRouter: () => router, withRouter: (component) => component },
+		'next/link': { __esModule: true, default: link },
+		'next/image': { __esModule: true, default: (props) => React.createElement('img', props) },
+		'next-i18next': { useTranslation: () => ({ t: (key) => key, i18n: { language: 'en' } }) },
+		'../../../apollo/store': store,
+		'../../auth': { logOut() {} },
+		'../../sweetAlert': {},
+		'../../hooks/useDeviceDetect': { __esModule: true, default: () => (mobileDevice ? 'mobile' : 'desktop') },
+		'../hooks/useDeviceDetect': { __esModule: true, default: () => (mobileDevice ? 'mobile' : 'desktop') },
+		'js-cookie': { __esModule: true, default: { get: () => undefined } },
+	};
+	const components = (file) => loadTs(path.join(__dirname, '..', file), mocks);
+	const { ProgramsHeader, ProgramsBottomNavigation } = components('libs/components/program/ProgramsNavigation.tsx');
+	const Footer = components('libs/components/Footer.tsx').default;
+	const Story = components('libs/components/community/CommunityStory.tsx').default;
+	const MyMenu = components('libs/components/mypage/MyMenu.tsx').default;
+	const AdminMenu = components('libs/components/admin/AdminMenuList.tsx').default;
+	const inspect = (component, props, check) => {
+		flushSync(() => root.render(React.createElement(component, props)));
+		check(document);
+	};
+	try {
+		for (mobile of [false, true]) {
+			mobileDevice = mobile;
+			for (const [pathname, category, expected] of [
+				['/community', undefined, '/community?articleCategory=FREE'],
+				['/community', 'FREE', '/community?articleCategory=FREE'],
+				['/mypage', 'myArticles', '/community?articleCategory=FREE'],
+				['/mypage', 'editArticle', '/community?articleCategory=FREE'],
+				['/mypage', 'writeArticle', '/community?articleCategory=FREE'],
+				['/mypage', 'myFavorites', '/mypage'],
+				['/program/booking', undefined, '/program'],
+				['/trainer/detail', undefined, '/trainer'],
+			]) {
+				router.pathname = pathname;
+				router.query = { category };
+				inspect(ProgramsBottomNavigation, {}, (document) => {
+					assert.equal(document.querySelectorAll('[aria-current="page"]').length, 1);
+					assert.equal(document.querySelector('[aria-current="page"]').getAttribute('href'), expected);
+				});
+			}
+			inspect(ProgramsHeader, {}, (document) =>
+				assert.equal(Boolean(document.querySelector('a[href="/cs"]')), !mobile),
+			);
+			for (const variant of ['default', 'programs', 'home']) {
+				inspect(Footer, { variant }, (document) => {
+					assert.equal(Boolean(document.querySelector('a[href="/cs"]')), !mobile);
+					assert.equal(Boolean(document.querySelector('a[href="/about"]')), !mobile && variant !== 'home');
+					assert(document.querySelector('a[href="/program"]'));
+				});
+			}
+			for (const memberType of ['USER', 'TRAINER', 'ADMIN']) {
+				const article = {
+					_id: 'story',
+					articleCategory: 'FREE',
+					articleTitle: 'Story',
+					memberData: { _id: 'other', memberType, memberNick: 'Author' },
+				};
+				inspect(Story, { article, lead: false, likeArticleHandler: async () => {} }, (document) => {
+					const byline = document.querySelector('.community-story-byline');
+					assert.equal(byline.textContent, 'Author');
+					const target = byline.querySelector('a')?.getAttribute('href');
+					assert.equal(
+						target,
+						memberType === 'TRAINER'
+							? '/trainer/detail?trainerId=other'
+							: mobile
+							? undefined
+							: '/member?memberId=other',
+					);
+					assert.notEqual(target, '/mypage');
+				});
+				user = { ...user, memberType };
+				inspect(MyMenu, {}, (document) => {
+					assert.equal(Boolean(document.querySelector('a[href*="myFavorites"]')), !mobile && memberType === 'USER');
+					if (mobile) assert.equal(document.querySelectorAll('a').length, 0);
+					else assert(document.querySelector('a[href*="recentlyVisited"]'));
+				});
+			}
+			pass(
+				(mobile ? 'mobile' : 'desktop') +
+					' author destinations, Help/About visibility, account roles and active navigation',
+			);
+		}
+		const { communityMemberHref } = components('libs/article.ts');
+		mobile = false;
+		mobileDevice = true;
+		inspect(ProgramsHeader, {}, (document) => assert(!document.querySelector('a[href="/cs"]')));
+		inspect(Footer, {}, (document) => assert(!document.querySelector('a[href="/cs"], a[href="/about"]')));
+		assert.equal(communityMemberHref('owner', 'USER', false, 'owner'), '/mypage');
+		assert.equal(communityMemberHref('owner', 'USER', true, 'owner'), undefined);
+		assert.equal(communityMemberHref(undefined, 'TRAINER', false, 'owner'), undefined);
+		inspect(AdminMenu, { router: { pathname: '/_admin/users' } }, (document) => {
+			const titles = [...document.querySelectorAll('.MuiListItemText-primary')].map((node) => node.textContent);
+			assert.deepEqual(titles, ['Users', 'Programs', 'Community']);
+		});
+		const top = fs.readFileSync(path.join(__dirname, '../libs/components/Top.tsx'), 'utf8');
+		assert(!top.includes('NotificationsOutlinedIcon'));
+		const support = fs.readFileSync(path.join(__dirname, '../pages/cs/index.tsx'), 'utf8');
+		assert(!support.includes('<Notice'));
+		const faq = fs.readFileSync(path.join(__dirname, '../libs/components/cs/Faq.tsx'), 'utf8');
+		assert(!faq.includes('Booking, schedules and online payments are not available'));
+		assert(!faq.includes('Program and trainer reviews are not supported'));
+		pass('Admin retains only functional menus, bell/Notice removed, obsolete FAQ promises removed');
+	} finally {
+		flushSync(() => root.unmount());
+		dom.window.close();
+		for (const [name, descriptor] of Object.entries(previousGlobals)) {
+			if (descriptor) Object.defineProperty(global, name, descriptor);
+			else delete global[name];
+		}
+	}
 }
 async function integration() {
 	const sharp = require('node:module').createRequire(path.join(__dirname, '../../gymflow/package.json'))('sharp');
@@ -685,6 +837,7 @@ async function integration() {
 }
 (async () => {
 	await locales();
+	legacyNavigation();
 	await integration();
 	output(checks + ' USER Profile checks passed.');
 })().catch((error) => {

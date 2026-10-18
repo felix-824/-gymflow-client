@@ -1,5 +1,18 @@
 import { BoardArticleCategory, BoardArticleStatus } from './enums/board-article.enum';
 import { BoardArticle } from './types/board-article/board-article';
+import { MemberType } from './enums/member.enum';
+
+export function communityMemberHref(
+	memberId: string | undefined,
+	memberType: MemberType | undefined,
+	mobile: boolean,
+	ownerId: string,
+) {
+	if (!memberId) return undefined;
+	if (memberType === MemberType.TRAINER) return `/trainer/detail?trainerId=${memberId}`;
+	if (mobile) return undefined;
+	return memberId === ownerId ? '/mypage' : `/member?memberId=${memberId}`;
+}
 
 export type OwnedArticle = Pick<
 	BoardArticle,

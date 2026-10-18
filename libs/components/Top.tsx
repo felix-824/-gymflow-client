@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { useRouter, withRouter, NextRouter } from 'next/router';
 import { useTranslation } from 'next-i18next';
 import { logOut } from '../auth';
-import { Stack, Box } from '@mui/material';
+import { Stack, Box, useMediaQuery } from '@mui/material';
 import MenuItem from '@mui/material/MenuItem';
 import Button from '@mui/material/Button';
 import { alpha, styled } from '@mui/material/styles';
@@ -12,7 +12,6 @@ import AccountCircleOutlinedIcon from '@mui/icons-material/AccountCircleOutlined
 import { CaretDown } from 'phosphor-react';
 import useDeviceDetect from '../hooks/useDeviceDetect';
 import Link from 'next/link';
-import NotificationsOutlinedIcon from '@mui/icons-material/NotificationsOutlined';
 import { useReactiveVar } from '@apollo/client';
 import { userVar } from '../../apollo/store';
 import { Logout } from '@mui/icons-material';
@@ -24,6 +23,7 @@ const MotionStack = motion.create(Stack);
 
 const DefaultTop = () => {
 	const device = useDeviceDetect();
+	const mobileViewport = useMediaQuery('(max-width:767px)');
 	const user = useReactiveVar(userVar);
 	const { t, i18n } = useTranslation('common');
 	const router = useRouter();
@@ -152,9 +152,6 @@ const DefaultTop = () => {
 				<Link href={'/community?articleCategory=FREE'}>
 					<div> {t('Community')} </div>
 				</Link>
-				<Link href={'/cs'}>
-					<div> {t('CS')} </div>
-				</Link>
 			</Stack>
 		);
 	} else {
@@ -196,9 +193,11 @@ const DefaultTop = () => {
 									<div> {t('My Page')} </div>
 								</Link>
 							)}
-							<Link href={'/cs'}>
-								<div> {t('CS')} </div>
-							</Link>
+							{!mobileViewport && (
+								<Link href={'/cs'}>
+									<div> {t('CS')} </div>
+								</Link>
+							)}
 						</Box>
 						<Box component={'div'} className={'user-box'}>
 							{user?._id ? (
@@ -239,7 +238,6 @@ const DefaultTop = () => {
 							)}
 
 							<div className={'lan-box'}>
-								{user?._id && <NotificationsOutlinedIcon className={'notification-icon'} />}
 								<Button
 									disableRipple
 									className="btn-lang"

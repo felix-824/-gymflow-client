@@ -127,7 +127,7 @@ const MyMenu = () => {
 									</ListItem>
 								</>
 							)}
-							<ListItem className={pathname === 'myFavorites' ? 'focus' : ''}>
+							{user.memberType === 'USER' && <ListItem className={pathname === 'myFavorites' ? 'focus' : ''}>
 								<Link
 									href={{
 										pathname: '/mypage',
@@ -147,7 +147,7 @@ const MyMenu = () => {
 										</Typography>
 									</div>
 								</Link>
-							</ListItem>
+							</ListItem>}
 							<ListItem className={pathname === 'recentlyVisited' ? 'focus' : ''}>
 								<Link
 									href={{

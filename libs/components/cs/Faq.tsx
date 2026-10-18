@@ -68,14 +68,6 @@ const Faq = () => {
 					'A program may be paused or deleted, or its trainer may no longer be active. Only visible programs appear in the public catalog.',
 			},
 		],
-		payment: [
-			{
-				id: 'payment-1',
-				subject: 'Can I book or pay on GymFlow?',
-				content:
-					'Booking, schedules and online payments are not available in the current version. Program capacity is informational.',
-			},
-		],
 		buyers: [
 			{
 				id: 'users-1',
@@ -118,14 +110,6 @@ const Faq = () => {
 					'Sign in to publish articles, like posts, follow members and comment on articles. Comments must contain 1–100 characters.',
 			},
 		],
-		other: [
-			{
-				id: 'other-1',
-				subject: 'Are program reviews supported?',
-				content:
-					'Program and trainer reviews are not supported in the current version. Community article comments remain available.',
-			},
-		],
 	};
 
 	if (device === 'mobile') {
@@ -141,14 +125,6 @@ const Faq = () => {
 						}}
 					>
 						Program
-					</div>
-					<div
-						className={category === 'payment' ? 'active' : ''}
-						onClick={() => {
-							changeCategoryHandler('payment');
-						}}
-					>
-						Payment
 					</div>
 					<div
 						className={category === 'buyers' ? 'active' : ''}
@@ -181,14 +157,6 @@ const Faq = () => {
 						}}
 					>
 						Community
-					</div>
-					<div
-						className={category === 'other' ? 'active' : ''}
-						onClick={() => {
-							changeCategoryHandler('other');
-						}}
-					>
-						Other
 					</div>
 				</Box>
 				<Box className={'wrap'} component={'div'}>

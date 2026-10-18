@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { Box, IconButton } from '@mui/material';
+import { Box, IconButton, useMediaQuery } from '@mui/material';
 import { useReactiveVar } from '@apollo/client';
 import { useTranslation } from 'next-i18next';
 import ArticleOutlinedIcon from '@mui/icons-material/ArticleOutlined';
@@ -12,6 +12,8 @@ import { userVar } from '../../../apollo/store';
 import { REACT_APP_API_URL } from '../../config';
 import { BoardArticle } from '../../types/board-article/board-article';
 import { T } from '../../types/common';
+import { communityMemberHref } from '../../article';
+import useDeviceDetect from '../../hooks/useDeviceDetect';
 
 interface CommunityStoryProps {
 	article: BoardArticle;
@@ -22,11 +24,14 @@ interface CommunityStoryProps {
 const CommunityStory = ({ article, lead, likeArticleHandler }: CommunityStoryProps) => {
 	const { t, i18n } = useTranslation('common');
 	const user = useReactiveVar(userVar);
+	const device = useDeviceDetect();
+	const mobile = useMediaQuery('(max-width:767px)') || device === 'mobile';
 	const [failedImage, setFailedImage] = useState('');
 	const imageSrc = article.articleImage ? `${REACT_APP_API_URL}/${article.articleImage}` : '';
 	const href = { pathname: '/community/detail', query: { articleCategory: article.articleCategory, id: article._id } };
 	const author = article.memberData?.memberNick?.trim();
 	const authorId = article.memberData?._id;
+	const authorHref = communityMemberHref(authorId, article.memberData?.memberType, mobile, user._id);
 	const date = article.createdAt ? new Date(article.createdAt) : null;
 	const validDate = date && !Number.isNaN(date.getTime()) ? date : null;
 	const locale = i18n.language === 'kr' ? 'ko' : i18n.language || 'en';
@@ -73,8 +78,8 @@ const CommunityStory = ({ article, lead, likeArticleHandler }: CommunityStoryPro
 				{(author || validDate) && (
 					<div className="community-story-byline">
 						{author &&
-							(authorId ? (
-								<Link href={authorId === user._id ? '/mypage' : `/member?memberId=${authorId}`}>{author}</Link>
+							(authorHref ? (
+								<Link href={authorHref}>{author}</Link>
 							) : (
 								<span>{author}</span>
 							))}

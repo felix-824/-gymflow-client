@@ -3,7 +3,7 @@ import { NextPage } from 'next';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 import dynamic from 'next/dynamic';
-import { Avatar, Box, Button, CircularProgress, IconButton, Pagination } from '@mui/material';
+import { Avatar, Box, Button, CircularProgress, IconButton, Pagination, useMediaQuery } from '@mui/material';
 import ArrowBackRoundedIcon from '@mui/icons-material/ArrowBackRounded';
 import EditOutlinedIcon from '@mui/icons-material/EditOutlined';
 import DeleteOutlineRoundedIcon from '@mui/icons-material/DeleteOutlineRounded';
@@ -24,6 +24,9 @@ import { CommentInput, CommentsInquiry } from '../../libs/types/comment/comment.
 import { CommentUpdate } from '../../libs/types/comment/comment.update';
 import { CommentStatus } from '../../libs/enums/comment.enum';
 import { T } from '../../libs/types/common';
+import { communityMemberHref } from '../../libs/article';
+import { MemberType } from '../../libs/enums/member.enum';
+import useDeviceDetect from '../../libs/hooks/useDeviceDetect';
 import { Messages, REACT_APP_API_URL } from '../../libs/config';
 import { GET_BOARD_ARTICLE, GET_COMMENTS } from '../../apollo/user/query';
 import { CREATE_COMMENT, LIKE_TARGET_BOARD_ARTICLE, UPDATE_COMMENT } from '../../apollo/user/mutation';
@@ -229,7 +232,18 @@ const CommunityDetail: NextPage = ({ initialInput }: T) => {
 		article?.articleCategory ?? Object.values(BoardArticleCategory).find((value) => value === articleCategory);
 	const communityHref = { pathname: '/community', query: category ? { articleCategory: category } : {} };
 	const locale = i18n.language === 'kr' ? 'ko' : i18n.language || 'en';
-	const memberHref = (memberId: string) => (memberId === user._id ? '/mypage' : '/member?memberId=' + memberId);
+	const device = useDeviceDetect();
+	const mobile = useMediaQuery('(max-width:767px)') || device === 'mobile';
+	const renderMember = (memberId: string, memberType: MemberType | undefined, children: React.ReactNode) => {
+		const href = communityMemberHref(memberId, memberType, mobile, user._id);
+		return href ? (
+			<Link href={href} className="article-author" aria-label={t('Article detail.Author profile')}>
+				{children}
+			</Link>
+		) : (
+			<span className="article-author">{children}</span>
+		);
+	};
 	const renderDate = (value?: Date) => {
 		if (!value) return null;
 		const date = new Date(value);
@@ -288,13 +302,8 @@ const CommunityDetail: NextPage = ({ initialInput }: T) => {
 								<span className="article-category">{t('Community discovery.' + article.articleCategory)}</span>
 								<h1>{article.articleTitle}</h1>
 								<div className="article-byline">
-									{(authorName || author?.memberImage) && authorId && (
-										<Link
-											href={memberHref(authorId)}
-											className="article-author"
-											passHref
-											aria-label={t('Article detail.Author profile')}
-										>
+									{(authorName || author?.memberImage) && authorId && renderMember(authorId, author?.memberType,
+										<>
 											<Avatar
 												src={author?.memberImage ? REACT_APP_API_URL + '/' + author.memberImage : undefined}
 												alt=""
@@ -311,7 +320,7 @@ const CommunityDetail: NextPage = ({ initialInput }: T) => {
 														)}
 												</span>
 											)}
-										</Link>
+										</>
 									)}
 									{renderDate(article.createdAt)}
 								</div>
@@ -414,24 +423,21 @@ const CommunityDetail: NextPage = ({ initialInput }: T) => {
 												<article className="article-comment" key={commentData._id}>
 													<header className="article-comment-header">
 														<div className="article-comment-identity">
-															<Link
-																href={memberHref(memberId)}
-																className="article-author"
-																aria-label={t('Article detail.Author profile')}
-																passHref
-															>
-																<Avatar
-																	src={
-																		commentData.memberData?.memberImage
-																			? REACT_APP_API_URL + '/' + commentData.memberData.memberImage
-																			: undefined
-																	}
-																	alt=""
-																>
-																	<AccountCircleOutlinedIcon />
-																</Avatar>
-																{name && <strong>{name}</strong>}
-															</Link>
+															{renderMember(memberId, commentData.memberData?.memberType,
+																<>
+																	<Avatar
+																		src={
+																			commentData.memberData?.memberImage
+																				? REACT_APP_API_URL + '/' + commentData.memberData.memberImage
+																				: undefined
+																		}
+																		alt=""
+																	>
+																		<AccountCircleOutlinedIcon />
+																	</Avatar>
+																	{name && <strong>{name}</strong>}
+																</>
+															)}
 															{renderDate(commentData.createdAt)}
 														</div>
 														{commentData.memberId === user._id && !editing && (

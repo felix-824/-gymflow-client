@@ -1,11 +1,14 @@
-import { Stack, Box } from '@mui/material';
+import { Stack, Box, useMediaQuery } from '@mui/material';
 import Link from 'next/link';
 import Image from 'next/image';
 import moment from 'moment';
 import { useTranslation } from 'next-i18next';
+import useDeviceDetect from '../hooks/useDeviceDetect';
 
 const Footer = ({ variant = 'default' }: { variant?: 'default' | 'programs' | 'home' }) => {
 	const { t } = useTranslation('common');
+	const device = useDeviceDetect();
+	const mobile = useMediaQuery('(max-width:767px)') || device === 'mobile';
 	if (variant === 'home') {
 		return (
 			<footer className="home-footer">
@@ -35,9 +38,11 @@ const Footer = ({ variant = 'default' }: { variant?: 'default' | 'programs' | 'h
 							<Link href="/mypage" passHref>
 								{t('My Page')}
 							</Link>
-							<Link href="/cs" passHref>
-								{t('CS')}
-							</Link>
+							{!mobile && (
+								<Link href="/cs" passHref>
+									{t('CS')}
+								</Link>
+							)}
 						</nav>
 					</div>
 					<div className="home-footer-bottom">
@@ -81,7 +86,7 @@ const Footer = ({ variant = 'default' }: { variant?: 'default' | 'programs' | 'h
 								['/cs', 'FAQs'],
 							],
 						},
-					].map(({ label, links }) => (
+					].filter(({ label }) => !mobile || label !== 'CS').map(({ label, links }) => (
 						<Box component={'nav'} key={label} className={'programs-footer-links'} aria-label={t(label)}>
 							<strong>{t(label)}</strong>
 							{links.map(([href, text]) => (
@@ -124,11 +129,13 @@ const Footer = ({ variant = 'default' }: { variant?: 'default' | 'programs' | 'h
 							<Link href="/community">{t('Community')}</Link>
 							<Link href="/mypage">{t('My Page')}</Link>
 						</div>
-						<div>
-							<strong>{t('CS')}</strong>
-							<Link href="/about">{t('About GymFlow')}</Link>
-							<Link href="/cs">{t('FAQs')}</Link>
-						</div>
+						{!mobile && (
+							<div>
+								<strong>{t('CS')}</strong>
+								<Link href="/about">{t('About GymFlow')}</Link>
+								<Link href="/cs">{t('FAQs')}</Link>
+							</div>
+						)}
 					</Box>
 				</Stack>
 			</Stack>

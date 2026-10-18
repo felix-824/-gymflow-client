@@ -212,12 +212,12 @@ const withLayoutBasic = (Component: any) => {
 						<title>GymFlow</title>
 						<meta name={'title'} content={`GymFlow`} />
 					</Head>
-					<Stack id="pc-wrap" className={router.pathname === '/trainer' ? 'trainer-discovery-layout' : undefined}>
+					<Stack id="pc-wrap" className={router.pathname === '/cs' ? 'legacy-support-layout' : router.pathname === '/trainer' ? 'trainer-discovery-layout' : undefined}>
 						<Stack id={'top'}>
 							<Top />
 						</Stack>
 
-						{router.pathname !== '/trainer' && (
+						{router.pathname !== '/trainer' && router.pathname !== '/cs' && (
 							<Stack
 								className={`header-basic ${authHeader && 'auth'}`}
 								style={{
