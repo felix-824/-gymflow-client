@@ -16,7 +16,6 @@ import MenuRoundedIcon from '@mui/icons-material/MenuRounded';
 import { userVar } from '../../../apollo/store';
 import { logOut } from '../../auth';
 import { REACT_APP_API_URL } from '../../config';
-import useDeviceDetect from '../../hooks/useDeviceDetect';
 
 const programDestinations = [
 	{ label: 'Home', href: '/', icon: HomeOutlinedIcon },
@@ -37,8 +36,6 @@ export const ProgramsHeader = () => {
 	const { t } = useTranslation('common');
 	const user = useReactiveVar(userVar);
 	const isCompact = useMediaQuery('(max-width:1199px)');
-	const device = useDeviceDetect();
-	const mobile = useMediaQuery('(max-width:767px)') || device === 'mobile';
 	const shouldReduceMotion = useMediaQuery('(prefers-reduced-motion: reduce)');
 	const [localeAnchor, setLocaleAnchor] = useState<HTMLElement | null>(null);
 	const [accountAnchor, setAccountAnchor] = useState<HTMLElement | null>(null);
@@ -47,7 +44,7 @@ export const ProgramsHeader = () => {
 	const memberName = user.memberFullName?.trim() || user.memberNick?.trim();
 	const destinations = [
 		...programDestinations.filter((destination) => destination.href !== '/mypage' || user._id),
-		...(!mobile ? [{ label: 'CS', href: '/cs' }] : []),
+		{ label: 'CS', href: '/help' },
 	];
 
 	useEffect(() => {

@@ -280,7 +280,7 @@ const Join: NextPage = () => {
 			</div>
 			<footer className="auth-footer">
 				<span>© GymFlow</span>
-				<Link href="/cs">{t('Auth.Support')}</Link>
+				<Link href="/help">{t('Auth.Support')}</Link>
 			</footer>
 		</div>
 	);

@@ -955,5 +955,199 @@
 		"Next page": "Next page",
 		"Go to page": "Go to page {{page}}",
 		"Current page": "Page {{page}}, current page"
+	},
+	"Help center": {
+		"Audiences": {
+			"Members": "Members",
+			"General": "General",
+			"Trainers": "Trainers",
+			"Community": "Community",
+			"Media": "Media"
+		},
+		"Page title": "Help Center",
+		"Eyebrow": "Help Center",
+		"Heading": "How can we help?",
+		"Support": "Find answers about booking, programs, your account, and using GymFlow.",
+		"Search label": "Search GymFlow Help",
+		"Search placeholder": "Search GymFlow Help (e.g. booking, reviews)…",
+		"Clear": "Clear search",
+		"Escape": "Esc to clear",
+		"Popular": "Popular Topics",
+		"Quick": "Quick Shortcuts",
+		"Shortcut navigation": "Help shortcuts",
+		"Directory eyebrow": "GymFlow Help",
+		"Browse": "Browse by Topic",
+		"Directory support": "Explore practical answers for your next step on GymFlow.",
+		"Empty title": "No matching answers",
+		"Empty support": "Try another word, or clear your search to browse all topics.",
+		"Closing title": "Still need help?",
+		"Closing support": "Discover available programs or find a trainer across the GymFlow marketplace.",
+		"Programs": "Explore Programs",
+		"Trainers": "Find a Trainer",
+		"Shortcuts": {
+			"Booking": "Booking a program",
+			"Bookings": "Managing my bookings",
+			"Trainer": "Finding a trainer",
+			"Program": "Creating a program",
+			"Schedule": "Trainer schedule"
+		},
+		"Topics": {
+			"programs": {
+				"Title": "Programs & Trainers",
+				"Description": "Find programs and trainers for your goals.",
+				"Questions": {
+					"find-program": {
+						"Question": "How do I find the right program?",
+						"Answer": "Open Programs to search by program name and filter by format, category, location, and price. Open a program to read its description, session details, and trainer information."
+					},
+					"find-trainer": {
+						"Question": "How do I find a trainer?",
+						"Answer": "Open Trainers and search by nickname. You can sort by newest, oldest, likes, or views, then open a trainer profile to learn more and explore their programs."
+					},
+					"formats": {
+						"Question": "What do program formats and locations mean?",
+						"Answer": "Programs can be one-to-one personal training, group classes, or ONLINE. Physical programs list a location and address. ONLINE programs use the ONLINE location and cannot be booked through the current session booking flow."
+					}
+				}
+			},
+			"booking": {
+				"Title": "Booking",
+				"Description": "Reservations, available times, and cancellations.",
+				"Questions": {
+					"book-session": {
+						"Question": "How do I book a session?",
+						"Answer": "Sign in with an active USER account, open a personal training or group program, and choose an available future date and time. Submit your reservation once. It starts as PENDING and awaits trainer confirmation; ONLINE programs are not bookable."
+					},
+					"unavailable-slot": {
+						"Question": "Why is a time slot unavailable?",
+						"Answer": "Available times depend on the trainer’s weekly hours, program duration, overlapping reservations, session capacity, and whether the start time is still in the future. A slot may become unavailable before you submit; GymFlow checks availability again when you book."
+					},
+					"my-bookings": {
+						"Question": "Where can I see my bookings?",
+						"Answer": "Open My Page → My Bookings. Upcoming shows pending or confirmed sessions that have not ended, including ongoing sessions. History includes ended sessions and completed, cancelled, or no-show reservations."
+					},
+					"cancel-booking": {
+						"Question": "When can I cancel?",
+						"Answer": "You can cancel your own PENDING or CONFIRMED reservation strictly before its scheduled start time. Booking times follow Asia/Seoul. Once the session starts, the user cancellation action is no longer available."
+					}
+				}
+			},
+			"account": {
+				"Title": "Account & Profile",
+				"Description": "Account types, details, and profile settings.",
+				"Questions": {
+					"create-account": {
+						"Question": "How do I create an account?",
+						"Answer": "Open Login / Register and choose Register. Enter your nickname, password, and phone number, then choose USER or TRAINER. Use your nickname and password to sign in."
+					},
+					"account-types": {
+						"Question": "What is the difference between a member and trainer?",
+						"Answer": "A USER account can book sessions, manage My Bookings, save programs, and review eligible completed reservations. A TRAINER account manages programs, weekly availability, and reservations in Trainer Workspace. Both can write articles and participate in Community."
+					},
+					"update-profile": {
+						"Question": "How do I update my profile?",
+						"Answer": "Open My Page → Profile, or Profile in Trainer Workspace. Update the available nickname, full name, phone, address, and profile photo fields, then save your changes."
+					}
+				}
+			},
+			"favorites": {
+				"Title": "Favorites & Reviews",
+				"Description": "Saved programs and feedback after a session.",
+				"Questions": {
+					"save-program": {
+						"Question": "How do Favorites work?",
+						"Answer": "With a USER account, use a program’s heart button to save or remove it. Open My Page → Favorites to see your available saved programs. Favorites stores programs, not a separate collection of trainers."
+					},
+					"leave-review": {
+						"Question": "When can I leave a review?",
+						"Answer": "You can leave one review for each of your own COMPLETED reservations. Open the eligible session in My Bookings History and use its review action. Pending, confirmed, cancelled, and no-show reservations are not eligible."
+					},
+					"unavailable-program": {
+						"Question": "Why is a program no longer available?",
+						"Answer": "A program may have been paused or deleted, or its trainer may no longer be active. Only publicly available programs appear in discovery and Favorites. A full session affects that time slot; it does not by itself hide the whole program."
+					}
+				}
+			},
+			"trainer-programs": {
+				"Title": "Trainer Programs",
+				"Description": "Create, update, and manage your program listings.",
+				"Questions": {
+					"create-program": {
+						"Question": "How do I create a program?",
+						"Answer": "In Trainer Workspace, open Programs → Create Program. Complete the program basics, session and pricing details, location, description, and photos. A new program becomes Active. Manage Active/Paused status from the Programs list."
+					},
+					"program-images": {
+						"Question": "How do program images work?",
+						"Answer": "Keep 1–5 images when saving. Each preview has its own Remove action; removing one image preserves the others and their order. New uploads are appended. The first remaining image is the cover, and removing it makes the next image the cover."
+					},
+					"save-program-changes": {
+						"Question": "Why can’t I save my Program changes?",
+						"Answer": "Check the highlighted fields and wait for uploads to finish. Type, duration, and location/address are locked while pending or confirmed reservations have not ended. Group capacity cannot fall below the busiest protected session’s reserved places. Price remains editable. If someone saved newer changes, follow the refresh/review message before saving again. For an uncertain create result, use the recovery instructions instead of creating another program."
+					},
+					"program-status": {
+						"Question": "How do pause and delete work?",
+						"Answer": "Pause hides the program from public discovery; Resume makes it Active again. Delete removes your listing and cannot be undone from Trainer Workspace. Pausing or deleting does not automatically cancel existing reservations, so continue managing those in Reservations."
+					}
+				}
+			},
+			"schedule": {
+				"Title": "Schedule & Reservations",
+				"Description": "Weekly availability and trainer reservation management.",
+				"Questions": {
+					"set-availability": {
+						"Question": "How do I set my availability?",
+						"Answer": "Open Trainer Workspace → Schedule. Set each weekday available or unavailable and choose one start/end interval for available days. Sessions fit within those hours using the program duration. Changing weekly hours does not automatically move or cancel existing reservations."
+					},
+					"manage-reservations": {
+						"Question": "Where do I manage reservations?",
+						"Answer": "Open Trainer Workspace → Reservations. Review your reservations and use the actions available for their status and session time. Confirm or cancel eligible reservations before the session starts; mark a confirmed session completed or no-show after it ends."
+					},
+					"reservation-statuses": {
+						"Question": "What do reservation statuses mean?",
+						"Answer": "PENDING awaits trainer confirmation. CONFIRMED has been accepted. COMPLETED records a finished session. CANCELLED records a cancellation. NO_SHOW records non-attendance. Pending and confirmed reservations occupy session capacity; the other statuses do not."
+					}
+				}
+			},
+			"community": {
+				"Title": "Community",
+				"Description": "Share stories and manage your published articles.",
+				"Questions": {
+					"write-article": {
+						"Question": "How do I write an article?",
+						"Answer": "Sign in with an active account and open Community → Write Article. Choose a category, enter a title and story, and optionally add a cover and inline images. The cover is separate from images inside your story. Publish once and wait for confirmation."
+					},
+					"comments-likes": {
+						"Question": "How do comments and likes work?",
+						"Answer": "Sign in to use the like and comment controls on an article’s detail page. You can manage your own comments using the available edit/delete actions."
+					},
+					"my-articles": {
+						"Question": "Where are my articles?",
+						"Answer": "Open Community → My Articles. USER accounts can also reach it through My Page → My Articles. It lists your published active articles with Read, Edit, and Delete actions. Delete asks for confirmation before removing an article."
+					},
+					"edit-article": {
+						"Question": "How do I edit an article?",
+						"Answer": "Open My Articles and choose Edit on your article. Update its title, cover, or story; its category cannot be changed. Save Changes updates the published article. If newer changes exist, review the conflict message and reload only when you are ready to replace your current edits."
+					}
+				}
+			},
+			"images": {
+				"Title": "Images & Uploads",
+				"Description": "Supported files, image limits, and program covers.",
+				"Questions": {
+					"image-formats": {
+						"Question": "Which image formats are supported?",
+						"Answer": "Upload JPEG/JPG, PNG, or WebP images. Each image must be no larger than 5 MiB (5,242,880 bytes) and 16 million pixels. Animated images are not supported."
+					},
+					"image-count": {
+						"Question": "How many program images can I add?",
+						"Answer": "A program needs at least one image and allows up to five. Remove an individual image to free a place, then upload another; retained images do not need to be uploaded again."
+					},
+					"image-cover": {
+						"Question": "Which image becomes the cover?",
+						"Answer": "The first image in the program’s current image order is the cover. Removing it naturally promotes the next image. New images are appended; there is no separate Set Cover or reorder control."
+					}
+				}
+			}
+		}
 	}
 }

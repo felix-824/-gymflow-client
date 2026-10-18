@@ -194,7 +194,7 @@ const DefaultTop = () => {
 								</Link>
 							)}
 							{!mobileViewport && (
-								<Link href={'/cs'}>
+								<Link href={'/help'}>
 									<div> {t('CS')} </div>
 								</Link>
 							)}

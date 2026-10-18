@@ -46,7 +46,7 @@ const About: NextPage = () => {
 						<p>Read fitness articles, discuss them with comments and follow other members.</p>
 						<strong>Support when you need it</strong>
 						<p>Visit our FAQ to learn about accounts, programs and trainer tools.</p>
-						<Link href="/cs">Read the FAQ →</Link>
+						<Link href="/help">Read the FAQ →</Link>
 					</Box>
 				</Stack>
 			</Stack>

@@ -38,11 +38,9 @@ const Footer = ({ variant = 'default' }: { variant?: 'default' | 'programs' | 'h
 							<Link href="/mypage" passHref>
 								{t('My Page')}
 							</Link>
-							{!mobile && (
-								<Link href="/cs" passHref>
-									{t('CS')}
-								</Link>
-							)}
+							<Link href="/help" passHref>
+								{t('CS')}
+							</Link>
 						</nav>
 					</div>
 					<div className="home-footer-bottom">
@@ -83,13 +81,13 @@ const Footer = ({ variant = 'default' }: { variant?: 'default' | 'programs' | 'h
 							label: 'CS',
 							links: [
 								['/about', 'About GymFlow'],
-								['/cs', 'FAQs'],
+								['/help', 'FAQs'],
 							],
 						},
-					].filter(({ label }) => !mobile || label !== 'CS').map(({ label, links }) => (
+					].map(({ label, links }) => (
 						<Box component={'nav'} key={label} className={'programs-footer-links'} aria-label={t(label)}>
 							<strong>{t(label)}</strong>
-							{links.map(([href, text]) => (
+							{links.filter(([href]) => !mobile || href !== '/about').map(([href, text]) => (
 								<Link key={href} href={href}>
 									{t(text)}
 								</Link>
@@ -129,13 +127,11 @@ const Footer = ({ variant = 'default' }: { variant?: 'default' | 'programs' | 'h
 							<Link href="/community">{t('Community')}</Link>
 							<Link href="/mypage">{t('My Page')}</Link>
 						</div>
-						{!mobile && (
-							<div>
-								<strong>{t('CS')}</strong>
-								<Link href="/about">{t('About GymFlow')}</Link>
-								<Link href="/cs">{t('FAQs')}</Link>
-							</div>
-						)}
+						<div>
+							<strong>{t('CS')}</strong>
+							{!mobile && <Link href="/about">{t('About GymFlow')}</Link>}
+							<Link href="/help">{t('FAQs')}</Link>
+						</div>
 					</Box>
 				</Stack>
 			</Stack>

@@ -28,6 +28,7 @@ const withLayoutBasic = (Component: any) => {
 		const authHeader = router.pathname === '/account/join';
 		const communityDiscovery = router.pathname === '/community';
 		const communityArticle = router.pathname === '/community/detail';
+		const helpCenter = router.pathname === '/help';
 		const communityWrite = router.pathname === '/mypage' && (router.query.category === 'writeArticle' || router.query.category === 'editArticle');
 		const communityMyArticles = router.pathname === '/mypage' && router.query.category === 'myArticles';
 		const trainerSchedule = router.pathname === '/mypage' && router.query.category === 'trainerSchedule';
@@ -44,7 +45,7 @@ const withLayoutBasic = (Component: any) => {
 		const userFavorites = router.pathname === '/mypage' && router.query.category === 'myFavorites';
 		const theme = useTheme();
 		const programTheme = useMemo(() => {
-			if (router.pathname !== '/program' && !communityDiscovery && !communityArticle && !communityWrite && !communityMyArticles && !myBookings && !userProfile && !userFavorites && !trainerReservations && !trainerDashboard && !trainerProfile && !trainerPrograms && !trainerProgramEditor) return theme;
+			if (router.pathname !== '/program' && !helpCenter && !communityDiscovery && !communityArticle && !communityWrite && !communityMyArticles && !myBookings && !userProfile && !userFavorites && !trainerReservations && !trainerDashboard && !trainerProfile && !trainerPrograms && !trainerProgramEditor) return theme;
 			const fontFamily = "'Plus Jakarta Sans', sans-serif";
 			const typography = Object.fromEntries(
 				Object.entries(theme.typography).map(([variant, value]) => [
@@ -58,7 +59,7 @@ const withLayoutBasic = (Component: any) => {
 				},
 				typography: { ...typography, fontFamily },
 			});
-		}, [theme, router.pathname, communityDiscovery, communityArticle, communityWrite, communityMyArticles, myBookings, userProfile, userFavorites, trainerReservations, trainerDashboard, trainerProfile, trainerPrograms, trainerProgramEditor]);
+		}, [theme, router.pathname, helpCenter, communityDiscovery, communityArticle, communityWrite, communityMyArticles, myBookings, userProfile, userFavorites, trainerReservations, trainerDashboard, trainerProfile, trainerPrograms, trainerProgramEditor]);
 
 		const memoizedValues = useMemo(() => {
 			let title = '',
@@ -151,7 +152,7 @@ const withLayoutBasic = (Component: any) => {
 			);
 		}
 
-		if (router.pathname === '/program' || compactTrainer || trainerDetail || communityDiscovery || communityArticle || communityWrite || communityMyArticles || myBookings || userProfile || userFavorites) {
+		if (router.pathname === '/program' || helpCenter || compactTrainer || trainerDetail || communityDiscovery || communityArticle || communityWrite || communityMyArticles || myBookings || userProfile || userFavorites) {
 			return (
 				<ThemeProvider theme={programTheme}>
 					<Head>
@@ -164,7 +165,7 @@ const withLayoutBasic = (Component: any) => {
 					</Head>
 					<Stack
 						id="pc-wrap"
-						className={`program-discovery-layout${compactTrainer || trainerDetail ? ' trainer-discovery-layout' : ''}${
+						className={`program-discovery-layout${helpCenter ? ' help-center-layout' : ''}${compactTrainer || trainerDetail ? ' trainer-discovery-layout' : ''}${
 							trainerDetail ? ' trainer-detail-layout' : ''
 						}${device === 'mobile' || compactTrainer ? ' is-mobile' : ''}${communityDiscovery ? ' community-discovery-layout' : ''}${communityArticle ? ' community-article-layout' : ''}${communityWrite ? ' community-write-layout' : ''}${communityMyArticles ? ' community-my-articles-layout' : ''}${myBookings ? ' my-bookings-layout' : ''}${userProfile ? ' user-profile-layout' : ''}${userFavorites ? ' user-favorites-layout' : ''}`}
 					>

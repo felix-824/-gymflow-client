@@ -146,12 +146,19 @@ function legacyNavigation() {
 					assert.equal(document.querySelector('[aria-current="page"]').getAttribute('href'), expected);
 				});
 			}
-			inspect(ProgramsHeader, {}, (document) =>
-				assert.equal(Boolean(document.querySelector('a[href="/cs"]')), !mobile),
-			);
+			router.pathname = '/help';
+			router.query = {};
+			inspect(ProgramsHeader, {}, (document) => {
+				assert(document.querySelector('a[href="/help"][aria-current="page"]'));
+				assert(!document.querySelector('a[href="/cs"]'));
+			});
+			inspect(ProgramsBottomNavigation, {}, (document) => {
+				assert.equal(document.querySelectorAll('a').length, 5);
+				assert(!document.querySelector('a[href="/help"], [aria-current="page"]'));
+			});
 			for (const variant of ['default', 'programs', 'home']) {
 				inspect(Footer, { variant }, (document) => {
-					assert.equal(Boolean(document.querySelector('a[href="/cs"]')), !mobile);
+					assert.ok(document.querySelector('a[href="/help"]'));
 					assert.equal(Boolean(document.querySelector('a[href="/about"]')), !mobile && variant !== 'home');
 					assert(document.querySelector('a[href="/program"]'));
 				});
@@ -178,6 +185,7 @@ function legacyNavigation() {
 					assert.notEqual(target, '/mypage');
 				});
 				user = { ...user, memberType };
+				inspect(ProgramsHeader, {}, (document) => assert(document.querySelector('a[href="/help"]')));
 				inspect(MyMenu, {}, (document) => {
 					assert.equal(Boolean(document.querySelector('a[href*="myFavorites"]')), !mobile && memberType === 'USER');
 					if (mobile) assert.equal(document.querySelectorAll('a').length, 0);
@@ -192,8 +200,11 @@ function legacyNavigation() {
 		const { communityMemberHref } = components('libs/article.ts');
 		mobile = false;
 		mobileDevice = true;
-		inspect(ProgramsHeader, {}, (document) => assert(!document.querySelector('a[href="/cs"]')));
-		inspect(Footer, {}, (document) => assert(!document.querySelector('a[href="/cs"], a[href="/about"]')));
+		inspect(ProgramsHeader, {}, (document) => assert(document.querySelector('a[href="/help"]')));
+		inspect(Footer, {}, (document) => {
+			assert(document.querySelector('a[href="/help"]'));
+			assert(!document.querySelector('a[href="/about"]'));
+		});
 		assert.equal(communityMemberHref('owner', 'USER', false, 'owner'), '/mypage');
 		assert.equal(communityMemberHref('owner', 'USER', true, 'owner'), undefined);
 		assert.equal(communityMemberHref(undefined, 'TRAINER', false, 'owner'), undefined);
