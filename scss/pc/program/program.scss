@@ -1011,6 +1011,37 @@
 		}
 	}
 
+	.discovery-name-search,
+	.discovery-price-fields {
+		.MuiOutlinedInput-root {
+			border: 0;
+			outline: 0;
+			box-shadow: none;
+			.MuiOutlinedInput-input {
+				border: 0;
+				outline: 0;
+				box-shadow: none;
+				&:focus,
+				&:focus-visible {
+					outline: 0;
+					box-shadow: none;
+				}
+			}
+			&:not(.Mui-error) {
+				.MuiOutlinedInput-notchedOutline {
+					border-color: var(--program-border);
+				}
+				&.Mui-focused .MuiOutlinedInput-notchedOutline {
+					border-color: var(--program-primary);
+					border-width: 2px;
+				}
+			}
+		}
+		.MuiInputLabel-root.Mui-focused:not(.Mui-error) {
+			color: var(--program-primary);
+		}
+	}
+
 	.discovery-quick-filters {
 		display: flex;
 		flex-wrap: wrap;
@@ -1097,7 +1128,7 @@
 		margin: 0;
 		padding: 0;
 		border: 0;
-		legend {
+		> legend {
 			margin-bottom: 8px;
 			padding: 0;
 			font-family: var(--program-font);
@@ -1120,13 +1151,59 @@
 		}
 	}
 
+	.discovery-filter-overflow {
+		opacity: 0;
+		transition: height 160ms ease-out, opacity 160ms ease-out;
+		&[aria-hidden='false'] {
+			opacity: 1;
+		}
+		&[aria-hidden='true'] {
+			pointer-events: none;
+		}
+	}
+
+	.discovery-filter-options {
+		display: flex;
+		flex-direction: column;
+		gap: 2px;
+	}
+
+	.discovery-filter-toggle.MuiButton-root {
+		align-self: flex-start;
+		min-width: 0;
+		min-height: 32px;
+		margin-top: 4px;
+		padding: 0;
+		color: #5b5e68;
+		font-family: var(--program-font);
+		font-size: 12px;
+		font-weight: 500;
+		text-transform: none;
+		&:hover {
+			background: transparent;
+			text-decoration: underline;
+		}
+		@media (max-width: 1023px), (hover: none), (pointer: coarse) {
+			min-height: 44px;
+		}
+	}
+
 	.discovery-price-fields {
 		gap: 16px;
-		legend {
+		> legend {
 			margin-bottom: 16px;
 		}
 		input {
 			font-variant-numeric: tabular-nums;
+		}
+		input[type='number'] {
+			-moz-appearance: textfield;
+			appearance: textfield;
+			&::-webkit-inner-spin-button,
+			&::-webkit-outer-spin-button {
+				-webkit-appearance: none;
+				margin: 0;
+			}
 		}
 	}
 
@@ -1431,6 +1508,9 @@
 		}
 	}
 	@media (prefers-reduced-motion: reduce) {
+		.discovery-filter-overflow {
+			transition: none;
+		}
 		.discovery-program-skeleton .MuiSkeleton-root,
 		.discovery-updating .MuiLinearProgress-bar {
 			animation: none;

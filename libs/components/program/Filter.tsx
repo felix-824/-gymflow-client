@@ -1,14 +1,16 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
 	Box,
 	Button,
 	Checkbox,
+	Collapse,
 	FormControlLabel,
 	IconButton,
 	MenuItem,
 	Stack,
 	TextField,
 	Typography,
+	useMediaQuery,
 } from '@mui/material';
 import CloseRoundedIcon from '@mui/icons-material/CloseRounded';
 import useDeviceDetect from '../../hooks/useDeviceDetect';
@@ -220,6 +222,78 @@ interface DiscoveryFilterType {
 	onClose?: () => void;
 }
 
+interface DiscoveryCheckboxGroupType {
+	id: string;
+	label: string;
+	values: readonly string[];
+	renderOption: (value: string, hidden: boolean) => React.ReactNode;
+}
+
+const DiscoveryCheckboxGroup = ({ id, label, values, renderOption }: DiscoveryCheckboxGroupType) => {
+	const { t, i18n } = useTranslation('common');
+	const canHover = useMediaQuery('(min-width:1024px) and (hover: hover) and (pointer: fine)');
+	const shouldReduceMotion = useReducedMotion();
+	const [expanded, setExpanded] = useState(false);
+	const overflowRef = useRef<HTMLDivElement>(null);
+	const toggleRef = useRef<HTMLButtonElement>(null);
+	const hasMore = values.length > 4;
+	const disclosureLabels =
+		i18n.language === 'kr'
+			? { more: '더 보기', less: '접기' }
+			: i18n.language === 'ru'
+			? { more: 'Показать ещё', less: 'Свернуть' }
+			: { more: 'Show more', less: 'Show less' };
+
+	const collapseHandler = () => {
+		if (overflowRef.current?.contains(document.activeElement)) toggleRef.current?.focus({ preventScroll: true });
+		setExpanded(false);
+	};
+
+	return (
+		<Box
+			component={'fieldset'}
+			className={'discovery-filter-group'}
+			onPointerEnter={(event) => {
+				if (hasMore && canHover && event.pointerType === 'mouse') setExpanded(true);
+			}}
+			onPointerLeave={(event) => {
+				if (hasMore && canHover && event.pointerType === 'mouse') collapseHandler();
+			}}
+		>
+			<Typography component={'legend'}>{label}</Typography>
+			{values.slice(0, 4).map((value) => renderOption(value, false))}
+			{hasMore && (
+				<>
+					<Collapse
+						id={id}
+						ref={overflowRef}
+						className={'discovery-filter-overflow'}
+						in={expanded}
+						timeout={shouldReduceMotion ? 0 : 160}
+						aria-hidden={!expanded}
+					>
+						<Box component={'div'} className={'discovery-filter-options'}>
+							{values.slice(4).map((value) => renderOption(value, !expanded))}
+						</Box>
+					</Collapse>
+					<Button
+						ref={toggleRef}
+						type={'button'}
+						className={'discovery-filter-toggle'}
+						aria-controls={id}
+						aria-expanded={expanded}
+						onClick={() => (expanded ? collapseHandler() : setExpanded(true))}
+					>
+						{t(expanded ? 'Show less' : 'Show more', {
+							defaultValue: expanded ? disclosureLabels.less : disclosureLabels.more,
+						})}
+					</Button>
+				</>
+			)}
+		</Box>
+	);
+};
+
 export const DiscoveryFilter = ({
 	draft,
 	setDraft,
@@ -270,15 +344,19 @@ export const DiscoveryFilter = ({
 						['categoryList', 'Category', Object.values(ProgramCategory)],
 					] as const
 				).map(([key, label, values]) => (
-					<Box component={'fieldset'} className={'discovery-filter-group'} key={key}>
-						<Typography component={'legend'}>{t(label)}</Typography>
-						{values.map((value) => (
+					<DiscoveryCheckboxGroup
+						key={key}
+						id={`${idPrefix}-${key}-more`}
+						label={t(label)}
+						values={values}
+						renderOption={(value, hidden) => (
 							<FormControlLabel
 								key={value}
 								label={t(key === 'locationList' ? value : `Program discovery card.${value}`)}
 								control={
 									<Checkbox
 										size={'small'}
+										inputProps={{ tabIndex: hidden ? -1 : undefined }}
 										checked={(draft.search[key] as string[] | undefined)?.includes(value) ?? false}
 										onChange={(_, checked) => {
 											setDraft((current) => {
@@ -295,8 +373,8 @@ export const DiscoveryFilter = ({
 									/>
 								}
 							/>
-						))}
-					</Box>
+						)}
+					/>
 				))}
 				<Box component={'fieldset'} className={'discovery-filter-group discovery-price-fields'}>
 					<Typography component={'legend'}>{t('Program discovery.Price')}</Typography>
