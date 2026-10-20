@@ -290,6 +290,140 @@
 			margin: 8px 20px 0 0;
 		}
 	}
+	.application-status-view {
+		display: grid;
+		gap: 24px;
+	}
+	.application-status-overview,
+	.application-submitted-summary {
+		min-width: 0;
+		padding: 28px;
+		background: #fff;
+		border-radius: 12px;
+	}
+	.application-status-overview {
+		h2 {
+			margin: 16px 0 12px;
+			font-size: 28px;
+			line-height: 1.35;
+			letter-spacing: -0.02em;
+			font-weight: 700;
+		}
+		> p:not(.application-status-label) {
+			font-size: 14px;
+			line-height: 1.7;
+			color: #5b5e68;
+		}
+		.application-actions {
+			margin-top: 24px;
+		}
+	}
+	.application-status-label {
+		display: inline-block;
+		margin: 0;
+		padding: 6px 10px;
+		border-radius: 6px;
+		font-size: 12px;
+		font-weight: 600;
+		line-height: 1.5;
+		color: #5b5e68;
+		background: #f2f4f6;
+	}
+	.application-status-label.is-rejected {
+		color: #a53425;
+		background: #fff3ef;
+	}
+	.application-status-label.is-approved {
+		color: #24543e;
+		background: #edf5ef;
+	}
+	.application-review-feedback,
+	.application-trainer-access {
+		margin-top: 24px;
+	}
+	.application-review-feedback h3,
+	.application-trainer-access h3 {
+		margin: 0 0 10px;
+		font-size: 15px;
+		font-weight: 600;
+	}
+	.application-review-feedback p {
+		margin: 0;
+		padding: 16px;
+		border-radius: 8px;
+		background: #f2f4f6;
+		white-space: pre-wrap;
+		overflow-wrap: anywhere;
+		font-size: 14px;
+		line-height: 1.7;
+	}
+	.application-trainer-access ul {
+		margin: 0;
+		padding-left: 20px;
+		display: grid;
+		gap: 8px;
+		font-size: 14px;
+		line-height: 1.6;
+	}
+	.application-role-reconciliation,
+	.application-refresh-error {
+		font-size: 13px;
+		line-height: 1.7;
+	}
+	.application-role-reconciliation p {
+		margin: 20px 0 0;
+	}
+	.application-refresh-error {
+		margin-bottom: 20px;
+		color: #ba1a1a;
+	}
+	.application-actions .application-primary-link {
+		padding: 12px 24px;
+		border-radius: 999px;
+		background: #c74c3b;
+		color: #fff;
+		font-weight: 600;
+		text-decoration: none;
+		text-align: center;
+		white-space: normal;
+	}
+	.application-actions .application-primary-link:hover {
+		background: #a53425;
+	}
+	.application-submitted-summary {
+		h2 {
+			margin: 0 0 24px;
+			font-size: 18px;
+			font-weight: 600;
+		}
+		dl {
+			display: grid;
+			gap: 24px;
+			margin: 0;
+		}
+		dl > div {
+			min-width: 0;
+		}
+		dt {
+			margin-bottom: 8px;
+			color: #5b5e68;
+			font-size: 12px;
+			line-height: 1.6;
+			font-weight: 600;
+		}
+		dd {
+			margin: 0;
+			white-space: pre-wrap;
+			overflow-wrap: anywhere;
+			font-size: 14px;
+			line-height: 1.8;
+		}
+		.application-submitted-categories {
+			display: flex;
+			flex-wrap: wrap;
+			gap: 8px 16px;
+		}
+	}
 	@media (max-width: 1024px) {
 		.trainer-application-grid {
 			grid-template-columns: minmax(0, 1fr);
@@ -304,6 +438,17 @@
 	}
 	@media (max-width: 767px) {
 		padding: 20px 16px 40px;
+		.application-status-overview,
+		.application-submitted-summary {
+			padding: 20px 16px;
+		}
+		.application-status-overview h2 {
+			font-size: 24px;
+		}
+		.application-status-overview .application-actions > * {
+			max-width: 100%;
+			white-space: normal;
+		}
 		.application-breadcrumb {
 			margin-bottom: 16px;
 		}

@@ -25,7 +25,7 @@ import { trainerReservationsAccess } from '../../libs/trainer-reservations';
 import { myBookingsAccess } from '../../libs/my-bookings';
 import { getJwtToken, updateUserInfo } from '../../libs/auth';
 import { Button } from '@mui/material';
-import { useTranslation } from 'next-i18next';
+import { i18n, useTranslation } from 'next-i18next';
 import Link from 'next/link';
 import MemberFollowers from '../../libs/components/member/MemberFollowers';
 import MemberFollowings from '../../libs/components/member/MemberFollowings';
@@ -34,11 +34,14 @@ import { Messages } from '../../libs/config';
 import { LIKE_TARGET_MEMBER, SUBSCRIBE, UNSUBSCRIBE } from '../../apollo/user/mutation';
 import { sweetErrorHandling, sweetMixinErrorAlert, sweetTopSmallSuccessAlert } from '../../libs/sweetAlert';
 
-export const getStaticProps = async ({ locale }: any) => ({
-	props: {
-		...(await serverSideTranslations(locale, ['common', 'trainer-application'])),
-	},
-});
+export const getStaticProps = async ({ locale }: any) => {
+	if (process.env.NODE_ENV === 'development') await i18n?.reloadResources(locale, ['trainer-application']);
+	return {
+		props: {
+			...(await serverSideTranslations(locale, ['common', 'trainer-application'])),
+		},
+	};
+};
 
 const MyPage: NextPage = () => {
 	const { t } = useTranslation('common');

@@ -1,4 +1,4 @@
-import React, { FormEvent, useEffect, useRef, useState } from 'react';
+import React, { FormEvent, useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { useMutation, useQuery, useReactiveVar } from '@apollo/client';
@@ -14,13 +14,15 @@ import { SUBMIT_TRAINER_APPLICATION } from '../../../apollo/user/mutation';
 import { authErrorVar, authReadyVar, userVar } from '../../../apollo/store';
 import { getAuthSessionId, updateUserInfo } from '../../auth';
 import { authErrorMessage } from '../../auth-form';
-import { myBookingsAccess } from '../../my-bookings';
 import { TrainerApplicationStatus } from '../../enums/trainer-application.enum';
 import {
 	trainerApplicationCategories,
 	trainerApplicationErrors,
 	trainerApplicationPayload,
 	trainerApplicationRoute,
+	trainerApplicationAccess,
+	trainerApplicationPollInterval,
+	trainerWorkspaceRoute,
 	TrainerApplicationDraft,
 	TrainerApplicationErrors,
 } from '../../trainer-application';
@@ -28,10 +30,11 @@ import {
 	TrainerApplication as Application,
 	TrainerApplicationInput,
 } from '../../types/trainer-application/trainer-application';
+import TrainerApplicationStatusView from './TrainerApplicationStatus';
 
 const profileRoute = '/mypage?category=myProfile';
 
-function ApplicationForm({
+function ApplicationLifecycle({
 	ownerId,
 	sessionIdentity,
 	fullName,
@@ -43,6 +46,11 @@ function ApplicationForm({
 	const { t } = useTranslation(['trainer-application', 'common']);
 	const mounted = useRef(true);
 	const writeLock = useRef(false);
+	const readLock = useRef(false);
+	const roleLock = useRef(false);
+	const reconciledApplication = useRef('');
+	const nameInput = useRef<HTMLInputElement>(null);
+	const user = useReactiveVar(userVar);
 	const [draft, setDraft] = useState<TrainerApplicationDraft>({
 		fullName,
 		categories: [],
@@ -51,13 +59,44 @@ function ApplicationForm({
 	});
 	const [errors, setErrors] = useState<TrainerApplicationErrors>({});
 	const [error, setError] = useState('');
-	const [submitted, setSubmitted] = useState<Application | null>(null);
+	const [application, setApplication] = useState<Application | null>();
+	const [previousApplicationId, setPreviousApplicationId] = useState<string>();
+	const [invalidRead, setInvalidRead] = useState(false);
+	const [roleState, setRoleState] = useState<'idle' | 'checking' | 'ready' | 'error'>('idle');
 	const [needsRecheck, setNeedsRecheck] = useState(false);
 	const [submitting, setSubmitting] = useState(false);
+	const activeAccount = useCallback(
+		() =>
+			mounted.current &&
+			authReadyVar() &&
+			!authErrorVar() &&
+			userVar()._id === ownerId &&
+			userVar().memberStatus === 'ACTIVE' &&
+			['USER', 'TRAINER'].includes(userVar().memberType) &&
+			getAuthSessionId() === sessionIdentity,
+		[ownerId, sessionIdentity],
+	);
 	const query = useQuery<{ getMyTrainerApplication: Application | null }>(GET_MY_TRAINER_APPLICATION, {
 		fetchPolicy: 'no-cache',
 		notifyOnNetworkStatusChange: true,
 		context: { handleErrorLocally: true, queryDeduplication: false },
+		onCompleted: (data) => {
+			if (!activeAccount()) return;
+			const next = data.getMyTrainerApplication;
+			if (
+				next !== null &&
+				(!next?._id || next.memberId !== ownerId || !Object.values(TrainerApplicationStatus).includes(next.status))
+			) {
+				setInvalidRead(true);
+				return;
+			}
+			setApplication(next);
+			setPreviousApplicationId((previous) =>
+				next?.status === TrainerApplicationStatus.REJECTED && next._id === previous ? previous : undefined,
+			);
+			setInvalidRead(false);
+			setNeedsRecheck(false);
+		},
 	});
 	const [submitApplication] = useMutation<
 		{ submitTrainerApplication: Application },
@@ -69,32 +108,98 @@ function ApplicationForm({
 			mounted.current = false;
 		};
 	}, []);
-	const activeAccount = () =>
-		mounted.current &&
-		authReadyVar() &&
-		!authErrorVar() &&
-		userVar()._id === ownerId &&
-		userVar().memberStatus === 'ACTIVE' &&
-		userVar().memberType === 'USER' &&
-		getAuthSessionId() === sessionIdentity;
-	const existing = submitted ?? query.data?.getMyTrainerApplication;
-	const checked = !query.loading && !query.error && query.data?.getMyTrainerApplication === null;
-	const retryQuery = async () => {
-		if (writeLock.current || !activeAccount()) return;
-		writeLock.current = true;
+	const editingRejected =
+		application?.status === TrainerApplicationStatus.REJECTED && application._id === previousApplicationId;
+	const checked = !query.loading && !query.error && !invalidRead && (application === null || editingRejected);
+	const { refetch, startPolling, stopPolling } = query;
+	const queryLoading = useRef(query.loading);
+	queryLoading.current = query.loading;
+	const retryQuery = useCallback(async () => {
+		if (writeLock.current || readLock.current || queryLoading.current || !activeAccount()) return;
+		readLock.current = true;
 		try {
-			const result = await query.refetch();
-			if (activeAccount() && !result.errors?.length && result.data?.getMyTrainerApplication !== undefined)
-				setNeedsRecheck(false);
+			await refetch();
 		} catch {
 			/* The query error renders a read-only retry state. */
 		} finally {
-			writeLock.current = false;
+			readLock.current = false;
 		}
+	}, [activeAccount, refetch]);
+	useEffect(() => {
+		const visible = () => document.visibilityState !== 'hidden';
+		const refreshVisible = () => {
+			if (visible()) void retryQuery();
+		};
+		const updatePolling = () => {
+			stopPolling();
+			if (visible() && application?.status === TrainerApplicationStatus.PENDING)
+				startPolling(trainerApplicationPollInterval);
+		};
+		const visibilityChanged = () => {
+			updatePolling();
+			refreshVisible();
+		};
+		updatePolling();
+		window.addEventListener('focus', refreshVisible);
+		document.addEventListener('visibilitychange', visibilityChanged);
+		return () => {
+			stopPolling();
+			window.removeEventListener('focus', refreshVisible);
+			document.removeEventListener('visibilitychange', visibilityChanged);
+		};
+	}, [application?.status, retryQuery, startPolling, stopPolling]);
+	const refreshRole = useCallback(async () => {
+		if (!activeAccount() || roleLock.current) return;
+		roleLock.current = true;
+		setRoleState('checking');
+		try {
+			await updateUserInfo();
+			if (activeAccount()) setRoleState(userVar().memberType === 'TRAINER' ? 'ready' : 'error');
+		} catch {
+			if (activeAccount()) setRoleState('error');
+		} finally {
+			roleLock.current = false;
+		}
+	}, [activeAccount]);
+	useEffect(() => {
+		if (application?.status !== TrainerApplicationStatus.APPROVED || reconciledApplication.current === application._id)
+			return;
+		reconciledApplication.current = application._id;
+		void refreshRole();
+	}, [application?._id, application?.status, refreshRole]);
+	useEffect(() => {
+		if (editingRejected) nameInput.current?.focus();
+	}, [editingRejected]);
+	const workspaceGuard = (event: React.MouseEvent<HTMLAnchorElement>) => {
+		if (!activeAccount() || userVar().memberType !== 'TRAINER') event.preventDefault();
+	};
+	const applyAgain = () => {
+		if (
+			!activeAccount() ||
+			userVar().memberType !== 'USER' ||
+			application?.status !== TrainerApplicationStatus.REJECTED ||
+			query.loading ||
+			query.error ||
+			invalidRead
+		)
+			return;
+		setDraft(trainerApplicationPayload(application));
+		setPreviousApplicationId(application._id);
+		setErrors({});
+		setError('');
 	};
 	const submitHandler = async (event: FormEvent<HTMLFormElement>) => {
 		event.preventDefault();
-		if (writeLock.current || submitting || !activeAccount() || !checked || existing || needsRecheck) return;
+		if (
+			writeLock.current ||
+			readLock.current ||
+			submitting ||
+			!activeAccount() ||
+			userVar().memberType !== 'USER' ||
+			!checked ||
+			needsRecheck
+		)
+			return;
 		const validation = trainerApplicationErrors(draft);
 		setErrors(validation);
 		setError('');
@@ -106,7 +211,9 @@ function ApplicationForm({
 		writeLock.current = true;
 		setSubmitting(true);
 		try {
-			const result = await submitApplication({ variables: { input: trainerApplicationPayload(draft) } });
+			const result = await submitApplication({
+				variables: { input: trainerApplicationPayload(draft, previousApplicationId) },
+			});
 			if (!activeAccount()) return;
 			const application = result.data?.submitTrainerApplication;
 			if (
@@ -115,7 +222,8 @@ function ApplicationForm({
 				application.status !== TrainerApplicationStatus.PENDING
 			)
 				throw new Error(t('Submission error'));
-			setSubmitted(application);
+			setApplication(application);
+			setPreviousApplicationId(undefined);
 		} catch (failure) {
 			if (!activeAccount()) return;
 			setError(authErrorMessage(failure, t('Connection error'), t('Submission error')));
@@ -168,23 +276,46 @@ function ApplicationForm({
 		<div className="trainer-application-grid">
 			<section aria-labelledby="trainer-application-title">
 				<header className="trainer-application-heading">
-					<h1 id="trainer-application-title">{t('Title')}</h1>
-					<p>{t('Intro')}</p>
+					<h1 id="trainer-application-title">
+						{t((application && !editingRejected) || user.memberType === 'TRAINER' ? 'Status title' : 'Title')}
+					</h1>
+					{(!application || editingRejected) && user.memberType === 'USER' && <p>{t('Intro')}</p>}
 				</header>
-				{existing ? (
-					<div className="application-notice" role="status">
-						<h2>{t(submitted ? 'Submitted title' : 'Existing title')}</h2>
-						<p>{t(submitted ? 'Submitted copy' : 'Existing copy')}</p>
-						<Link href={profileRoute}>{t('Back to profile')}</Link>
+				{(query.error || invalidRead) && application !== undefined && (
+					<div className="application-refresh-error" role="alert">
+						<p>{authErrorMessage(query.error, t('Connection error'), t('Query error'))}</p>
+						<Button onClick={() => void retryQuery()}>{t('Retry')}</Button>
 					</div>
-				) : query.loading ? (
+				)}
+				{application && !editingRejected ? (
+					<TrainerApplicationStatusView
+						application={application}
+						canApplyAgain={user.memberType === 'USER' && !query.loading && !query.error && !invalidRead}
+						onApplyAgain={applyAgain}
+						roleState={roleState}
+						onRefreshRole={() => void refreshRole()}
+						canUseWorkspace={roleState === 'ready' && user.memberType === 'TRAINER'}
+						onWorkspace={workspaceGuard}
+					/>
+				) : application === undefined && query.loading ? (
 					<p className="application-notice" role="status">
 						{t('Loading')}
 					</p>
-				) : query.error || !checked ? (
+				) : application === undefined ? (
 					<div className="application-notice" role="alert">
 						<p>{authErrorMessage(query.error, t('Connection error'), t('Query error'))}</p>
 						<Button onClick={() => void retryQuery()}>{t('Retry')}</Button>
+					</div>
+				) : user.memberType === 'TRAINER' ? (
+					<div className="application-notice">
+						<h2>{t('Existing trainer title')}</h2>
+						<p>{t('Existing trainer copy')}</p>
+						<div className="application-actions">
+							<Link className="application-primary-link" href={trainerWorkspaceRoute} onClick={workspaceGuard}>
+								{t('Go to Trainer Workspace')}
+							</Link>
+							<Link href={profileRoute}>{t('View profile')}</Link>
+						</div>
 					</div>
 				) : (
 					<form
@@ -199,6 +330,7 @@ function ApplicationForm({
 								<span id="application-fullName-hint">{t('Name limit')}</span>
 							</div>
 							<input
+								ref={nameInput}
 								id="application-fullName"
 								name="fullName"
 								type="text"
@@ -266,7 +398,7 @@ function ApplicationForm({
 							<Button
 								type="submit"
 								variant="contained"
-								disabled={submitting || needsRecheck}
+								disabled={submitting || needsRecheck || !checked}
 								endIcon={submitting ? <CircularProgress size={18} color="inherit" /> : <ArrowForwardRoundedIcon />}
 							>
 								{t(submitting ? 'Submitting' : 'Submit application')}
@@ -307,17 +439,17 @@ const TrainerApplication = () => {
 	const user = useReactiveVar(userVar);
 	const ready = useReactiveVar(authReadyVar);
 	const authError = useReactiveVar(authErrorVar);
-	const access = myBookingsAccess(ready && router.isReady, authError, user);
+	const access = trainerApplicationAccess(ready && router.isReady, authError, user);
 	const sessionIdentity = getAuthSessionId();
 	return (
 		<div id="trainer-application-page">
 			<nav className="application-breadcrumb" aria-label={t('Breadcrumb')}>
 				<Link href={profileRoute}>{t('My profile')}</Link>
 				<span aria-hidden="true">/</span>
-				<span aria-current="page">{t('Entry')}</span>
+				<span aria-current="page">{t('Status title')}</span>
 			</nav>
 			{access === 'ready' ? (
-				<ApplicationForm
+				<ApplicationLifecycle
 					key={`${user._id}:${sessionIdentity}`}
 					ownerId={user._id}
 					sessionIdentity={sessionIdentity}

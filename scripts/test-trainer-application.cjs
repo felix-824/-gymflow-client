@@ -95,12 +95,67 @@ function unit() {
 	const page = fs.readFileSync(path.join(__dirname, '../pages/mypage/index.tsx'), 'utf8');
 	assert.match(page, /category === 'trainerApplication'\) return <TrainerApplication/);
 	assert.match(page, /category !== 'trainerApplication'/);
-	assert.match(page, /serverSideTranslations\(locale, \['common', 'trainer-application'\]\)/);
+	assert.match(page, /serverSideTranslations\(locale, \['common', 'trainer-application'\]/);
 	const layout = fs.readFileSync(path.join(__dirname, '../libs/components/layout/LayoutBasic.tsx'), 'utf8');
 	assert.match(layout, /userFavorites \|\| trainerApplication\)/);
 	pass(
 		'existing My Page controller routes trainerApplication through the modern shared layout and loads the separate namespace',
 	);
+}
+
+async function translationLoadingChecks() {
+	const pageFile = path.join(__dirname, '../pages/mypage/index.tsx');
+	const source = ts.createSourceFile(pageFile, fs.readFileSync(pageFile, 'utf8'), ts.ScriptTarget.Latest);
+	const mocks = Object.fromEntries(
+		source.statements.filter(ts.isImportDeclaration).map((statement) => [statement.moduleSpecifier.text, {}]),
+	);
+	mocks['../../libs/components/layout/LayoutBasic'] = { __esModule: true, default: (page) => page };
+	mocks['next-i18next/serverSideTranslations'] = require('next-i18next/serverSideTranslations');
+	mocks['next-i18next'] = require('next-i18next');
+	const { getStaticProps } = loadTs(pageFile, mocks);
+	const appModule = require('next-i18next/dist/commonjs/appWithTranslation');
+	const React = require('react');
+	const { renderToStaticMarkup } = require('react-dom/server');
+	const App = appModule.appWithTranslation(() => null);
+	const originalEnvironment = process.env.NODE_ENV;
+	try {
+		process.env.NODE_ENV = 'development';
+		const initial = await getStaticProps({ locale: 'en' });
+		renderToStaticMarkup(React.createElement(App, { pageProps: initial.props }));
+		for (const locale of ['en', 'kr', 'ru']) {
+			// Simulate a long-running dev server that loaded the Phase 5C bundle before status keys existed.
+			const stale = { Title: 'Become a GymFlow Trainer' };
+			appModule.globalI18n.removeResourceBundle(locale, 'trainer-application');
+			appModule.globalI18n.addResourceBundle(locale, 'trainer-application', stale);
+			assert.equal(appModule.globalI18n.getResource(locale, 'trainer-application', 'PENDING title'), undefined);
+			const loaded = await getStaticProps({ locale });
+			const bundle = loaded.props._nextI18Next.initialI18nStore[locale]['trainer-application'];
+			const expected = JSON.parse(
+				fs.readFileSync(path.join(__dirname, '../public/locales', locale, 'trainer-application.json'), 'utf8'),
+			);
+			assert.deepEqual(bundle, expected, locale + ' must refresh the stale server namespace from disk');
+			for (const status of ['PENDING', 'REJECTED', 'APPROVED']) {
+				for (const key of ['Status title', 'Status ' + status, status + ' title', status + ' copy']) {
+					const translated = appModule.globalI18n.getFixedT(locale, 'trainer-application')(key);
+					assert.equal(translated, expected[key]);
+					assert.notEqual(translated, key, locale + ' must not expose ' + key);
+				}
+			}
+		}
+		process.env.NODE_ENV = 'production';
+		appModule.globalI18n.removeResourceBundle('en', 'trainer-application');
+		appModule.globalI18n.addResourceBundle('en', 'trainer-application', { Title: 'Cached production bundle' });
+		const production = await getStaticProps({ locale: 'en' });
+		assert.deepEqual(production.props._nextI18Next.initialI18nStore.en['trainer-application'], {
+			Title: 'Cached production bundle',
+		});
+		pass(
+			'real My Page translation loader refreshes stale EN/KR/RU status bundles in development; production caching stays enabled',
+		);
+	} finally {
+		if (originalEnvironment === undefined) delete process.env.NODE_ENV;
+		else process.env.NODE_ENV = originalEnvironment;
+	}
 }
 
 async function domChecks() {
@@ -138,6 +193,29 @@ async function domChecks() {
 	let identity = 'session-1',
 		locale = 'en',
 		routerReady = true;
+	let visibility = 'visible',
+		roleRefreshCalls = 0,
+		refreshedRole = 'TRAINER',
+		holdRole = false,
+		releaseRole;
+	Object.defineProperty(document, 'visibilityState', { configurable: true, get: () => visibility });
+	const nativeSetTimeout = global.setTimeout,
+		nativeClearTimeout = global.clearTimeout;
+	const pollingTimers = new Map();
+	global.setTimeout = (callback, delay, ...args) => {
+		const timer = nativeSetTimeout(callback, delay, ...args);
+		if (delay === helpers.trainerApplicationPollInterval)
+			pollingTimers.set(timer, () => {
+				nativeClearTimeout(timer);
+				pollingTimers.delete(timer);
+				callback(...args);
+			});
+		return timer;
+	};
+	global.clearTimeout = (timer) => {
+		pollingTimers.delete(timer);
+		return nativeClearTimeout(timer);
+	};
 	const i18n = require('i18next').createInstance();
 	const resources = Object.fromEntries(
 		['en', 'kr', 'ru'].map((lng) => [
@@ -151,6 +229,17 @@ async function domChecks() {
 		]),
 	);
 	await i18n.init({ resources, lng: 'en', defaultNS: 'common', initImmediate: false });
+	for (const [key, expected] of Object.entries({
+		'Status title': 'Trainer Application',
+		'Status PENDING': 'PENDING',
+		'PENDING title': 'Your application is under review',
+		'PENDING copy':
+			'We’ve received your trainer application. Trainer access will remain unavailable until the application is approved.',
+		'Review note':
+			'Applications are reviewed before trainer access is enabled. Submitting an application does not automatically make your account a trainer account.',
+		'Back to profile': 'Back to profile',
+	}))
+		assert.equal(i18n.getFixedT('en', 'trainer-application')(key), expected);
 	for (const lng of ['en', 'kr', 'ru']) {
 		assert.deepEqual(
 			Object.keys(resources[lng]['trainer-application']).sort(),
@@ -164,7 +253,18 @@ async function domChecks() {
 		'../../../apollo/store': store,
 		'../../auth': {
 			getAuthSessionId: () => identity,
-			updateUserInfo: async () => {},
+			updateUserInfo: async () => {
+				roleRefreshCalls++;
+				const owner = store.userVar()._id,
+					session = identity;
+				if (holdRole)
+					await new Promise((resolve) => {
+						releaseRole = resolve;
+					});
+				if (refreshedRole === 'error') throw new Error('Account refresh unavailable');
+				if (owner === store.userVar()._id && session === identity)
+					store.userVar({ ...store.userVar(), memberType: refreshedRole });
+			},
 			ensureAccessToken: async () => '',
 			logOut: async () => true,
 		},
@@ -232,6 +332,11 @@ async function domChecks() {
 		releaseMutation = null;
 		version++;
 		identity = 'session-' + version;
+		visibility = 'visible';
+		roleRefreshCalls = 0;
+		refreshedRole = 'TRAINER';
+		holdRole = false;
+		releaseRole = undefined;
 		routerReady = true;
 		store.userVar({ ...user });
 		store.authReadyVar(true);
@@ -254,9 +359,17 @@ async function domChecks() {
 									observer.complete();
 								}
 							} else {
-								if (mutationFailure) observer.next({ errors: [{ message: mutationFailure }] });
+								if (mutationFailure === 'UNCERTAIN') {
+									latest = { ...receipt(), ...operation.variables.input, _id: 'd'.repeat(24) };
+									observer.error(new Error('Response lost after write'));
+									return;
+								} else if (mutationFailure) observer.next({ errors: [{ message: mutationFailure }] });
 								else {
-									latest = receipt();
+									latest = {
+										...receipt(),
+										...operation.variables.input,
+										_id: operation.variables.input.previousApplicationId ? 'd'.repeat(24) : 'b'.repeat(24),
+									};
 									observer.next({ data: { submitTrainerApplication: latest } });
 								}
 								observer.complete();
@@ -316,7 +429,6 @@ async function domChecks() {
 		pass('actual MyProfile heading entry appears only for ACTIVE USER and hides for TRAINER/ADMIN/guest/BLOCK/DELETE');
 		for (const account of [
 			{ ...store.emptyUser },
-			{ ...user, memberType: 'TRAINER' },
 			{ ...user, memberType: 'ADMIN' },
 			{ ...user, memberStatus: 'BLOCK' },
 			{ ...user, memberStatus: 'DELETE' },
@@ -406,26 +518,207 @@ async function domChecks() {
 		});
 		releaseMutation();
 		await until(() => !document.querySelector('form'));
-		assert(document.body.textContent.includes('Application submitted'));
+		assert(document.body.textContent.includes('Your application is under review'));
 		assert.equal(store.userVar().memberType, 'USER');
 		assert(!document.body.textContent.includes(receipt()._id));
 		assert(!document.body.textContent.includes(user._id));
 		assert(document.querySelector('a[href="/mypage?category=myProfile"]'));
 		pass(
-			'same-tick submissions dispatch once with exact trimmed contract; PENDING receipt shows minimal notice, keeps USER and hides internal IDs',
+			'same-tick submissions dispatch once with exact trimmed contract; backend PENDING receipt shows read-only state, keeps USER and hides internal IDs',
 		);
 		for (const status of ['PENDING', 'APPROVED', 'REJECTED']) {
 			reset();
 			latest = receipt(status);
 			render();
-			await until(() => document.body.textContent.includes('Application already on file'));
+			await until(() => document.body.textContent.includes(resources.en['trainer-application'][status + ' title']));
 			assert(!document.querySelector('form'));
 			assert.equal(writes().length, 0);
 			assert(!document.body.textContent.includes(latest._id));
-			assert(!document.body.textContent.includes(status));
+			assert.equal(document.querySelector('.application-status-label').textContent, status);
+			assert.equal(
+				document.querySelector('.application-status-overview > p:not(.application-status-label)').textContent,
+				resources.en['trainer-application'][status + ' copy'],
+			);
+			assert(document.querySelector('dl').textContent.includes(latest.fullName));
+			assert(document.querySelector('dl').textContent.includes(latest.experienceSummary));
+			assert(document.querySelector('dl').textContent.includes(latest.bio));
+			assert.equal(document.querySelector('.application-status-view input, .application-status-view textarea'), null);
+			if (status === 'PENDING') {
+				assert.equal(
+					document.querySelector('.application-review-note').textContent,
+					resources.en['trainer-application']['Review note'],
+				);
+				assert.equal(document.querySelector('.application-status-view button'), null);
+				assert.equal(document.querySelector('a[href="/mypage?category=trainerDashboard"]'), null);
+			}
+			if (status === 'REJECTED') assert.equal(document.querySelector('.application-review-note'), null);
+			if (status === 'APPROVED') {
+				assert.deepEqual(
+					[...document.querySelectorAll('.application-trainer-access li')].map((node) => node.textContent),
+					['Create Programs', 'Manage Schedule', 'Manage Reservations'],
+				);
+				assert(
+					document.querySelector('.application-submitted-summary h2').textContent.includes('Approved Application'),
+				);
+				assert(!document.querySelector('.application-status-view button')?.textContent.includes('Apply again'));
+			}
 		}
 		pass(
-			'existing PENDING/APPROVED/REJECTED show only the temporary notice and cannot overwrite or submit a duplicate',
+			'PENDING/APPROVED/REJECTED render frozen read-only values and status/actions; no IDs, form, editing or duplicate writes',
+		);
+		const clickText = (text) =>
+			flushSync(() => [...document.querySelectorAll('button')].find((button) => button.textContent === text).click());
+		reset();
+		latest = {
+			...receipt('REJECTED'),
+			rejectionReason: 'Please explain your coaching approach.\nInclude relevant experience.',
+			reviewedBy: 'private-reviewer',
+			reviewedAt: '2026-10-19T01:02:03Z',
+		};
+		const predecessor = latest,
+			predecessorSnapshot = JSON.stringify(latest);
+		render();
+		await until(() => document.querySelector('.application-review-feedback'));
+		assert.equal(document.querySelector('.application-review-feedback p').textContent, predecessor.rejectionReason);
+		for (const hidden of [
+			predecessor._id,
+			predecessor.memberId,
+			predecessor.reviewedBy,
+			predecessor.reviewedAt,
+			predecessor.createdAt,
+		])
+			assert(!document.body.textContent.includes(hidden));
+		clickText('Apply again');
+		assert(document.querySelector('form'));
+		assert.equal(document.activeElement, field('fullName'));
+		assert.equal(field('fullName').value, predecessor.fullName);
+		assert.equal(field('bio').value, predecessor.bio);
+		assert.equal(document.querySelector('[aria-pressed="true"]').textContent, 'Muscle gain');
+		input('bio', ' Revised coaching philosophy ');
+		mutationFailure = 'Application history changed; reload before submitting';
+		submit();
+		await until(() => document.querySelector('#application-error'));
+		assert.equal(writes()[0].variables.input.previousApplicationId, predecessor._id);
+		assert.equal(field('bio').value, ' Revised coaching philosophy ');
+		assert.equal(JSON.stringify(predecessor), predecessorSnapshot);
+		submit();
+		assert.equal(writes().length, 1);
+		clickText('Check application before retrying');
+		await until(() => !document.querySelector('button[type="submit"]').disabled);
+		assert.equal(field('bio').value, ' Revised coaching philosophy ');
+		mutationFailure = null;
+		holdMutation = true;
+		flushSync(() => {
+			const form = document.querySelector('form');
+			for (let i = 0; i < 3; i++) form.dispatchEvent(new window.Event('submit', { bubbles: true, cancelable: true }));
+		});
+		await until(() => releaseMutation);
+		assert.equal(writes().length, 2);
+		assert.equal(writes()[1].variables.input.previousApplicationId, predecessor._id);
+		assert.equal(writes()[1].variables.input.bio, 'Revised coaching philosophy');
+		releaseMutation();
+		await until(() => document.querySelector('.application-status-label')?.textContent === 'PENDING');
+		assert.equal(JSON.stringify(predecessor), predecessorSnapshot);
+		assert.notEqual(latest._id, predecessor._id);
+		assert.equal(store.userVar().memberType, 'USER');
+		pass(
+			'REJECTED actual feedback stays private; Apply again opens/focuses an editable copy; failed retry preserves draft/predecessor and rapid successful resubmission creates new PENDING',
+		);
+		reset();
+		latest = receipt('REJECTED');
+		render();
+		await until(() => document.querySelector('.application-status-label'));
+		clickText('Apply again');
+		input('bio', 'Draft for uncertain write');
+		mutationFailure = 'UNCERTAIN';
+		submit();
+		await until(() => document.querySelector('#application-error'));
+		assert.equal(field('bio').value, 'Draft for uncertain write');
+		assert.equal(writes().length, 1);
+		submit();
+		assert.equal(writes().length, 1);
+		clickText('Check application before retrying');
+		await until(() => document.querySelector('.application-status-label')?.textContent === 'PENDING');
+		assert.equal(writes().length, 1);
+		assert(!document.querySelector('form'));
+		pass('uncertain reapplication response blocks replay and reconciles the new PENDING record through an owner read');
+		reset();
+		latest = receipt();
+		holdRole = true;
+		render();
+		await until(() => document.querySelector('.application-status-label')?.textContent === 'PENDING');
+		latest = receipt('APPROVED');
+		window.dispatchEvent(new window.Event('focus'));
+		await until(() => releaseRole);
+		assert.equal(store.userVar().memberType, 'USER');
+		assert.equal(roleRefreshCalls, 1);
+		assert(!document.querySelector('a[href="/mypage?category=trainerDashboard"]'));
+		assert(
+			[...document.querySelectorAll('button')].find((button) => button.textContent === 'Go to Trainer Workspace')
+				.disabled,
+		);
+		releaseRole();
+		await until(() => document.querySelector('a[href="/mypage?category=trainerDashboard"]'));
+		assert.equal(store.userVar().memberType, 'TRAINER');
+		assert.equal(roleRefreshCalls, 1);
+		assert.equal(document.querySelector('.application-status-label').textContent, 'APPROVED');
+		assert(!/Verified Coach|certification|calendar sync|client roster/i.test(document.body.textContent));
+		pass(
+			'APPROVED waits for updateUserInfo, retains the same lifecycle across USER→TRAINER, enables only the real workspace route and adds no unsupported claims',
+		);
+		reset();
+		latest = receipt('APPROVED');
+		refreshedRole = 'USER';
+		render();
+		await until(() => document.querySelector('.application-role-reconciliation[role="alert"]'));
+		assert.equal(roleRefreshCalls, 1);
+		assert(!document.querySelector('a[href="/mypage?category=trainerDashboard"]'));
+		window.dispatchEvent(new window.Event('focus'));
+		await new Promise((resolve) => setTimeout(resolve, 30));
+		assert.equal(roleRefreshCalls, 1);
+		refreshedRole = 'TRAINER';
+		clickText('Refresh trainer access');
+		await until(() => document.querySelector('a[href="/mypage?category=trainerDashboard"]'));
+		assert.equal(roleRefreshCalls, 2);
+		pass(
+			'unconfirmed approval cannot navigate to workspace or refresh-loop; explicit authoritative-role Retry recovers',
+		);
+		reset();
+		store.userVar({ ...user, memberType: 'TRAINER' });
+		render();
+		await until(() => document.body.textContent.includes('Your trainer workspace is available'));
+		assert(!document.querySelector('form, .application-status-label, dl'));
+		assert(document.querySelector('a[href="/mypage?category=trainerDashboard"]'));
+		assert.equal(roleRefreshCalls, 0);
+		pass(
+			'grandfathered ACTIVE TRAINER with no application retains workspace access without a form or fabricated approval',
+		);
+		reset();
+		latest = receipt();
+		render();
+		await until(() => pollingTimers.size > 0);
+		assert.equal(helpers.trainerApplicationPollInterval, 30000);
+		const beforePoll = requests.length;
+		[...pollingTimers.values()][0]();
+		await until(() => requests.length > beforePoll);
+		await until(() => pollingTimers.size > 0);
+		visibility = 'hidden';
+		document.dispatchEvent(new window.Event('visibilitychange'));
+		assert.equal(pollingTimers.size, 0);
+		const hiddenRequests = requests.length;
+		window.dispatchEvent(new window.Event('focus'));
+		await new Promise((resolve) => setTimeout(resolve, 20));
+		assert.equal(requests.length, hiddenRequests);
+		visibility = 'visible';
+		document.dispatchEvent(new window.Event('visibilitychange'));
+		await until(() => requests.length > hiddenRequests);
+		await new Promise((resolve) => setTimeout(resolve, 20));
+		latest = { ...receipt('REJECTED'), rejectionReason: 'Add experience details' };
+		window.dispatchEvent(new window.Event('focus'));
+		await until(() => document.querySelector('.application-status-label')?.textContent === 'REJECTED');
+		assert.equal(pollingTimers.size, 0);
+		pass(
+			'entry/focus reads and 30-second PENDING polling refresh state; hidden tabs pause polling and terminal status stops it',
 		);
 		reset();
 		queryFailure = true;
@@ -449,7 +742,7 @@ async function domChecks() {
 				.find((button) => button.textContent.includes('Check application'))
 				.click(),
 		);
-		await until(() => document.body.textContent.includes('Application already on file'));
+		await until(() => document.body.textContent.includes('Your application is under review'));
 		assert.equal(writes().length, 1);
 		pass(
 			'query errors fail closed with read-only Retry; backend submit error stays readable and duplicate recovery reads existing state without replay',
@@ -469,7 +762,7 @@ async function domChecks() {
 		await until(() => document.querySelector('form') && field('bio').value === '');
 		releaseOldMutation();
 		await new Promise((resolve) => setTimeout(resolve, 30));
-		assert(!document.body.textContent.includes('Application submitted'));
+		assert(!document.body.textContent.includes('Your application is under review'));
 		assert.equal(store.userVar()._id, 'c'.repeat(24));
 		pass('obsolete mutation completion cannot show success or change the next account/session');
 		for (locale of ['en', 'kr', 'ru']) {
@@ -485,11 +778,57 @@ async function domChecks() {
 				document.querySelector('.trainer-application-editorial img').getAttribute('src'),
 				'/img/fiber/strength-barbell.webp',
 			);
+			for (const status of ['PENDING', 'REJECTED', 'APPROVED']) {
+				reset();
+				latest = { ...receipt(status), rejectionReason: 'Actual feedback' };
+				render();
+				await until(() => document.querySelector('.application-status-label'));
+				assert.equal(
+					document.querySelector('.application-status-label').textContent,
+					resources[locale]['trainer-application']['Status ' + status],
+				);
+				assert.equal(
+					document.querySelector('#application-status-heading').textContent,
+					resources[locale]['trainer-application'][status + ' title'],
+				);
+				assert.equal(
+					document.querySelector('h1').textContent,
+					resources[locale]['trainer-application']['Status title'],
+				);
+				assert.equal(
+					document.querySelector('.application-breadcrumb [aria-current="page"]').textContent,
+					resources[locale]['trainer-application']['Status title'],
+				);
+				assert.equal(
+					document.querySelector('.application-status-overview > p:not(.application-status-label)').textContent,
+					resources[locale]['trainer-application'][status + ' copy'],
+				);
+				assert.doesNotMatch(
+					document.getElementById('trainer-application-page').textContent,
+					/Status title|Status (?:PENDING|REJECTED|APPROVED)|(?:PENDING|REJECTED|APPROVED) (?:title|copy)/,
+				);
+				if (status === 'PENDING') {
+					assert.equal(
+						document.querySelector('.application-review-note').textContent,
+						resources[locale]['trainer-application']['Review note'],
+					);
+					assert.equal(
+						document.querySelector('.application-status-overview a[href="/mypage?category=myProfile"]').textContent,
+						resources[locale]['trainer-application']['Back to profile'],
+					);
+				}
+			}
 		}
-		pass('localized form/category labels and existing local editorial photo resolve for all three locales');
+		pass(
+			'EN/KR/RU state titles, copy, breadcrumb and PENDING note/action render without key fallbacks; approved form/photo stay unchanged',
+		);
 	} finally {
 		flushSync(() => root.unmount());
 		client?.stop();
+		for (const timer of pollingTimers.keys()) nativeClearTimeout(timer);
+		pollingTimers.clear();
+		global.setTimeout = nativeSetTimeout;
+		global.clearTimeout = nativeClearTimeout;
 		dom.window.close();
 		for (const [name, descriptor] of Object.entries(previousGlobals)) {
 			if (descriptor) Object.defineProperty(global, name, descriptor);
@@ -542,12 +881,23 @@ async function integration() {
 			'real frontend documents validate against backend; owner-scoped null/read/submit creates PENDING without promotion; guest/role and duplicate guards hold',
 		);
 		const applications = fixture.db.model('TrainerApplication');
-		await applications.updateOne({ _id: application._id }, { status: 'APPROVED' });
-		assert((await fixture.gql('SUBMIT_TRAINER_APPLICATION', valid, fixture.user)).errors?.length);
-		assert.equal(await applications.countDocuments({ memberId: fixture.user._id }), 1);
-		await applications.updateOne(
-			{ _id: application._id },
-			{ status: 'REJECTED', rejectionReason: 'More detail needed' },
+		const { TrainerApplicationService } = backendRequire(
+			path.join(
+				__dirname,
+				'../../gymflow/apps/gymflow-api/src/components/trainer-application/trainer-application.service.ts',
+			),
+		);
+		const service = fixture.app.get(TrainerApplicationService);
+		await service.reviewTrainerApplication(fixture.admin._id, {
+			applicationId: application._id,
+			decision: 'REJECTED',
+			rejectionReason: 'More detail needed',
+		});
+		const rejectedSnapshot = JSON.parse(JSON.stringify(await applications.findById(application._id).lean()));
+		assert.equal(
+			(await fixture.gql('GET_MY_TRAINER_APPLICATION', undefined, fixture.user)).data.getMyTrainerApplication
+				.rejectionReason,
+			'More detail needed',
 		);
 		assert((await fixture.gql('SUBMIT_TRAINER_APPLICATION', valid, fixture.user)).errors?.length);
 		const again = await fixture.gql(
@@ -558,10 +908,73 @@ async function integration() {
 		assert.equal(again.errors, undefined, JSON.stringify(again.errors));
 		assert.notEqual(again.data.submitTrainerApplication._id, application._id);
 		assert.equal((await applications.findById(application._id)).status, 'REJECTED');
+		assert.deepEqual(JSON.parse(JSON.stringify(await applications.findById(application._id).lean())), rejectedSnapshot);
 		assert.equal(await applications.countDocuments({ memberId: fixture.user._id }), 2);
 		pass(
-			'REJECTED predecessor requires previousApplicationId and creates a new application without editing history; form helper supports the later flow',
+			'actual backend rejection is owner-readable; reapplication requires previousApplicationId and creates a new PENDING record with identical preserved rejected history',
 		);
+		const approvedId = again.data.submitTrainerApplication._id;
+		await service.reviewTrainerApplication(fixture.admin._id, { applicationId: approvedId, decision: 'APPROVED' });
+		assert.equal(
+			(await fixture.gql('GET_MY_TRAINER_APPLICATION', undefined, fixture.user)).data.getMyTrainerApplication.status,
+			'APPROVED',
+		);
+		assert.equal((await fixture.members.findById(fixture.user._id)).memberType, 'TRAINER');
+		assert((await fixture.gql('SUBMIT_TRAINER_APPLICATION', valid, fixture.user)).errors?.length);
+		assert.equal(
+			(await fixture.gql('GET_MY_TRAINER_APPLICATION', undefined, fixture.trainer)).data.getMyTrainerApplication,
+			null,
+		);
+		pass(
+			'real approval promotes the backend account; original session reads APPROVED and prevents reapplication; grandfathered trainer has no fabricated record',
+		);
+		const previousGlobals = Object.fromEntries(
+			['window', 'localStorage'].map((name) => [name, Object.getOwnPropertyDescriptor(global, name)]),
+		);
+		let client;
+		try {
+			global.window = {};
+			const storage = new Map();
+			global.localStorage = {
+				getItem: (key) => storage.get(key) ?? null,
+				setItem: (key, value) => storage.set(key, value),
+				removeItem: (key) => storage.delete(key),
+			};
+			const { ApolloClient, ApolloLink, HttpLink, InMemoryCache } = require('@apollo/client');
+			const store = loadTs(path.join(__dirname, '../apollo/store.ts'));
+			let auth;
+			client = new ApolloClient({
+				cache: new InMemoryCache(),
+				link: new ApolloLink((operation, forward) => {
+					operation.setContext({ headers: { Authorization: 'Bearer ' + auth.getJwtToken() } });
+					return forward(operation);
+				}).concat(new HttpLink({ uri: fixture.uri, fetch: fixture.sessionFetch })),
+			});
+			auth = loadTs(path.join(__dirname, '../libs/auth/index.ts'), {
+				'../../apollo/client': { initializeApollo: () => client },
+				'../../apollo/store': store,
+			});
+			const originalToken = fixture.token(fixture.user);
+			auth.setJwtToken(originalToken);
+			store.userVar({ ...store.emptyUser, _id: String(fixture.user._id), memberType: 'USER', memberStatus: 'ACTIVE' });
+			const originalSession = auth.getAuthSessionId();
+			await auth.updateUserInfo();
+			assert.equal(store.userVar().memberType, 'TRAINER');
+			assert.equal(store.userVar().memberStatus, 'ACTIVE');
+			assert.equal(auth.getJwtToken(), originalToken);
+			assert.equal(auth.getAuthSessionId(), originalSession);
+			assert.equal(store.authReadyVar(), true);
+			assert.equal(storage.has('accessToken'), false);
+			pass(
+				'actual updateUserInfo GET_MY_MEMBER reconciles stale USER to ACTIVE TRAINER while retaining the same healthy memory-only token/session',
+			);
+		} finally {
+			client?.stop();
+			for (const [name, descriptor] of Object.entries(previousGlobals)) {
+				if (descriptor) Object.defineProperty(global, name, descriptor);
+				else delete global[name];
+			}
+		}
 	} finally {
 		await fixture?.stop();
 		console.log = previousLog;
@@ -572,6 +985,7 @@ async function integration() {
 }
 (async () => {
 	unit();
+	await translationLoadingChecks();
 	await domChecks();
 	if (process.argv.includes('--integration')) await integration();
 	output(checks + ' trainer application checks passed.');
