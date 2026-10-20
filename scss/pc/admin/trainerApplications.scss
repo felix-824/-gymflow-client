@@ -1,0 +1,246 @@
+#pc-wrap.admin #bunker:has(.admin-trainer-applications) {
+	min-width: 0;
+}
+
+#pc-wrap.admin #bunker .admin-trainer-applications {
+	min-width: 0;
+	width: 100%;
+	max-width: 1200px;
+	color: #212121;
+	.admin-application-heading {
+		margin-bottom: 28px;
+		h1 {
+			margin: 0 0 8px;
+			font-size: 28px;
+			line-height: 1.35;
+			font-weight: 600;
+		}
+		p {
+			margin: 0;
+			color: #616161;
+			font-size: 14px;
+			line-height: 1.6;
+		}
+	}
+	.table-wrap {
+		min-width: 0;
+		overflow: hidden;
+		border: 1px solid #e0e0e0;
+		border-radius: 8px;
+		background: #fff;
+	}
+	.MuiTabs-root {
+		border-bottom: 1px solid #e0e0e0;
+		padding: 0 12px;
+	}
+	.MuiTab-root {
+		text-transform: none;
+		min-height: 56px;
+	}
+	.MuiTableContainer-root {
+		overflow-x: auto;
+	}
+	.MuiTable-root {
+		min-width: 740px;
+		table-layout: fixed;
+	}
+	.MuiTableCell-root {
+		padding: 20px 16px;
+		overflow-wrap: anywhere;
+	}
+	.MuiTableCell-head {
+		background: #fafafa;
+		color: #616161;
+		font-size: 12px;
+		font-weight: 600;
+	}
+	.MuiTableCell-root:first-child {
+		width: 26%;
+	}
+	.MuiTableCell-root:nth-child(2) {
+		width: 26%;
+	}
+	.MuiTableCell-root:last-child {
+		width: 12%;
+	}
+	.MuiTableCell-root.admin-application-empty {
+		padding: 48px 24px;
+		text-align: center;
+	}
+	.MuiTablePagination-root {
+		border-top: 1px solid #e0e0e0;
+		overflow-x: auto;
+	}
+	.MuiTablePagination-toolbar {
+		flex-wrap: wrap;
+		gap: 4px;
+		padding: 8px 16px;
+	}
+	.MuiTablePagination-spacer {
+		flex: 1 1 0;
+	}
+	a {
+		color: #a53425;
+		text-underline-offset: 3px;
+	}
+	.admin-application-applicant {
+		display: flex;
+		align-items: center;
+		gap: 12px;
+		min-width: 0;
+	}
+	.admin-application-applicant > span {
+		overflow-wrap: anywhere;
+	}
+	.MuiAvatar-root {
+		flex-shrink: 0;
+		background: #f2f4f6;
+		color: #5b5e68;
+		font-size: 14px;
+	}
+	.admin-application-specialties {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 4px 12px;
+	}
+	.admin-application-status {
+		font-size: 12px;
+		font-weight: 600;
+		color: #616161;
+	}
+	.admin-application-status.is-approved {
+		color: #24543e;
+	}
+	.admin-application-status.is-rejected {
+		color: #a53425;
+	}
+	.admin-application-back {
+		margin-bottom: 24px;
+	}
+	.admin-application-detail {
+		max-width: 920px;
+		border: 1px solid #e0e0e0;
+		border-radius: 8px;
+		background: #fff;
+		padding: 32px;
+	}
+	.admin-application-detail h2 {
+		margin: 0 0 6px;
+		font-size: 22px;
+		line-height: 1.4;
+		overflow-wrap: anywhere;
+	}
+	.admin-application-detail dl {
+		margin: 32px 0 0;
+		display: grid;
+		gap: 28px;
+	}
+	.admin-application-detail dt {
+		margin-bottom: 8px;
+		font-size: 14px;
+		font-weight: 600;
+	}
+	.admin-application-detail dd {
+		margin: 0;
+		font-size: 14px;
+		line-height: 1.8;
+		white-space: pre-wrap;
+		overflow-wrap: anywhere;
+	}
+	.admin-application-decision {
+		margin-top: 32px;
+		padding-top: 24px;
+		border-top: 1px solid #e0e0e0;
+	}
+	.admin-application-decision p {
+		margin: 0 0 20px;
+		font-size: 13px;
+		line-height: 1.6;
+		color: #616161;
+	}
+	.admin-application-decision > div {
+		display: flex;
+		flex-wrap: wrap;
+		justify-content: flex-end;
+		gap: 12px;
+	}
+	.admin-application-recovery {
+		margin-bottom: 24px;
+		font-size: 14px;
+		line-height: 1.6;
+	}
+	.MuiButton-root {
+		text-transform: none;
+	}
+	a:focus-visible {
+		outline: 2px solid #a53425;
+		outline-offset: 4px;
+	}
+	@media (max-width: 900px) {
+		.admin-application-heading h1 {
+			font-size: 24px;
+		}
+		.admin-application-detail {
+			padding: 24px 16px;
+		}
+		.admin-application-decision .MuiButton-root {
+			flex: 1 1 160px;
+		}
+		.MuiTablePagination-spacer {
+			display: none;
+		}
+	}
+}
+
+.admin-application-dialog {
+	.MuiDialogTitle-root {
+		font-size: 22px;
+		line-height: 1.4;
+	}
+	.MuiDialogContentText-root {
+		font-size: 14px;
+		line-height: 1.7;
+	}
+	.admin-review-field {
+		margin-top: 24px;
+		min-width: 0;
+		> .MuiFormLabel-root {
+			display: block;
+			position: static;
+			font-size: 14px;
+			font-weight: 600;
+			line-height: 1.5;
+		}
+		.MuiTextField-root {
+			margin-top: 8px;
+		}
+		.MuiOutlinedInput-root {
+			height: auto;
+			align-items: flex-start;
+		}
+		.MuiOutlinedInput-notchedOutline {
+			top: -5px;
+			padding: 0 8px;
+		}
+		textarea {
+			white-space: pre-wrap;
+		}
+	}
+	.MuiDialogActions-root {
+		padding: 16px 24px 24px;
+		flex-wrap: wrap;
+		gap: 8px;
+	}
+	.MuiButton-root {
+		text-transform: none;
+	}
+	.admin-review-counter {
+		margin: 6px 14px 0;
+		text-align: right;
+		font-size: 12px;
+		color: #616161;
+	}
+	textarea {
+		overflow-wrap: anywhere;
+	}
+}

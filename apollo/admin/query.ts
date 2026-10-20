@@ -1,5 +1,36 @@
 import { gql } from '@apollo/client';
 
+export const GET_TRAINER_APPLICATIONS_BY_ADMIN = gql`
+	query GetTrainerApplicationsByAdmin($input: TrainerApplicationsInquiry!) {
+		getTrainerApplicationsByAdmin(input: $input) {
+			list {
+				_id
+				fullName
+				categories
+				status
+				createdAt
+			}
+			metaCounter {
+				total
+			}
+		}
+	}
+`;
+
+export const GET_TRAINER_APPLICATION_BY_ADMIN = gql`
+	query GetTrainerApplicationByAdmin($applicationId: String!) {
+		getTrainerApplicationByAdmin(applicationId: $applicationId) {
+			_id
+			fullName
+			categories
+			status
+			experienceSummary
+			bio
+			rejectionReason
+		}
+	}
+`;
+
 /**************************
  *         MEMBER         *
  *************************/

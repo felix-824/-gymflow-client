@@ -1,5 +1,19 @@
 import { gql } from '@apollo/client';
 
+export const REVIEW_TRAINER_APPLICATION = gql`
+	mutation ReviewTrainerApplication($input: TrainerApplicationReview!) {
+		reviewTrainerApplication(input: $input) {
+			_id
+			fullName
+			categories
+			status
+			experienceSummary
+			bio
+			rejectionReason
+		}
+	}
+`;
+
 /**************************
  *         MEMBER         *
  *************************/

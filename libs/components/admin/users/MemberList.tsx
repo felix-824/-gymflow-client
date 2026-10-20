@@ -197,7 +197,11 @@ export const MemberPanelList = (props: MemberPanelListType) => {
 												sx={{ p: 1 }}
 											>
 												{Object.values(MemberType)
-													.filter((ele) => ele !== member?.memberType)
+													.filter(
+														(ele) =>
+															ele !== member?.memberType &&
+															!(member.memberType === MemberType.USER && ele === MemberType.TRAINER),
+													)
 													.map((type: string) => (
 														<MenuItem
 															onClick={() => updateMemberHandler({ _id: member._id, memberType: type })}

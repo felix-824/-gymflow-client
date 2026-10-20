@@ -9,9 +9,15 @@ import ExpandMore from '@mui/icons-material/ExpandMore';
 import { ChatsCircle, User, UserCircleGear } from 'phosphor-react';
 import cookies from 'js-cookie';
 import useDeviceDetect from '../../hooks/useDeviceDetect';
+import enApplications from '../../../public/locales/en/admin-trainer-applications.json';
+import krApplications from '../../../public/locales/kr/admin-trainer-applications.json';
+import ruApplications from '../../../public/locales/ru/admin-trainer-applications.json';
+import { adminTrainerApplicationsRoute } from '../../admin-trainer-applications';
 
 const AdminMenuList = (props: any) => {
 	const router = useRouter();
+	const applicationLabels =
+		router.locale === 'kr' ? krApplications : router.locale === 'ru' ? ruApplications : enApplications;
 	const device = useDeviceDetect();
 	const [mobileLayout, setMobileLayout] = useState(false);
 	const [openSubMenu, setOpenSubMenu] = useState('Users');
@@ -30,6 +36,9 @@ const AdminMenuList = (props: any) => {
 		if (device === 'mobile') setMobileLayout(true);
 
 		switch (pathnames[1]) {
+			case 'trainer-applications':
+				setClickMenu([]);
+				break;
 			case 'programs':
 				setClickMenu(['Programs']);
 				break;
@@ -103,6 +112,20 @@ const AdminMenuList = (props: any) => {
 
 	return (
 		<>
+			<List className="menu_wrap" disablePadding>
+				<Link href={adminTrainerApplicationsRoute} passHref>
+					<ListItemButton
+						className={router.pathname.startsWith(adminTrainerApplicationsRoute) ? 'menu on' : 'menu'}
+						aria-current={router.pathname.startsWith(adminTrainerApplicationsRoute) ? 'page' : undefined}
+						sx={{ minHeight: 48, px: 2.5 }}
+					>
+						<ListItemIcon>
+							<UserCircleGear size={20} color="#bdbdbd" weight="fill" />
+						</ListItemIcon>
+						<ListItemText primary={applicationLabels.Title} />
+					</ListItemButton>
+				</Link>
+			</List>
 			{menu_set.map((item, index) => (
 				<List className={'menu_wrap'} key={index} disablePadding>
 					<ListItemButton
