@@ -42,6 +42,35 @@ function loadTs(file, mocks = {}, cache = new Map()) {
 	return module.exports;
 }
 async function unit() {
+	const typeFile = path.resolve(__dirname, 'signup-contract.typecheck.ts');
+	const typeSource = `
+		import { signUp } from '../libs/auth';
+		import { MemberInput } from '../libs/types/member/member.input';
+		import { MemberType } from '../libs/enums/member.enum';
+		const input: MemberInput = { memberNick: 'member', memberPassword: 'pass123', memberPhone: 'phone', memberType: MemberType.USER };
+		signUp(input.memberNick, input.memberPassword, input.memberPhone);
+		signUp(input.memberNick, input.memberPassword, input.memberPhone, { handleErrorLocally: true });
+		// @ts-expect-error Public signup input excludes TRAINER.
+		input.memberType = MemberType.TRAINER;
+		// @ts-expect-error Public signup input excludes ADMIN.
+		input.memberType = MemberType.ADMIN;
+		// @ts-expect-error The public helper no longer accepts a TRAINER role argument.
+		signUp('member', 'pass123', 'phone', 'TRAINER');
+		// @ts-expect-error The public helper no longer accepts an ADMIN role argument.
+		signUp('member', 'pass123', 'phone', 'ADMIN');
+		// @ts-expect-error The options object cannot select a role either.
+		signUp('member', 'pass123', 'phone', { memberType: MemberType.TRAINER });
+	`;
+	const config = ts.readConfigFile(path.resolve(__dirname, '../tsconfig.json'), ts.sys.readFile);
+	const { options } = ts.parseJsonConfigFileContent(config.config, ts.sys, path.resolve(__dirname, '..'));
+	const host = ts.createCompilerHost(options);
+	const getSourceFile = host.getSourceFile.bind(host);
+	host.getSourceFile = (file, ...args) => path.resolve(file) === typeFile
+		? ts.createSourceFile(file, typeSource, options.target, true) : getSourceFile(file, ...args);
+	const program = ts.createProgram([typeFile], { ...options, incremental: false }, host);
+	const diagnostics = program.getSemanticDiagnostics(program.getSourceFile(typeFile));
+	assert.deepEqual(diagnostics.map((item) => ts.flattenDiagnosticMessageText(item.messageText, '\n')), []);
+	pass('public signup types accept USER and reject TRAINER/ADMIN inputs and role arguments');
 	const { safeAuthDestination, authErrorMessage } = loadTs(path.join(__dirname, '../libs/auth-form.ts'));
 	for (const value of [
 		undefined,
@@ -120,6 +149,7 @@ async function logoutContract() {
 	const module = { exports: {} };
 	const mocks = {
 		'../config': loadTs(path.join(__dirname, '../libs/config.ts')),
+		'../enums/member.enum': loadTs(path.join(__dirname, '../libs/enums/member.enum.ts')),
 		'../../apollo/client': { initializeApollo: () => client },
 		'../../apollo/store': store,
 		'../../apollo/user/mutation': loadTs(path.join(__dirname, '../apollo/user/mutation.ts')),
@@ -354,6 +384,19 @@ async function integration() {
 		assert.equal(select('#auth-password').autocomplete, 'new-password');
 		assert.equal(select('#auth-confirmPassword').autocomplete, 'new-password');
 		pass('Login/Signup retain credential autocomplete semantics independently from profile editing');
+		assert.equal(document.querySelector('fieldset, [name="accountType"], input[type="radio"], select, input[type="hidden"]'), null);
+		assert.equal(document.querySelector('[value="TRAINER"], [value="ADMIN"], .auth-role-field, .auth-role-switch'), null);
+		assert.ok(!document.querySelector('form').textContent.includes(resources.Auth['Account Type']));
+		for (const [selector, minLength, maxLength] of [
+			['#auth-nick', 3, 12], ['#auth-password', 5, 12], ['#auth-confirmPassword', 5, 12],
+		]) {
+			assert.equal(select(selector).required, true);
+			assert.equal(select(selector).minLength, minLength);
+			assert.equal(select(selector).maxLength, maxLength);
+		}
+		assert.equal(select('#auth-phone').required, true);
+		assert.equal(select('form').checkValidity(), false);
+		pass('signup has no account-type control or TRAINER/ADMIN option and retains required field constraints');
 		click('[aria-controls="auth-confirmPassword"]');
 		assert.equal(select('#auth-confirmPassword').type, 'text');
 		pass('password visibility controls work independently and reset when auth mode changes');
@@ -369,6 +412,7 @@ async function integration() {
 		assert.equal(select('[role="alert"]').textContent, resources.Auth['Password mismatch']);
 		pass('confirm-password mismatch prevents mutation and focuses the invalid field');
 		input('confirmPassword', fixture.password);
+		router.query.referrer = '/program?input=%7B%22text%22%3A%22yoga%22%7D';
 		hold = true;
 		flushSync(() => {
 			const form = select('form');
@@ -394,20 +438,15 @@ async function integration() {
 		assert.ok(auth.getJwtToken());
 		assert.equal(store.authReadyVar(), true);
 		assert.equal(contexts.at(-1).handleErrorLocally, true);
-		assert.equal(destinations.at(-1), '/');
+		assert.equal(destinations.at(-1), router.query.referrer);
+		assert.equal(store.userVar().memberPhone, 'auth-member-phone');
+		assert.equal(store.userVar().accessToken, undefined);
+		assert.equal(localStorage.getItem('accessToken'), null);
+		assert.equal(window.sessionStorage.getItem('accessToken'), null);
 		pass(
-			'Member signup maps to USER, uses only contract fields, updates session and rejects same-tick duplicate submissions',
+			'public signup sends USER, applies the owner/memory-only session, preserves referrer and rejects same-tick duplicate submissions',
 		);
-		auth.invalidateSession();
-		input('nick', 'auth-trainer');
-		input('phone', 'auth-trainer-phone');
-		click('[name="accountType"][value="TRAINER"]');
-		submit();
-		await until(() => store.userVar().memberNick === 'auth-trainer' && !select('.auth-submit').disabled);
-		assert.equal(writes().at(-1).variables.input.memberType, 'TRAINER');
-		assert.equal(store.userVar().memberType, 'TRAINER');
-		pass('Trainer signup maps to TRAINER and uses the existing successful-signup session behavior');
-		auth.invalidateSession();
+		await auth.invalidateSession();
 		submit();
 		await until(() => document.querySelector('[role="alert"]'));
 		assert.ok(

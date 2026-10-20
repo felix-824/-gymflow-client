@@ -75,12 +75,14 @@ async function main() {
 	await Promise.all(Object.values(connection.models).map((model) => model.init()));
 	const members = connection.model('Member');
 	const auth = module.get(AuthService);
-	async function signup(nick, type, phone) {
-		return (await gql('SIGN_UP', { memberNick: nick, memberPassword: 'pass123', memberPhone: phone, memberType: type })).signup;
+	async function trainerFixture(nick, phone) {
+		const member = await members.create({ memberNick: nick, memberPassword: await auth.hashPassword('pass123'), memberPhone: phone, memberType: 'TRAINER' });
+		return { ...member.toObject(), _id: String(member._id), accessToken: await auth.createToken(member) };
 	}
-	const trainer = await signup('trainer', 'TRAINER', '111');
-	const other = await signup('other', 'TRAINER', '222');
-	const user = await signup('user', 'USER', '333');
+	const trainer = await trainerFixture('trainer', '111');
+	const other = await trainerFixture('other', '222');
+	const user = (await gql('SIGN_UP', { memberNick: 'user', memberPassword: 'pass123', memberPhone: '333', memberType: 'USER' })).signup;
+	assert.equal(user.memberType, 'USER');
 	const admin = await members.create({ memberNick: 'admin', memberPhone: '444', memberPassword: 'fixture', memberType: 'ADMIN' });
 	const adminToken = await auth.createToken(admin);
 	const trainerToken = trainer.accessToken, userToken = user.accessToken;
@@ -91,7 +93,10 @@ async function main() {
 	await gql('CHECK_AUTH', undefined, trainerToken);
 	assert.equal((await gql('GET_MEMBER', trainer._id, trainerToken)).getMember.memberNick, 'trainer');
 	pass('signup/login/checkAuth/getMember use the new JWT and Member contract');
-	await gql('SIGN_UP', { memberNick: 'evil', memberPassword: 'pass123', memberPhone: '555', memberType: 'ADMIN' }, undefined, true);
+	for (const memberType of ['TRAINER', 'ADMIN']) {
+		await gql('SIGN_UP', { memberNick: 'evil', memberPassword: 'pass123', memberPhone: '555', memberType }, undefined, true);
+		assert.equal(await members.countDocuments({ memberNick: 'evil' }), 0);
+	}
 	await gql('UPDATE_MEMBER', { _id: user._id, memberType: 'ADMIN' }, userToken, true);
 	const profile = (await gql('UPDATE_MEMBER', { memberAddress: 'Seoul city', memberFullName: 'Test Trainer' }, trainerToken)).updateMember;
 	assert.equal(profile.memberFullName, 'Test Trainer');

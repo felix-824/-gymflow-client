@@ -298,66 +298,6 @@
 			width: 20px;
 		}
 	}
-	.auth-role-field {
-		margin: 0;
-		padding: 0;
-		border: 0;
-		min-width: 0;
-		legend {
-			font-size: 14px;
-			font-weight: 600;
-			line-height: 20px;
-			margin-bottom: 6px;
-			padding: 0;
-		}
-	}
-	.auth-role-switch {
-		display: flex;
-		background: #f2f4f6;
-		border-radius: 8px;
-		padding: 4px;
-		gap: 4px;
-		label {
-			flex: 1;
-			min-width: 0;
-			position: relative;
-			cursor: pointer;
-		}
-		input {
-			position: absolute;
-			width: 1px;
-			height: 1px;
-			opacity: 0;
-		}
-		span {
-			display: flex;
-			align-items: center;
-			justify-content: center;
-			gap: 6px;
-			min-height: 44px;
-			padding: 8px;
-			border-radius: 6px;
-			font-size: 14px;
-			font-weight: 600;
-			color: #5b5e68;
-			svg {
-				width: 18px;
-			}
-		}
-		input:checked + span {
-			background: #fff;
-			color: #191c1e;
-			box-shadow: 0 1px 3px rgba(18, 21, 29, 0.08);
-		}
-		input:focus-visible + span {
-			outline: 2px solid #a53425;
-			outline-offset: 1px;
-		}
-		input:disabled + span {
-			opacity: 0.65;
-			cursor: default;
-		}
-	}
 	.auth-submit.MuiButton-root {
 		width: 100%;
 		min-height: 48px;
@@ -561,18 +501,6 @@
 			background: #fff;
 			font-size: 16px;
 			box-shadow: 0 1px 3px rgba(18, 21, 29, 0.03);
-		}
-		.auth-role-field legend {
-			font-size: 12px;
-		}
-		.auth-role-switch {
-			background: #edeef0;
-			span {
-				font-size: 13px;
-			}
-			input:checked + span svg {
-				color: #a53425;
-			}
 		}
 		.auth-switch-helper {
 			margin-top: 12px;

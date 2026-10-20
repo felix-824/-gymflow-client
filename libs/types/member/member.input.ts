@@ -5,7 +5,7 @@ export interface MemberInput {
 	memberNick: string;
 	memberPassword: string;
 	memberPhone: string;
-	memberType?: MemberType;
+	memberType?: MemberType.USER;
 	memberAuthType?: MemberAuthType;
 }
 

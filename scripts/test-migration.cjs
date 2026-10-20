@@ -141,8 +141,22 @@ async function authChecks() {
 			assert.equal(h.store.userVar().memberNick, 'trainer'); assert.equal(h.store.userVar().memberPrograms, 2);
 			assert.equal(h.auth.getJwtToken(), h.token); assert.equal(h.storage.has('accessToken'), false);
 		});
-		await assert.rejects(h.auth.signUp('a', 'b', 'c', 'ADMIN'));
-		check('signup rejects administrative escalation', () => assert.equal(h.store.userVar().memberType, 'TRAINER'));
+		for (const role of ['USER', 'TRAINER', 'ADMIN']) {
+			h = authHarness();
+			h.member.memberType = 'USER';
+			let request;
+			h.client.mutate = async (value) => { request = value; return { data: { signup: h.member } }; };
+			// Simulate untyped callers injecting role data into the context or using the removed role argument.
+			for (const context of [undefined, { memberType: role, type: role, handleErrorLocally: true }, role]) {
+				await h.auth.signUp('member', 'password', 'phone', context);
+				assert.deepEqual(request.variables.input, { memberNick: 'member', memberPassword: 'password', memberPhone: 'phone', memberType: 'USER' });
+				assert.equal(h.store.userVar().memberType, 'USER');
+				assert.equal(h.store.authReadyVar(), true);
+				assert.equal(h.auth.getJwtToken(), h.token);
+				assert.equal(h.storage.has('accessToken'), false);
+			}
+		}
+		check('signup always sends USER despite injected TRAINER/ADMIN roles and establishes the memory-only USER session', () => {});
 		h = authHarness(); h.storage.set('accessToken', 'obsolete-long-lived-token');
 		const first = h.auth.updateUserInfo(), duplicate = h.auth.updateUserInfo();
 		assert.equal(first, duplicate); await first;

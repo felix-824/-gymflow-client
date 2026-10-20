@@ -4,6 +4,8 @@ import { initializeApollo } from '../../apollo/client';
 import { authErrorVar, authReadyVar, emptyUser, userVar } from '../../apollo/store';
 import { CustomJwtPayload } from '../types/customJwtPayload';
 import { OwnerMember } from '../types/member/member';
+import { MemberInput } from '../types/member/member.input';
+import { MemberType } from '../enums/member.enum';
 import { LOGIN, SIGN_UP, REFRESH_SESSION, LOGOUT_SESSION } from '../../apollo/user/mutation';
 import { GET_MY_MEMBER } from '../../apollo/user/query';
 import { getApiGraphqlUrl } from '../config';
@@ -216,11 +218,13 @@ async function authenticate(mutation: any, input: any, field: 'login' | 'signup'
 export const logIn = (nick: string, password: string, context: { handleErrorLocally?: boolean } = {}) =>
 	authenticate(LOGIN, { memberNick: nick, memberPassword: password }, 'login', context);
 export const signUp = async (
-	nick: string, password: string, phone: string, type: string,
+	nick: string, password: string, phone: string,
 	context: { handleErrorLocally?: boolean } = {},
 ): Promise<void> => {
-	if (!['USER', 'TRAINER'].includes(type)) throw new Error('Invalid signup role');
-	await authenticate(SIGN_UP, { memberNick: nick, memberPassword: password, memberPhone: phone, memberType: type }, 'signup', context);
+	const input: MemberInput = {
+		memberNick: nick, memberPassword: password, memberPhone: phone, memberType: MemberType.USER,
+	};
+	await authenticate(SIGN_UP, input, 'signup', context);
 };
 export const logOut = async (): Promise<boolean> => {
 	const isUser = Boolean(userVar()._id) && userVar().memberType === 'USER';

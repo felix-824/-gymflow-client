@@ -9,8 +9,6 @@ import AlternateEmailRoundedIcon from '@mui/icons-material/AlternateEmailRounded
 import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
 import PhoneOutlinedIcon from '@mui/icons-material/PhoneOutlined';
 import PersonOutlineRoundedIcon from '@mui/icons-material/PersonOutlineRounded';
-import FitnessCenterOutlinedIcon from '@mui/icons-material/FitnessCenterOutlined';
-import SportsOutlinedIcon from '@mui/icons-material/SportsOutlined';
 import VisibilityOutlinedIcon from '@mui/icons-material/VisibilityOutlined';
 import VisibilityOffOutlinedIcon from '@mui/icons-material/VisibilityOffOutlined';
 import { useTranslation } from 'next-i18next';
@@ -26,7 +24,7 @@ export const getStaticProps = async ({ locale }: any) => ({
 const Join: NextPage = () => {
 	const router = useRouter();
 	const { t } = useTranslation('common');
-	const [input, setInput] = useState({ nick: '', password: '', confirmPassword: '', phone: '', type: 'USER' });
+	const [input, setInput] = useState({ nick: '', password: '', confirmPassword: '', phone: '' });
 	const [loginView, setLoginView] = useState(true);
 	const [submitting, setSubmitting] = useState(false);
 	const [error, setError] = useState('');
@@ -63,7 +61,7 @@ const Join: NextPage = () => {
 		setSubmitting(true);
 		try {
 			if (loginView) await logIn(input.nick, input.password, { handleErrorLocally: true });
-			else await signUp(input.nick, input.password, input.phone, input.type, { handleErrorLocally: true });
+			else await signUp(input.nick, input.password, input.phone, { handleErrorLocally: true });
 			await router.push(safeAuthDestination(router.query.referrer));
 		} catch (err: unknown) {
 			setError(authErrorMessage(err, t('Auth.Connection error'), t('Auth.Auth error')));
@@ -180,31 +178,6 @@ const Join: NextPage = () => {
 								<p>{t(loginView ? 'Auth.Login intro' : 'Auth.Signup intro')}</p>
 							</div>
 							<form onSubmit={submitHandler} aria-busy={submitting} aria-describedby={error ? 'auth-error' : undefined}>
-								{!loginView && (
-									<fieldset className="auth-role-field" disabled={submitting}>
-										<legend>{t('Auth.Account Type')}</legend>
-										<div className="auth-role-switch">
-											{[
-												{ value: 'USER', label: 'Member', Icon: FitnessCenterOutlinedIcon },
-												{ value: 'TRAINER', label: 'Trainer', Icon: SportsOutlinedIcon },
-											].map(({ value, label, Icon }) => (
-												<label key={value}>
-													<input
-														type="radio"
-														name="accountType"
-														value={value}
-														checked={input.type === value}
-														onChange={() => handleInput('type', value)}
-													/>
-													<span>
-														<Icon aria-hidden="true" />
-														{t(`Auth.${label}`)}
-													</span>
-												</label>
-											))}
-										</div>
-									</fieldset>
-								)}
 								<div className="auth-field">
 									<label htmlFor="auth-nick">
 										<AlternateEmailRoundedIcon aria-hidden="true" />
