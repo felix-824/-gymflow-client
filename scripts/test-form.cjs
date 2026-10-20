@@ -2,7 +2,7 @@ const assert = require('node:assert/strict');
 const path = require('node:path');
 
 // DOM unit tests for stateful form behavior; no browser/server or application data is used.
-module.exports = async function runFormChecks(loadTs, forms) {
+module.exports = async function runFormChecks(loadTs, forms, options = {}) {
 	const { JSDOM } = require('jsdom');
 	const dom = new JSDOM('<!doctype html><html><body><div id="root"></div></body></html>', { url: 'http://localhost/' });
 	global.window = dom.window; global.document = dom.window.document;
@@ -117,11 +117,79 @@ module.exports = async function runFormChecks(loadTs, forms) {
 	const root = createRoot(document.getElementById('root'));
 	let checks = 0;
 	const pass = (name) => { checks++; console.log('PASS ' + name); };
+	let controlStyles;
+	if (options.checkControlStyles) {
+		const shell = document.createElement('div');
+		shell.id = 'pc-wrap';
+		shell.className = 'trainer-program-editor-layout';
+		const mount = document.getElementById('root');
+		mount.before(shell);
+		shell.appendChild(mount);
+		controlStyles = document.createElement('style');
+		controlStyles.textContent = require('sass').compile(path.join(__dirname, '../scss/pc/mypage/addNewProgram.scss')).css;
+		document.head.appendChild(controlStyles);
+	}
+	const checkControlStyles = async (mode) => {
+		if (!controlStyles) return;
+		const css = controlStyles.textContent;
+		const style = (field) => {
+			// Invalidate JSDOM's style cache after changing native focus/validity state.
+			controlStyles.textContent = css;
+			return dom.window.getComputedStyle(field);
+		};
+		const singleFocusEdge = (field) => {
+			const computed = style(field);
+			const width = parseFloat(computed.outlineWidth || computed.outline);
+			assert(width >= 2, mode + ': retain a strong focus indicator');
+			assert(parseFloat(computed.outlineOffset) <= -width, mode + ': focus must overlap the native border, not draw an outside frame');
+			assert.equal(computed.borderTopWidth, '1px');
+		};
+		const writes = state.mutations.length;
+		for (const id of ['program-name', 'program-location', 'program-address', 'program-description']) {
+			let field = document.getElementById(id);
+			assert(field, mode + ': ' + id);
+			assert.equal(field.closest('.MuiOutlinedInput-root'), null, 'these controls are native, not nested MUI fields');
+			const original = field.value;
+			const values = field.tagName === 'SELECT'
+				? [original, [...field.options].find((option) => option.value !== original).value]
+				: ['', id === 'program-description' ? 'A long first line ' + 'x'.repeat(300) + '\nSecond line.' : 'Populated field'];
+			for (const value of values) {
+				await act(async () => Simulate.change(field, { target: { value } }));
+				field = document.getElementById(id);
+				field.blur();
+				assert.equal(style(field).borderTopWidth, '1px');
+				field.focus();
+				assert.equal(document.activeElement, field);
+				singleFocusEdge(field);
+				field.setCustomValidity('Fixture validation error');
+				assert.equal(field.validity.valid, false);
+				singleFocusEdge(field);
+				field.setCustomValidity('');
+				field.blur();
+			}
+			if (field.tagName === 'SELECT') assert.notEqual(style(field).appearance, 'none', 'preserve the native dropdown arrow');
+			else {
+				field.readOnly = true;
+				field.focus();
+				singleFocusEdge(field);
+				field.blur();
+				field.readOnly = false;
+			}
+			field.disabled = true;
+			assert.equal(style(field).borderTopWidth, '1px');
+			field.disabled = false;
+			await act(async () => Simulate.change(field, { target: { value: original } }));
+		}
+		assert(document.querySelector('.editor-description-meta').textContent.includes(String(document.getElementById('program-description').value.length)));
+		assert.equal(state.mutations.length, writes);
+		pass(mode + ': compiled editor CSS gives empty/populated/focused/invalid/disabled/read-only native controls one continuous boundary; select arrow and description counter retained');
+	};
 	try {
 		await act(async () => { root.render(React.createElement(Component)); });
 		assert.equal(state.queries[0].query, 'GET_TRAINER_PROGRAMS');
 		assert.equal(state.queries[0].variables.input.page, 1);
 		assert.equal(document.querySelector('input').value, 'Paused strength');
+		await checkControlStyles('Edit Program');
 		pass('PAUSED owner lookup ignores list page/filter context without public getProgram');
 
 		await act(async () => Simulate.change(document.querySelector('input[value="ONLINE"]')));
@@ -206,6 +274,7 @@ module.exports = async function runFormChecks(loadTs, forms) {
 		state.mobile = true;
 		await act(async () => root.render(React.createElement(Component, { key: 'create' })));
 		assert.equal(document.querySelector('#program-name').value, '');
+		await checkControlStyles('Create Program');
 		assert.deepEqual(
 			[...document.querySelectorAll('section')].map((section) => section.className.split(' ').at(-1)),
 			['editor-basics', 'editor-pricing', 'editor-location', 'editor-photos', 'editor-description', 'editor-confirm'],
