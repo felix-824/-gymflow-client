@@ -30,6 +30,7 @@ import CheckCircleOutlineRoundedIcon from '@mui/icons-material/CheckCircleOutlin
 import LogoutRoundedIcon from '@mui/icons-material/LogoutRounded';
 import DevicesOutlinedIcon from '@mui/icons-material/DevicesOutlined';
 import UserAccountNavigation from './UserAccountNavigation';
+import { trainerApplicationRoute } from '../../trainer-application';
 
 const MyProfile: NextPage<{ initialValues?: MemberSelfUpdate; trainerWorkspace?: boolean; userProfile?: boolean }> = ({
 	initialValues,
@@ -257,6 +258,9 @@ const MyProfile: NextPage<{ initialValues?: MemberSelfUpdate; trainerWorkspace?:
 					<p className="user-profile-eyebrow">{t('User profile.Account Settings')}</p>
 					<h1>{t('User profile.Title')}</h1>
 					<p>{t('User profile.Intro')}</p>
+					<Link className="trainer-application-entry" href={trainerApplicationRoute}>
+						{t('trainer-application:Entry')}
+					</Link>
 				</header>
 				<UserAccountNavigation active="Profile" />
 				<section className="user-profile-surface" aria-labelledby="user-profile-personal-title">

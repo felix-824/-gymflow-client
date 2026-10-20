@@ -43,9 +43,10 @@ const withLayoutBasic = (Component: any) => {
 			(router.query.category == null || router.query.category === 'myProfile');
 		const myBookings = (router.pathname === '/mypage' && router.query.category === 'myBookings') || router.pathname === '/mypage/review';
 		const userFavorites = router.pathname === '/mypage' && router.query.category === 'myFavorites';
+		const trainerApplication = router.pathname === '/mypage' && router.query.category === 'trainerApplication';
 		const theme = useTheme();
 		const programTheme = useMemo(() => {
-			if (router.pathname !== '/program' && !helpCenter && !communityDiscovery && !communityArticle && !communityWrite && !communityMyArticles && !myBookings && !userProfile && !userFavorites && !trainerReservations && !trainerDashboard && !trainerProfile && !trainerPrograms && !trainerProgramEditor) return theme;
+			if (router.pathname !== '/program' && !helpCenter && !communityDiscovery && !communityArticle && !communityWrite && !communityMyArticles && !myBookings && !userProfile && !userFavorites && !trainerReservations && !trainerDashboard && !trainerProfile && !trainerPrograms && !trainerProgramEditor && !trainerApplication) return theme;
 			const fontFamily = "'Plus Jakarta Sans', sans-serif";
 			const typography = Object.fromEntries(
 				Object.entries(theme.typography).map(([variant, value]) => [
@@ -59,7 +60,7 @@ const withLayoutBasic = (Component: any) => {
 				},
 				typography: { ...typography, fontFamily },
 			});
-		}, [theme, router.pathname, helpCenter, communityDiscovery, communityArticle, communityWrite, communityMyArticles, myBookings, userProfile, userFavorites, trainerReservations, trainerDashboard, trainerProfile, trainerPrograms, trainerProgramEditor]);
+		}, [theme, router.pathname, helpCenter, communityDiscovery, communityArticle, communityWrite, communityMyArticles, myBookings, userProfile, userFavorites, trainerReservations, trainerDashboard, trainerProfile, trainerPrograms, trainerProgramEditor, trainerApplication]);
 
 		const memoizedValues = useMemo(() => {
 			let title = '',
@@ -152,7 +153,7 @@ const withLayoutBasic = (Component: any) => {
 			);
 		}
 
-		if (router.pathname === '/program' || helpCenter || compactTrainer || trainerDetail || communityDiscovery || communityArticle || communityWrite || communityMyArticles || myBookings || userProfile || userFavorites) {
+		if (router.pathname === '/program' || helpCenter || compactTrainer || trainerDetail || communityDiscovery || communityArticle || communityWrite || communityMyArticles || myBookings || userProfile || userFavorites || trainerApplication) {
 			return (
 				<ThemeProvider theme={programTheme}>
 					<Head>

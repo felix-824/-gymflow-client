@@ -400,3 +400,20 @@ export const UNSUBSCRIBE = gql`
 		}
 	}
 `;
+export const SUBMIT_TRAINER_APPLICATION = gql`
+	mutation SubmitTrainerApplication($input: TrainerApplicationInput!) {
+		submitTrainerApplication(input: $input) {
+			_id
+			memberId
+			status
+			fullName
+			categories
+			experienceSummary
+			bio
+			rejectionReason
+			reviewedAt
+			createdAt
+			updatedAt
+		}
+	}
+`;

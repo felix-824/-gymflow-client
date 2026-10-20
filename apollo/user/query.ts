@@ -676,3 +676,20 @@ export const GET_MEMBER_FOLLOWINGS = gql`
 		}
 	}
 `;
+export const GET_MY_TRAINER_APPLICATION = gql`
+	query GetMyTrainerApplication {
+		getMyTrainerApplication {
+			_id
+			memberId
+			status
+			fullName
+			categories
+			experienceSummary
+			bio
+			rejectionReason
+			reviewedAt
+			createdAt
+			updatedAt
+		}
+	}
+`;

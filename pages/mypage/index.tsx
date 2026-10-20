@@ -9,6 +9,7 @@ import MyFavorites from '../../libs/components/mypage/MyFavorites';
 import RecentlyVisited from '../../libs/components/mypage/RecentlyVisited';
 import AddProgram from '../../libs/components/mypage/AddNewProgram';
 import MyProfile from '../../libs/components/mypage/MyProfile';
+import TrainerApplication from '../../libs/components/mypage/TrainerApplication';
 import MyArticles from '../../libs/components/mypage/MyArticles';
 import { useMutation, useReactiveVar } from '@apollo/client';
 import { userVar, authReadyVar, authErrorVar } from '../../apollo/store';
@@ -35,7 +36,7 @@ import { sweetErrorHandling, sweetMixinErrorAlert, sweetTopSmallSuccessAlert } f
 
 export const getStaticProps = async ({ locale }: any) => ({
 	props: {
-		...(await serverSideTranslations(locale, ['common'])),
+		...(await serverSideTranslations(locale, ['common', 'trainer-application'])),
 	},
 });
 
@@ -55,7 +56,7 @@ const authError = useReactiveVar(authErrorVar);
 
 	/** LIFECYCLES **/
 	useEffect(() => {
-		if (router.isReady && category !== 'writeArticle' && category !== 'editArticle' && category !== 'myArticles' && category !== 'myProfile' && category !== 'myFavorites' && category !== 'myBookings' && category !== 'trainerReservations' && category !== 'trainerDashboard' && authReady && !authError && !user._id) router.push('/').then();
+		if (router.isReady && category !== 'trainerApplication' && category !== 'writeArticle' && category !== 'editArticle' && category !== 'myArticles' && category !== 'myProfile' && category !== 'myFavorites' && category !== 'myBookings' && category !== 'trainerReservations' && category !== 'trainerDashboard' && authReady && !authError && !user._id) router.push('/').then();
 	}, [user, authReady, authError, router, category]);
 
 	/** HANDLERS **/
@@ -131,6 +132,7 @@ const likeMemberHandler = async (id: string, refetch: any, query: any) => {
 	if (category === 'myPrograms') return <MyPrograms />;
 	if (category === 'myFavorites') return <MyFavorites />;
 	if (category === 'myBookings') return <MyBookings />;
+	if (category === 'trainerApplication') return <TrainerApplication />;
 	if (category === 'trainerReservations') return <TrainerReservations />;
 	if (category === 'trainerDashboard') return <TrainerDashboard />;
 	if (category === 'myProfile' && user.memberType === 'TRAINER') {
