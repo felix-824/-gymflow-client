@@ -26,7 +26,7 @@ export function myBookingsAccess(
 	if (error) return 'error';
 	if (!ready) return 'initializing';
 	if (!user._id || user.memberStatus !== 'ACTIVE') return 'guest';
-	return user.memberType === 'USER' ? 'ready' : 'forbidden';
+	return user.memberType === 'USER' || user.memberType === 'TRAINER' ? 'ready' : 'forbidden';
 }
 
 export function seoulNow(now = new Date()) {

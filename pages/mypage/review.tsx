@@ -57,11 +57,8 @@ export function LeaveReviewForm({
 	const mounted = useRef(true);
 	const active = () =>
 		mounted.current &&
-		authReadyVar() &&
-		!authErrorVar() &&
 		userVar()._id === memberId &&
-		userVar().memberType === 'USER' &&
-		userVar().memberStatus === 'ACTIVE';
+		myBookingsAccess(authReadyVar(), authErrorVar(), userVar()) === 'ready';
 	const [createReview, { loading: mutating }] = useMutation<{ createReview: Review }>(CREATE_REVIEW, {
 		context: { handleErrorLocally: true },
 	});

@@ -449,6 +449,9 @@ const MyProfile: NextPage<{ initialValues?: MemberSelfUpdate; trainerWorkspace?:
 				<header className="trainer-profile-heading">
 					<h1>{t('Trainer profile.Title')}</h1>
 					<p>{t('Trainer profile.Intro')}</p>
+					<Link className="trainer-profile-bookings-link" href="/mypage?category=myBookings">
+						{t('MyBookings.Title')}
+					</Link>
 				</header>
 				<div className="trainer-profile-surface">
 					<form

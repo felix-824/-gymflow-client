@@ -41,6 +41,12 @@ function loadTs(file, mocks = {}, cache = new Map()) {
 	);
 	return module.exports;
 }
+function compileProfileStyles() {
+	return require('sass').compileString(
+		fs.readFileSync(path.join(__dirname, '../scss/variables.scss'), 'utf8') + '\n' +
+		fs.readFileSync(path.join(__dirname, '../scss/pc/mypage/myProfile.scss'), 'utf8'),
+	).css;
+}
 async function locales() {
 	const i18n = require('i18next').createInstance();
 	const resources = Object.fromEntries(
@@ -59,6 +65,14 @@ async function locales() {
 			assert.ok(i18n.getFixedT(locale)('Trainer profile.' + key) !== 'Trainer profile.' + key);
 	}
 	pass('EN/KR/RU Profile JSON, matching keys and actual i18next resolution');
+	const css = compileProfileStyles();
+	const selector = '#pc-wrap.trainer-profile-layout .trainer-profile-heading .trainer-profile-bookings-link';
+	assert.ok(css.includes(selector));
+	assert.match(css.slice(css.indexOf(selector), css.indexOf(selector + ':hover')), /min-height: 44px/);
+	assert.ok(css.includes(selector + ':hover'));
+	assert.ok(css.includes(selector + ':focus-visible'));
+	assert.match(css.slice(css.indexOf(selector + ':focus-visible')), /outline: 2px solid #a53425/);
+	pass('Profile SCSS compiles with scoped secondary booking link, 44px touch target, hover and keyboard focus');
 }
 async function integration() {
 	const sharp = require('node:module').createRequire(path.join(__dirname, '../../gymflow/package.json'))('sharp');
@@ -97,6 +111,9 @@ async function integration() {
 			cancelAnimationFrame: clearTimeout,
 		});
 		Object.defineProperty(global, 'navigator', { value: dom.window.navigator, configurable: true, writable: true });
+		const profileStyles = document.createElement('style');
+		profileStyles.textContent = compileProfileStyles();
+		document.head.append(profileStyles);
 		const React = require('react'),
 			{ createRoot } = require('react-dom/client'),
 			{ flushSync } = require('react-dom');
@@ -194,8 +211,13 @@ async function integration() {
 				},
 			},
 		};
-		const texts = JSON.parse(fs.readFileSync(path.join(__dirname, '../public/locales/en/common.json'), 'utf8'));
-		const t = (key) => key.split('.').reduce((value, part) => value?.[part], texts) || key;
+		const resources = Object.fromEntries(['en', 'kr', 'ru'].map((locale) => [locale, {
+			common: JSON.parse(fs.readFileSync(path.join(__dirname, '../public/locales', locale, 'common.json'), 'utf8')),
+		}]));
+		const texts = resources.en.common;
+		const i18n = require('i18next').createInstance();
+		await i18n.init({ resources, lng: 'en', ns: ['common'], defaultNS: 'common', initImmediate: false });
+		const t = (key, values) => i18n.getFixedT(router.locale)(key, values);
 		let mobile = false;
 		const router = {
 			isReady: true,
@@ -205,10 +227,20 @@ async function integration() {
 			locale: 'en',
 			push: async () => true,
 		};
-		const link = ({ href, children, passHref, scroll, ...props }) =>
+		const link = ({ href, children, passHref, scroll, onClick, ...props }) =>
 			React.createElement(
 				'a',
-				{ ...props, href: typeof href === 'string' ? href : href.pathname + '?' + new URLSearchParams(href.query) },
+				{
+					...props,
+					href: typeof href === 'string' ? href : href.pathname + '?' + new URLSearchParams(href.query),
+					onClick: (event) => {
+						onClick?.(event);
+						if (!event.defaultPrevented) {
+							event.preventDefault();
+							void router.push(href);
+						}
+					},
+				},
 				children,
 			);
 		const noopPage = { __esModule: true, default: () => null };
@@ -249,10 +281,6 @@ async function integration() {
 			'TrainerDashboard',
 		])
 			mocks['../../libs/components/mypage/' + name] = noopPage;
-		mocks['../../libs/components/mypage/MyBookings'] = {
-			__esModule: true,
-			default: () => React.createElement('p', { 'data-test': 'my-bookings' }),
-		};
 		for (const name of ['MemberFollowers', 'MemberFollowings'])
 			mocks['../../libs/components/member/' + name] = noopPage;
 		const Page = loadTs(path.join(__dirname, '../pages/mypage/index.tsx'), mocks).default;
@@ -263,6 +291,14 @@ async function integration() {
 		root = createRoot(document.getElementById('test-root'));
 		const wrap = (element) => React.createElement(ApolloProvider, { client }, element);
 		const render = () => root.render(wrap(React.createElement(Page)));
+		router.push = router.replace = async (href) => {
+			const url = new URL(typeof href === 'string' ? href : href.pathname + '?' + new URLSearchParams(href.query), 'http://localhost');
+			router.pathname = url.pathname;
+			router.query = Object.fromEntries(url.searchParams);
+			router.asPath = url.pathname + url.search;
+			render();
+			return true;
+		};
 		const until = async (fn) => {
 			const start = Date.now();
 			while (!fn()) {
@@ -355,6 +391,65 @@ async function integration() {
 			}
 		}
 		pass('shared desktop/mobile five-item workspace navigation preserves every destination and active state');
+		const customer = await members.create({
+			memberNick: 'Promoted profile customer', memberPhone: 'profile-history-customer',
+			memberPassword: 'fixture', memberType: 'USER',
+		});
+		const { addBookingDays, seoulToday } = loadTs(path.join(__dirname, '../libs/booking.ts'));
+		const [upcoming, completed] = await fixture.reservations.create([
+			{ memberId: customer._id, reservationDate: addBookingDays(seoulToday(), 1), reservationStatus: 'CONFIRMED' },
+			{ memberId: customer._id, reservationDate: addBookingDays(seoulToday(), -1), reservationStatus: 'COMPLETED' },
+		].map((row) => ({ ...row, trainerId: trainer._id, programId: fixture.program._id, startTime: '09:00', endTime: '10:00' })));
+		const application = await fixture.gql('SUBMIT_TRAINER_APPLICATION', {
+			fullName: 'Promoted profile customer', categories: ['YOGA'],
+			experienceSummary: 'Coaching experience', bio: 'Customer history navigation fixture',
+		}, customer);
+		assert.equal(application.errors, undefined);
+		const approval = await fixture.gql('REVIEW_TRAINER_APPLICATION', {
+			applicationId: application.data.submitTrainerApplication._id, decision: 'APPROVED',
+		}, admin);
+		assert.equal(approval.errors, undefined);
+		await auth.invalidateSession();
+		auth.setJwtToken(token(customer));
+		await auth.updateUserInfo();
+		assert.equal(store.userVar()._id, String(customer._id));
+		assert.equal(store.userVar().memberType, 'TRAINER');
+		const bookingsLink = '#trainer-profile-page .trainer-profile-heading .trainer-profile-bookings-link';
+		for (const viewport of [false, true]) {
+			mobile = viewport;
+			for (const locale of ['en', 'kr', 'ru']) {
+				router.locale = locale;
+				await router.push('/mypage');
+				await until(() => document.querySelector(bookingsLink));
+				assert.ok(document.querySelector('#pc-wrap.trainer-profile-layout'));
+				assert.ok(!document.querySelector('#my-page .left-config'));
+				const target = select(bookingsLink);
+				assert.equal(target.textContent.trim(), resources[locale].common.MyBookings.Title);
+				assert.equal(target.getAttribute('href'), '/mypage?category=myBookings');
+				assert.equal(target.closest('form'), null);
+				assert.equal(target.previousElementSibling.textContent, resources[locale].common['Trainer profile'].Intro);
+				assert.equal(window.getComputedStyle(target).display, 'inline-flex');
+				assert.equal(window.getComputedStyle(target).minHeight, '44px');
+				for (const selector of ['.schedule-desktop-navigation', '.schedule-mobile-navigation']) {
+					assert.equal(document.querySelectorAll(selector + ' a').length, 5);
+					assert.ok(document.querySelector(selector + ' a[href*="category=trainerReservations"]'));
+					assert.ok(!document.querySelector(selector + ' a[href*="category=myBookings"]'));
+				}
+				click(bookingsLink);
+				await until(() => document.querySelector('[data-reservation-id="' + upcoming._id + '"]'));
+				assert.equal(router.asPath, '/mypage?category=myBookings');
+				assert.equal(router.query.period, undefined);
+				assert.ok(!document.querySelector('[data-reservation-id="' + fixture.pending[0]._id + '"]'));
+				const ownRead = requests.filter((request) => request.operationName === 'GetMyReservations').at(-1);
+				assert.ok(ownRead);
+				assert.equal(ownRead.variables.input.memberId, undefined);
+				click('.my-bookings-tabs button:last-child');
+				await until(() => document.querySelector('[data-reservation-id="' + completed._id + '"]'));
+			}
+		}
+		pass('real promoted account /mypage Profile link reaches owned upcoming/history bookings through the full route/layout in EN/KR/RU and desktop/mobile branches');
+		router.locale = 'en';
+		await signIn(trainer);
 		mobile = false;
 		router.query = { category: 'myProfile' };
 		render();
@@ -489,7 +584,8 @@ async function integration() {
 		assert.ok(!document.querySelector('.trainer-profile-layout'));
 		router.query = { category: 'myBookings' };
 		render();
-		await until(() => document.querySelector('[data-test="my-bookings"]'));
+		await until(() => document.querySelector('#my-bookings-page'));
+		await until(() => document.querySelector('[data-reservation-id="' + fixture.pending[0]._id + '"]'));
 		pass('ADMIN legacy Profile/sidebar/logout remain unchanged; USER mobile Profile default and explicit My Bookings route are isolated');
 		await signIn(otherTrainer);
 		mobile = false;

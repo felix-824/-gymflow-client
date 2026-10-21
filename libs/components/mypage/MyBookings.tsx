@@ -215,11 +215,8 @@ function MyBookingsContent({ memberId }: { memberId: string }) {
 	const mounted = useRef(true);
 	const activeAccount = () =>
 		mounted.current &&
-		authReadyVar() &&
-		!authErrorVar() &&
 		userVar()._id === memberId &&
-		userVar().memberType === 'USER' &&
-		userVar().memberStatus === 'ACTIVE';
+		myBookingsAccess(authReadyVar(), authErrorVar(), userVar()) === 'ready';
 
 	/** APOLLO REQUESTS **/
 	const listQuery = useQuery<ReservationQuery>(GET_MY_RESERVATIONS, {

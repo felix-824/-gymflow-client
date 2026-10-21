@@ -62,7 +62,7 @@ const MyMenu = () => {
 							MY ACTIVITY
 						</Typography>
 						<List className={'sub-section'}>
-							{user.memberType === 'USER' && <ListItem className={pathname === 'myBookings' ? 'focus' : ''}>
+							{user._id && user.memberStatus === 'ACTIVE' && (user.memberType === 'USER' || user.memberType === 'TRAINER') && <ListItem className={pathname === 'myBookings' ? 'focus' : ''}>
 								<Link href={{ pathname: '/mypage', query: { category: 'myBookings' } }} scroll={false}>
 									<div className="flex-box"><Typography className="sub-title" variant="subtitle1" component="p">{t('MyBookings.Title')}</Typography></div>
 								</Link>

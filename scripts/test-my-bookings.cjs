@@ -90,10 +90,14 @@ function unit() {
 	assert.equal(helpers.myBookingsAccess(false, '', user), 'initializing');
 	assert.equal(helpers.myBookingsAccess(true, 'error', user), 'error');
 	assert.equal(helpers.myBookingsAccess(true, '', { ...user, _id: '' }), 'guest');
-	for (const memberType of ['TRAINER', 'ADMIN'])
+	for (const memberType of ['ADMIN', 'UNKNOWN'])
 		assert.equal(helpers.myBookingsAccess(true, '', { ...user, memberType }), 'forbidden');
-	assert.equal(helpers.myBookingsAccess(true, '', { ...user, memberStatus: 'BLOCK' }), 'guest');
 	assert.equal(helpers.myBookingsAccess(true, '', user), 'ready');
+	assert.equal(helpers.myBookingsAccess(true, '', { ...user, memberType: 'TRAINER' }), 'ready');
+	for (const memberType of ['USER', 'TRAINER'])
+		for (const memberStatus of ['BLOCK', 'DELETE'])
+			assert.equal(helpers.myBookingsAccess(true, '', { ...user, memberType, memberStatus }), 'guest');
+	pass('same account keeps historical booking access from ACTIVE USER to ACTIVE TRAINER; inactive roles remain denied');
 	assert.equal(helpers.cancellationErrorKind({ networkError: new Error('lost') }), 'unknown');
 	for (const statusCode of [404, 409])
 		assert.equal(
@@ -198,7 +202,7 @@ const { fixtureAccessToken } = require(path.join(backend, 'apps/gymflow-api/test
 	);
 	const log = console.log,
 		previousDownload = process.env.MONGOMS_RUNTIME_DOWNLOAD;
-	let mongo, app, root, client, dom;
+	let mongo, app, root, menuRoot, client, dom;
 	try {
 		console.log = () => {};
 		process.env.MONGOMS_RUNTIME_DOWNLOAD = 'false';
@@ -245,6 +249,12 @@ const { fixtureAccessToken } = require(path.join(backend, 'apps/gymflow-api/test
 			memberPhone: 'mybookings102',
 			memberPassword: 'fixture',
 			memberType: 'USER',
+		});
+		const admin = await members.create({
+			memberNick: 'Admin fixture',
+			memberPhone: 'mybookings103',
+			memberPassword: 'fixture',
+			memberType: 'ADMIN',
 		});
 		const program = await programs.create({
 			memberId: trainer._id,
@@ -348,7 +358,9 @@ const { fixtureAccessToken } = require(path.join(backend, 'apps/gymflow-api/test
 		assert.ok(past.list.find((r) => r._id === history[4]._id.toString()));
 		assert.equal(past.list.find((r) => r._id === missing._id.toString()).programData, null);
 		assert.equal(past.list.find((r) => r._id === missing._id.toString()).trainerData, null);
-		assert.ok((await gql('GET_MY_RESERVATIONS', { page: 1, limit: 6, search: {} }, trainer)).errors);
+		const trainerHistory = await gql('GET_MY_RESERVATIONS', { page: 1, limit: 6, search: {} }, trainer);
+		assert.equal(trainerHistory.errors, undefined);
+		assert.deepEqual(trainerHistory.data.getMyReservations.list, []);
 		assert.ok((await gql('CANCEL_RESERVATION', pending[0]._id.toString(), other)).errors);
 		const running = await reservations.create({
 			...base,
@@ -433,7 +445,7 @@ const { fixtureAccessToken } = require(path.join(backend, 'apps/gymflow-api/test
 			'next/router': { useRouter: () => router },
 			'next/link': {
 				__esModule: true,
-				default: ({ href, children, passHref, ...props }) =>
+				default: ({ href, children, passHref, scroll, ...props }) =>
 					React.createElement(
 						'a',
 						{ ...props, href: typeof href === 'string' ? href : href.pathname + '?' + new URLSearchParams(href.query) },
@@ -483,12 +495,18 @@ const { fixtureAccessToken } = require(path.join(backend, 'apps/gymflow-api/test
 		await until(() => text().includes(texts.MyBookings.guest));
 		assert.equal(requests.length, 0);
 		assert.ok(document.querySelector('a[href*="referrer="]'));
-		for (const memberType of ['TRAINER', 'ADMIN']) {
-			store.userVar({ _id: trainer._id.toString(), memberType, memberStatus: 'ACTIVE' });
-			await until(() => text().includes(texts.MyBookings.forbidden));
+		for (const [memberType, memberStatus, state] of [
+			['ADMIN', 'ACTIVE', 'forbidden'],
+			['USER', 'BLOCK', 'guest'],
+			['USER', 'DELETE', 'guest'],
+			['TRAINER', 'BLOCK', 'guest'],
+			['TRAINER', 'DELETE', 'guest'],
+		]) {
+			store.userVar({ _id: trainer._id.toString(), memberType, memberStatus });
+			await until(() => text().includes(texts.MyBookings[state]));
 			assert.equal(requests.length, 0);
 		}
-		pass('mounted auth initialization, guest return URL and non-USER guards issue no private queries');
+		pass('mounted auth initialization, guest return URL, ADMIN and BLOCK/DELETE USER/TRAINER issue no private queries');
 		fault = 'read-hold';
 		store.userVar({ _id: user._id.toString(), memberType: 'USER', memberStatus: 'ACTIVE' });
 		await until(() => release);
@@ -522,6 +540,54 @@ const { fixtureAccessToken } = require(path.join(backend, 'apps/gymflow-api/test
 		release = undefined;
 		await until(() => !text().includes(texts.MyBookings.Updating));
 		pass('real list/counts/global hero, optional request, real image priority and broken/missing image fallback');
+		// Legacy-menu checks only; test-trainer-profile.cjs covers discoverability through the real MyPage/layout.
+		const Menu = loadTs(path.join(__dirname, '../libs/components/mypage/MyMenu.tsx'), {
+			...mocks,
+			'../../hooks/useDeviceDetect': { __esModule: true, default: () => 'desktop' },
+			'../../sweetAlert': { sweetConfirmAlert: async () => false },
+		}).default;
+		const menuContainer = document.createElement('div');
+		menuRoot = createRoot(menuContainer);
+		const menuMarkup = () => {
+			flushSync(() => menuRoot.render(React.createElement(Menu)));
+			return menuContainer.innerHTML;
+		};
+		assert.ok(menuMarkup().includes('/mypage?category=myBookings'));
+		const submitted = await gql('SUBMIT_TRAINER_APPLICATION', {
+			fullName: 'Customer becoming trainer',
+			categories: ['YOGA'],
+			experienceSummary: 'Existing coaching experience',
+			bio: 'Historical customer compatibility fixture',
+		});
+		assert.equal(submitted.errors, undefined);
+		const approved = await gql('REVIEW_TRAINER_APPLICATION', {
+			applicationId: submitted.data.submitTrainerApplication._id,
+			decision: 'APPROVED',
+		}, admin);
+		assert.equal(approved.errors, undefined);
+		assert.equal(approved.data.reviewTrainerApplication.status, 'APPROVED');
+		const refreshed = await gql('GET_MY_MEMBER');
+		assert.equal(refreshed.errors, undefined);
+		assert.equal(refreshed.data.getMyMember.memberType, 'TRAINER');
+		flushSync(() => store.userVar(refreshed.data.getMyMember));
+		window.dispatchEvent(new window.Event('focus'));
+		await until(() => row(confirmed._id) && !text().includes(texts.MyBookings.Updating));
+		const owned = await gql('GET_MY_RESERVATIONS', { page: 1, limit: 100, search: {} });
+		assert.equal(owned.errors, undefined);
+		assert.ok(owned.data.getMyReservations.list.every((item) => item.memberId === String(user._id)));
+		assert.ok(!row(running._id));
+		assert.ok(menuMarkup().includes('/mypage?category=myBookings'));
+		for (const category of ['myPrograms', 'trainerSchedule', 'trainerReservations'])
+			assert.ok(menuMarkup().includes('/mypage?category=' + category));
+		pass('isolated legacy MyMenu retains customer-history and trainer links; this is not workspace discoverability coverage');
+		assert.ok((await gql('CANCEL_RESERVATION', String(running._id))).errors);
+		const reservationCount = await reservations.countDocuments({ memberId: user._id });
+		const denied = await gql('CREATE_RESERVATION', {
+			programId: String(program._id), reservationDate: tomorrow, startTime: '11:00',
+		});
+		assert.ok(denied.errors.some((error) => error.message === 'Role not permitted'));
+		assert.equal(await reservations.countDocuments({ memberId: user._id }), reservationCount);
+		pass('real approval and authoritative member refresh preserve owned bookings; foreign cancellation and new booking creation stay denied');
 		const before = requests.filter((r) => r.operationName === 'CancelReservation').length;
 		cancel(pending[0]._id);
 		await until(() => document.querySelector('[role="dialog"]'));
@@ -624,10 +690,12 @@ const { fixtureAccessToken } = require(path.join(backend, 'apps/gymflow-api/test
 		store.userVar({ _id: other._id.toString(), memberType: 'USER', memberStatus: 'BLOCK' });
 		await until(() => text().includes(texts.MyBookings.guest));
 		assert.equal(document.querySelectorAll('.my-bookings-card').length, 0);
+		assert.ok(!menuMarkup().includes('/mypage?category=myBookings'));
 		pass('non-active/account change removes private content');
 	} finally {
 		console.log = log;
 		root?.unmount();
+		menuRoot?.unmount();
 		client?.stop();
 		dom?.window.close();
 		if (app) await app.close();

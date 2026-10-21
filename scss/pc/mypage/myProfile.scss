@@ -854,6 +854,27 @@
 			font-size: 14px;
 			line-height: 1.6;
 		}
+		.trainer-profile-bookings-link {
+			display: inline-flex;
+			align-items: center;
+			min-height: 44px;
+			margin-top: 8px;
+			padding: 8px 0;
+			border-radius: 2px;
+			color: #626978;
+			font-size: 14px;
+			font-weight: 600;
+			text-decoration: none;
+			text-underline-offset: 4px;
+			&:hover {
+				color: #a53425;
+				text-decoration: underline;
+			}
+			&:focus-visible {
+				outline: 2px solid #a53425;
+				outline-offset: 4px;
+			}
+		}
 	}
 	.trainer-profile-surface {
 		padding: 32px;

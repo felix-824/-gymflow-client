@@ -321,7 +321,8 @@ const MyFavorites = () => {
 	const user = useReactiveVar(userVar);
 	const authReady = useReactiveVar(authReadyVar);
 	const authError = useReactiveVar(authErrorVar);
-	const access = myBookingsAccess(authReady && router.isReady, authError, user);
+	const historyAccess = myBookingsAccess(authReady && router.isReady, authError, user);
+	const access = historyAccess === 'ready' && user.memberType !== 'USER' ? 'forbidden' : historyAccess;
 	return (
 		<div id="my-favorites-page">
 			<header className="user-favorites-heading">

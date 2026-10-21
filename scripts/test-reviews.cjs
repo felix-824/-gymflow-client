@@ -245,9 +245,9 @@ async function integration() {
 			element.click();
 		};
 		const change = (value) => Simulate.change(document.querySelector('#review-content'), { target: { value } });
-		const record = async () =>
+		const record = async (memberId = fixture.user._id) =>
 			fixture.reservations.create({
-				memberId: fixture.user._id,
+				memberId,
 				trainerId: fixture.trainer._id,
 				programId: fixture.program._id,
 				reservationDate: fixture.history[0].reservationDate,
@@ -313,6 +313,44 @@ async function integration() {
 		assert(card.textContent.includes(resources.en.common.Reviews['Review submitted']));
 		assert(!card.querySelector('.my-bookings-review a'));
 		pass('return to My Bookings uses real backend reviewId and a non-action submitted state');
+		const promotedReservation = await record();
+		const foreign = await record(fixture.otherTrainer._id);
+		const application = await fixture.gql('SUBMIT_TRAINER_APPLICATION', {
+			fullName: 'Review customer becoming trainer',
+			categories: ['YOGA'],
+			experienceSummary: 'Coaching experience',
+			bio: 'Retaining completed customer reservations',
+		}, fixture.user);
+		assert.equal(application.errors, undefined);
+		const approval = await fixture.gql('REVIEW_TRAINER_APPLICATION', {
+			applicationId: application.data.submitTrainerApplication._id,
+			decision: 'APPROVED',
+		}, fixture.admin);
+		assert.equal(approval.errors, undefined);
+		await auth.updateUserInfo();
+		assert.equal(store.userVar()._id, String(fixture.user._id));
+		assert.equal(store.userVar().memberType, 'TRAINER');
+		const promotedProfile = store.userVar();
+		reset();
+		router.pathname = '/mypage/review';
+		router.query = { reservationId: String(promotedReservation._id) };
+		render(LeaveReview);
+		await until(() => document.querySelector('#review-content'));
+		click('input[value="5"]');
+		change('Review after trainer approval');
+		await until(() => !document.querySelector('.leave-review-submit').disabled);
+		click('.leave-review-submit');
+		await until(() => notifications.length === 2 && navigations.length === 2);
+		const savedReview = await fixture.db.model('Review').findOne({ reservationId: promotedReservation._id });
+		assert.equal(String(savedReview.memberId), String(fixture.user._id));
+		assert.equal(savedReview.content, 'Review after trainer approval');
+		await assert.rejects(() => client.mutate({
+			mutation: mutation.CREATE_REVIEW,
+			variables: { input: { reservationId: String(foreign._id), rating: 5, content: 'Foreign reservation' } },
+			context: { handleErrorLocally: true },
+		}));
+		assert.equal(await fixture.db.model('Review').countDocuments({ reservationId: foreign._id }), 0);
+		pass('real approval/updateUserInfo keeps completed owned review submission available to TRAINER; foreign reviews remain denied');
 		reset();
 		const stale = await record();
 		router.pathname = '/mypage/review';
@@ -328,8 +366,8 @@ async function integration() {
 		await until(() => !document.querySelector('.leave-review-submit').disabled);
 		click('.leave-review-submit');
 		await until(() => text().includes(resources.en.common.Reviews['Review submitted']));
-		assert.equal(notifications.length, 1);
-		assert.equal(navigations.length, 1);
+		assert.equal(notifications.length, 2);
+		assert.equal(navigations.length, 2);
 		pass('real duplicate error reconciles submitted state without claiming a new success');
 		assert.equal(globalAlerts.length, 0);
 		await client
@@ -356,12 +394,12 @@ async function integration() {
 		await until(() => text().includes(resources.en.common.Reviews.Unknown));
 		assert(document.querySelector('.leave-review-submit').disabled);
 		assert.equal(createRequests().length, beforeLost + 1);
-		assert.equal(notifications.length, 1);
+		assert.equal(notifications.length, 2);
 		dropResponse = false;
 		click('.leave-review-feedback button');
 		await until(() => text().includes(resources.en.common.Reviews['Review submitted']));
 		assert.equal(createRequests().length, beforeLost + 1);
-		assert.equal(notifications.length, 1);
+		assert.equal(notifications.length, 2);
 		pass('lost mutation response never fakes success or retries; read-only status check finds committed review');
 		for (const status of ['PENDING', 'CONFIRMED', 'CANCELLED', 'NO_SHOW']) {
 			reset();
@@ -372,7 +410,7 @@ async function integration() {
 			assert(!document.querySelector('#review-content'));
 		}
 		pass('direct routes reject all four non-COMPLETED statuses, including elapsed CONFIRMED');
-		for (const id of [fixture.missing._id, new fixture.db.base.Types.ObjectId()]) {
+		for (const id of [fixture.missing._id, foreign._id, new fixture.db.base.Types.ObjectId()]) {
 			reset();
 			router.query = { reservationId: String(id) };
 			render(LeaveReview);
@@ -391,17 +429,22 @@ async function integration() {
 		render(LeaveReview);
 		await until(() => text().includes(resources.en.common.Reviews.Unavailable));
 		assert.equal(requests.length, beforeInvalid);
-		for (const actor of [null, fixture.trainer, fixture.admin]) {
+		for (const actor of [
+			null,
+			{ ...fixture.admin.toObject(), _id: String(fixture.admin._id) },
+			...['USER', 'TRAINER'].flatMap((memberType) =>
+				['BLOCK', 'DELETE'].map((memberStatus) => ({ ...promotedProfile, memberType, memberStatus }))),
+		]) {
 			reset();
-			store.userVar(actor ? { ...actor.toObject(), _id: String(actor._id) } : { ...store.emptyUser });
+			store.userVar(actor ?? { ...store.emptyUser });
 			router.query = { reservationId: String(first._id) };
 			const before = requests.length;
 			render(LeaveReview);
-			await until(() => text().includes(resources.en.common.MyBookings[actor ? 'forbidden' : 'guest']));
+			await until(() => text().includes(resources.en.common.MyBookings[actor?.memberType === 'ADMIN' ? 'forbidden' : 'guest']));
 			assert.equal(requests.length, before);
 		}
-		pass('malformed routes and guest/TRAINER/ADMIN screens send no owned reservation queries');
-		store.userVar({ ...fixture.user.toObject(), _id: String(fixture.user._id) });
+		pass('malformed routes, guest, ADMIN and BLOCK/DELETE USER/TRAINER send no owned reservation queries');
+		store.userVar(promotedProfile);
 		const extra = await record();
 		await client.mutate({
 			mutation: mutation.CREATE_REVIEW,
@@ -412,8 +455,8 @@ async function integration() {
 		router.query = { id: String(fixture.program._id) };
 		render(ProgramReviews, { programId: String(fixture.program._id) });
 		await until(() => document.querySelectorAll('.program-review').length === 3);
-		assert(text().includes('4 reviews'));
-		assert(document.querySelector('.program-reviews-aggregate strong').textContent === '3.3');
+		assert(text().includes('5 reviews'));
+		assert(document.querySelector('.program-reviews-aggregate strong').textContent === '3.6');
 		assert(!text().includes('Write Review'));
 		assert(!text().includes('Private booking'));
 		const pageTwo = Array.from(document.querySelectorAll('.MuiPaginationItem-page')).find(
@@ -421,9 +464,9 @@ async function integration() {
 		);
 		assert(pageTwo);
 		pageTwo.click();
-		await until(() => document.querySelectorAll('.program-review').length === 1);
+		await until(() => document.querySelectorAll('.program-review').length === 2);
 		assert(requests.some((item) => item.operationName === 'GetReviews' && item.variables.input.page === 2));
-		assert(text().includes('4 reviews'));
+		assert(text().includes('5 reviews'));
 		pass('real program reviews, rounded average/total, editorial rows and backend numbered pagination');
 		const reviewModel = fixture.db.model('Review');
 		const storedReviews = await reviewModel.collection.find({ programId: fixture.program._id }).toArray();
