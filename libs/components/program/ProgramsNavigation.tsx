@@ -16,6 +16,7 @@ import MenuRoundedIcon from '@mui/icons-material/MenuRounded';
 import { userVar } from '../../../apollo/store';
 import { logOut } from '../../auth';
 import { REACT_APP_API_URL } from '../../config';
+import GlobalProgramSearch from '../GlobalProgramSearch';
 
 const programDestinations = [
 	{ label: 'Home', href: '/', icon: HomeOutlinedIcon },
@@ -40,6 +41,7 @@ export const ProgramsHeader = () => {
 	const [localeAnchor, setLocaleAnchor] = useState<HTMLElement | null>(null);
 	const [accountAnchor, setAccountAnchor] = useState<HTMLElement | null>(null);
 	const [navigationAnchor, setNavigationAnchor] = useState<HTMLElement | null>(null);
+	const [searchHeight, setSearchHeight] = useState(0);
 	const locale = router.locale ?? 'en';
 	const memberName = user.memberFullName?.trim() || user.memberNick?.trim();
 	const destinations = [
@@ -59,6 +61,7 @@ export const ProgramsHeader = () => {
 	};
 
 	return (
+		<>
 		<Box component={'header'} className={'programs-header mui-fixed'}>
 			<Box component={'div'} className={'programs-header-inner'}>
 				<Link href={'/'} passHref className={'programs-brand'} aria-label={t('Program navigation.GymFlow home')}>
@@ -77,6 +80,7 @@ export const ProgramsHeader = () => {
 					))}
 				</Box>
 				<Box component={'div'} className={'programs-header-actions'}>
+					<GlobalProgramSearch onDesktopHeightChange={setSearchHeight} />
 					<Button
 						id={'programs-language-button'}
 						className={'programs-language-button'}
@@ -196,6 +200,8 @@ export const ProgramsHeader = () => {
 				))}
 			</Menu>
 		</Box>
+		<div className="global-program-search-space" style={{ height: searchHeight }} aria-hidden={true} />
+		</>
 	);
 };
 

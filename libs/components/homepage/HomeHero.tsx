@@ -3,7 +3,6 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useTranslation } from 'next-i18next';
 import ArrowForwardRoundedIcon from '@mui/icons-material/ArrowForwardRounded';
-import HeaderFilter from './HeaderFilter';
 
 const HomeHero = () => {
 	const { t } = useTranslation('common');
@@ -26,10 +25,6 @@ const HomeHero = () => {
 							{t('Home hero.Find Trainers')}
 						</Link>
 					</div>
-				</div>
-				<div className="home-hero-search">
-					<h2>{t('Home hero.Search title')}</h2>
-					<HeaderFilter />
 				</div>
 			</div>
 		</section>

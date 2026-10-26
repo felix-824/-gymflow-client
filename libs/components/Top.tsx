@@ -18,6 +18,7 @@ import { Logout } from '@mui/icons-material';
 import { REACT_APP_API_URL } from '../config';
 import { motion, useReducedMotion } from 'framer-motion';
 import { ProgramsHeader } from './program/ProgramsNavigation';
+import GlobalProgramSearch from './GlobalProgramSearch';
 
 const MotionStack = motion.create(Stack);
 
@@ -31,6 +32,7 @@ const DefaultTop = () => {
 	const shouldReduceMotion = useReducedMotion();
 	const NavbarContent = isHome ? MotionStack : Stack;
 	const [motionReady, setMotionReady] = useState(false);
+	const [searchHeight, setSearchHeight] = useState(0);
 	const [anchorEl2, setAnchorEl2] = useState<null | HTMLElement>(null);
 	const [lang, setLang] = useState<string | null>('en');
 	const drop = Boolean(anchorEl2);
@@ -140,6 +142,7 @@ const DefaultTop = () => {
 	if (device == 'mobile') {
 		return (
 			<Stack className={'top'}>
+				<GlobalProgramSearch />
 				<Link href={'/'}>
 					<div>{t('Home')}</div>
 				</Link>
@@ -199,7 +202,8 @@ const DefaultTop = () => {
 								</Link>
 							)}
 						</Box>
-						<Box component={'div'} className={'user-box'}>
+						<Box component={'div'} className={'user-box global-search-utilities'}>
+							<GlobalProgramSearch onDesktopHeightChange={setSearchHeight} />
 							{user?._id ? (
 								<>
 									<div className={'login-user'} onClick={(event: any) => setLogoutAnchor(event.currentTarget)}>
@@ -289,6 +293,7 @@ const DefaultTop = () => {
 						</Box>
 					</NavbarContent>
 				</Stack>
+				<div className="global-program-search-space" style={{ height: searchHeight }} aria-hidden={true} />
 			</Stack>
 		);
 	}
