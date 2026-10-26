@@ -150,7 +150,7 @@
 	@media (max-width: 767px) {
 		padding-top: calc(68px + env(safe-area-inset-top, 0px));
 		.programs-header-inner { width: calc(100% - 32px); min-height: 68px; gap: 8px; }
-		.programs-brand { gap: 5px; font-size: 18px; img { width: 28px; height: 28px; } }
+		.programs-brand { gap: 5px; min-height: 44px; font-size: 18px; img { width: 28px; height: 28px; } }
 		.programs-header-actions { gap: 2px; }
 		.programs-auth-link { padding: 8px; border: 0; span { display: none; } }
 		.home-hero-photo { inset: 0; img { object-position: 58% top; } }
