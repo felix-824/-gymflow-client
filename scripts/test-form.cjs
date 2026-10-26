@@ -323,9 +323,38 @@ module.exports = async function runFormChecks(loadTs, forms, options = {}) {
 		assert.equal(document.querySelectorAll('.editor-photo').length, 1);
 		assert.equal(document.querySelector('.editor-photo small').textContent, 'Primary image');
 		const newCreate = () => [...document.querySelectorAll('button')].find(button => Object.values(resources).some(resource => button.textContent === resource.common['Trainer program form']['New create']));
+		const assertFreshCreate = () => {
+			assert.equal(document.querySelector('#program-name').value, '');
+			assert.equal(document.querySelector('input[name="programType"]:checked').value, 'PT_1ON1');
+			assert.equal(document.querySelector('#program-category').value, 'WEIGHT_LOSS');
+			assert.equal(document.querySelector('#program-location').value, 'SEOUL');
+			assert.equal(document.querySelector('#program-address').value, '');
+			assert.equal(document.querySelector('#program-description').value, '');
+			assert.deepEqual([...document.querySelectorAll('input[type=number]')].map(input => input.value), ['0', '60', '1']);
+			assert.equal(document.querySelectorAll('.editor-photo').length, 0);
+			assert.equal(document.querySelector('input[type=file]').value, '');
+			assert.equal(document.querySelector('[role=alert]'), null);
+			assert.equal(document.querySelector('button[type=submit]').disabled, false);
+			assert.equal(newCreate(), undefined);
+			assert.equal(forms.readProgramCreateEnvelope(trainer._id), null);
+		};
+		const fillCreate = async () => {
+			await act(async () => Simulate.change(document.querySelector('input[value="GROUP_CLASS"]')));
+			for (const [id, value] of Object.entries({
+				'program-name': 'Strength & Performance PT', 'program-category': 'MUSCLE_GAIN',
+				'program-location': 'BUSAN', 'program-address': 'Busan training studio',
+				'programPrice': '45000', 'programDuration': '90', 'programCapacity': '8',
+				'program-description': 'Strength coaching and technique practice.',
+			})) await act(async () => Simulate.change(document.getElementById(id), { target: { value } }));
+			await chooseFile();
+		};
 		for (const locale of ['en', 'kr', 'ru']) {
 			await i18n.changeLanguage(locale);
-			if (newCreate()) await act(async () => newCreate().click());
+			if (newCreate()) {
+				await act(async () => newCreate().click());
+				assertFreshCreate();
+				await fillCreate();
+			}
 			await act(async () => Simulate.submit(document.querySelector('form')));
 			assert.equal(state.success.at(-1), resources[locale].common['Trainer program form'].Created);
 		}
@@ -336,7 +365,41 @@ module.exports = async function runFormChecks(loadTs, forms, options = {}) {
 		assert.equal(state.mutations.at(-1).variables.input.programStatus, undefined);
 		pass('file format and total-image limit, primary image, and create payload without client-owned status');
 
+		const completedCreate = forms.readProgramCreateEnvelope(trainer._id);
+		const writesBeforeReentry = state.mutations.length, uploadsBeforeReentry = state.uploads.length;
+		const keysBeforeReentry = state.generatedKeys.length;
+		assert.equal(completedCreate.status, 'confirmed');
+		assert.equal(state.navigation.at(-1).query.category, 'myPrograms');
+		router.query = { category: 'myPrograms' };
+		await act(async () => root.render(React.createElement('div', null, 'Programs test destination')));
+		router.query = { category: 'addProgram' };
+		await act(async () => root.render(React.createElement(Component)));
+		assertFreshCreate();
+		assert.equal(state.mutations.length, writesBeforeReentry);
+		assert.equal(state.uploads.length, uploadsBeforeReentry);
+		assert.equal(state.generatedKeys.length, keysBeforeReentry);
+		pass('successful Create -> Programs -> Create clears confirmed receipt, every field, image and success state without writes/uploads');
+
+		await fillCreate();
+		const draftPhoto = document.querySelector('.editor-photo img').src;
+		await act(async () => root.render(React.createElement(Component)));
+		assert.equal(document.querySelector('#program-name').value, 'Strength & Performance PT');
+		assert.equal(document.querySelector('#program-category').value, 'MUSCLE_GAIN');
+		assert.equal(document.querySelector('#program-location').value, 'BUSAN');
+		assert.equal(document.querySelector('#program-description').value, 'Strength coaching and technique practice.');
+		assert.equal(document.querySelector('.editor-photo img').src, draftPhoto);
+		assert.equal(forms.readProgramCreateEnvelope(trainer._id), null);
+		assert.equal(state.generatedKeys.length, keysBeforeReentry);
+		await act(async () => Simulate.submit(document.querySelector('form')));
+		assert.notEqual(state.mutations.at(-1).variables.input.createRequestId, completedCreate.createRequestId);
+		assert.equal(state.generatedKeys.length, keysBeforeReentry + 1);
+		pass('ordinary rerender preserves unsaved fields/images; next valid submission creates a fresh idempotency identity');
+
 		await act(async () => newCreate().click());
+		assertFreshCreate();
+		assert.equal(state.uploads.length, uploadsBeforeReentry + 1);
+		pass('Start new submission resets all form/image/success state without deleting or uploading persisted assets');
+		await fillCreate();
 		await act(async () => document.querySelector('.editor-remove-photo').click());
 		assert.equal(document.querySelectorAll('.editor-photo').length, 0);
 		await act(async () => Simulate.change(document.querySelector('input[value="ONLINE"]')));
@@ -351,6 +414,8 @@ module.exports = async function runFormChecks(loadTs, forms, options = {}) {
 
 		// Create recovery models a committed-but-lost response: explicit retry only, original envelope.
 		await act(async () => newCreate().click());
+		assertFreshCreate();
+		await fillCreate();
 		state.unknownMutation = true;
 		const keysBefore = state.generatedKeys.length, createsBefore = state.mutations.length, uploadsBefore = state.uploads.length;
 		await act(async () => { Simulate.submit(document.querySelector('form')); Simulate.submit(document.querySelector('form')); });
@@ -393,17 +458,18 @@ module.exports = async function runFormChecks(loadTs, forms, options = {}) {
 		await act(async () => Simulate.submit(document.querySelector('form')));
 		assert.equal(state.mutations.length, createsBefore + 3);
 		state.feedbackError = false;
-		await act(async () => root.render(React.createElement(Component, { key: 'confirmed-f5' })));
 		await act(async () => Simulate.submit(document.querySelector('form')));
 		assert.equal(state.mutations.length, createsBefore + 3);
 		assert.equal(state.uploads.length, uploadsBefore);
-		pass('confirmed Create is marked before feedback; feedback failure/F5 cannot create again or replay uploads');
+		pass('confirmed Create is marked before feedback; feedback failure cannot unlock repeated submits or replay uploads');
 
 		state.confirmRefresh = false;
 		await act(async () => newCreate().click());
 		assert.equal(forms.readProgramCreateEnvelope(trainer._id).status, 'confirmed');
 		state.confirmRefresh = true;
 		await act(async () => newCreate().click());
+		assertFreshCreate();
+		await fillCreate();
 		state.navigationError = true;
 		await act(async () => Simulate.submit(document.querySelector('form')));
 		assert.notEqual(state.mutations.at(-1).variables.input.createRequestId, envelope.createRequestId);
@@ -412,6 +478,11 @@ module.exports = async function runFormChecks(loadTs, forms, options = {}) {
 		assert.equal(state.mutations.length, createsBefore + 4);
 		state.navigationError = false;
 		pass('deliberate new submission requires confirmation/new key; navigation failure preserves confirmed state');
+		await act(async () => root.render(React.createElement(Component, { key: 'confirmed-f5' })));
+		assertFreshCreate();
+		assert.equal(state.mutations.length, createsBefore + 4);
+		assert.equal(state.generatedKeys.length, keysBefore + 2);
+		pass('new Create mount after confirmed navigation failure discards only the completed receipt without replaying a request');
 		forms.clearProgramCreateEnvelope(trainer._id);
 		forms.storeProgramCreateEnvelope({ ...envelope, accessToken: 'excluded', payload: { ...envelope.payload, password: 'excluded' } });
 		assert.equal(window.sessionStorage.getItem('gymflow:program-create:' + trainer._id).includes('excluded'), false);
@@ -428,6 +499,8 @@ module.exports = async function runFormChecks(loadTs, forms, options = {}) {
 		pass('envelope stores only whitelisted business data; malformed response stays unresolved and payload conflict cannot reuse key');
 
 		await act(async () => newCreate().click());
+		assertFreshCreate();
+		await fillCreate();
 		const setItem = dom.window.Storage.prototype.setItem;
 		dom.window.Storage.prototype.setItem = () => { throw new Error('Storage disabled'); };
 		const writesBeforeStorageFailure = state.mutations.length;

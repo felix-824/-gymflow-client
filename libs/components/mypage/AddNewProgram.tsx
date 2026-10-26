@@ -273,6 +273,10 @@ const AddProgram = () => {
 			if (!(await sweetConfirmAlert(t('Trainer program form.New create confirmation'))) ||
 				currentScope.current !== scope || getAuthSessionId() !== sessionIdentity) return;
 			clearProgramCreateEnvelope(user._id);
+			draftEpoch.current++;
+			setInsertProgramData({ ...initialValues, programImages: [] });
+			setValidationAttempt(0);
+			if (inputRef.current) inputRef.current.value = '';
 			createEnvelopeRef.current = null;
 			setCreateEnvelope(null);
 			setCreateStorageError(false);
@@ -335,11 +339,13 @@ const AddProgram = () => {
 			if (router.isReady && authReady && user.memberType === 'TRAINER') {
 				try {
 					const envelope = readProgramCreateEnvelope(user._id);
-					createEnvelopeRef.current = envelope;
-					setCreateEnvelope(envelope);
-					if (envelope) {
+					// A completed receipt is not a draft for the next Create entry.
+					if (envelope?.status === 'confirmed') clearProgramCreateEnvelope(user._id);
+					else if (envelope) {
+						createEnvelopeRef.current = envelope;
+						setCreateEnvelope(envelope);
 						setInsertProgramData(envelope.payload);
-						setFormError(envelope.status === 'confirmed' ? 'Created' : 'Uncertain create');
+						setFormError('Uncertain create');
 					}
 					setCreateReadyScope(scope);
 				} catch {
