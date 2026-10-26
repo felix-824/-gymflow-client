@@ -1,13 +1,9 @@
 import React from 'react';
 import Link from 'next/link';
-import { Box, Button, CircularProgress, IconButton, Stack, Typography } from '@mui/material';
+import { Box, Button, CircularProgress, Stack, Typography } from '@mui/material';
 import ArrowForwardRoundedIcon from '@mui/icons-material/ArrowForwardRounded';
-import EastRoundedIcon from '@mui/icons-material/EastRounded';
 import SearchOffRoundedIcon from '@mui/icons-material/SearchOffRounded';
-import WestRoundedIcon from '@mui/icons-material/WestRounded';
 import { useTranslation } from 'next-i18next';
-import { Navigation } from 'swiper';
-import { Swiper, SwiperSlide } from 'swiper/react';
 import { NetworkStatus, useMutation, useQuery } from '@apollo/client';
 import { GET_PROGRAMS } from '../../../apollo/user/query';
 import { LIKE_TARGET_PROGRAM } from '../../../apollo/user/mutation';
@@ -38,7 +34,7 @@ const TrendPrograms = ({ initialInput }: TrendProgramsProps) => {
 		notifyOnNetworkStatusChange: true,
 	});
 	const resolvedProgramsData = getProgramsData ?? previousProgramsData;
-	const programs: Program[] = resolvedProgramsData?.getPrograms?.list ?? [];
+	const programs: Program[] = resolvedProgramsData?.getPrograms?.list?.slice(0, 4) ?? [];
 
 	const likeProgramHandler = async (user: T, id: string) => {
 		try {
@@ -84,16 +80,6 @@ const TrendPrograms = ({ initialInput }: TrendProgramsProps) => {
 							{t('Home discover.View all')}
 							<ArrowForwardRoundedIcon aria-hidden={true} />
 						</Link>
-						{programs.length > 0 && (
-							<Box component={'div'} className={'home-discover-navigation'}>
-								<IconButton className={'home-discover-prev'} aria-label={t('Previous programs')}>
-									<WestRoundedIcon />
-								</IconButton>
-								<IconButton className={'home-discover-next'} aria-label={t('Next programs')}>
-									<EastRoundedIcon />
-								</IconButton>
-							</Box>
-						)}
 					</Box>
 				</Box>
 
@@ -121,19 +107,11 @@ const TrendPrograms = ({ initialInput }: TrendProgramsProps) => {
 							</Link>
 						</Box>
 					) : (
-						<Swiper
-							className={'home-discover-swiper'}
-							slidesPerView={'auto'}
-							spaceBetween={20}
-							modules={[Navigation]}
-							navigation={{ nextEl: '.home-discover-next', prevEl: '.home-discover-prev' }}
-						>
+						<Box component={'div'} className={'home-discover-grid'}>
 							{programs.map((program: Program) => (
-								<SwiperSlide key={program._id} className={'home-discover-slide'}>
-									<ProgramCard program={program} likeProgramHandler={likeProgramHandler} variant={'discovery'} />
-								</SwiperSlide>
+								<ProgramCard key={program._id} program={program} likeProgramHandler={likeProgramHandler} variant={'discovery'} />
 							))}
-						</Swiper>
+						</Box>
 					)}
 				</Box>
 			</Box>
@@ -144,7 +122,7 @@ const TrendPrograms = ({ initialInput }: TrendProgramsProps) => {
 TrendPrograms.defaultProps = {
 	initialInput: {
 		page: 1,
-		limit: 8,
+		limit: 4,
 		sort: 'programLikes',
 		direction: 'DESC',
 		search: {},
