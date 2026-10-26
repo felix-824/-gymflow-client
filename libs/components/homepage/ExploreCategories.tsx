@@ -8,20 +8,13 @@ import { initialProgramsInquiry, readProgramsInquiry } from '../../program';
 
 const categories = [
 	{
-		category: ProgramCategory.WEIGHT_LOSS,
-		image: '/img/fiber/cardio-running.webp',
-		layout: 'category-feature',
-	},
-	{
 		category: ProgramCategory.MUSCLE_GAIN,
 		image: '/img/fiber/strength-dumbbell-curl.webp',
-		layout: 'category-wide',
+		layout: 'category-feature',
 	},
 	{ category: ProgramCategory.YOGA, image: '/img/fiber/yoga-outdoor-flow.webp', layout: 'category-yoga' },
-	{ category: ProgramCategory.PILATES, image: '/img/fiber/pilates-reformer.webp', layout: 'category-pilates' },
-	{ category: ProgramCategory.CROSSFIT, image: '/img/fiber/strength-lifting.webp', layout: 'category-crossfit' },
+	{ category: ProgramCategory.PILATES, image: '/img/fiber/pilates-training.webp', layout: 'category-pilates' },
 	{ category: ProgramCategory.CARDIO, image: '/img/fiber/cardio-skipping.webp', layout: 'category-cardio' },
-	{ category: ProgramCategory.REHAB, image: '/img/fiber/yoga-senior-practice.webp', layout: 'category-rehab' },
 ] as const;
 
 const ExploreCategories = () => {
@@ -53,6 +46,12 @@ const ExploreCategories = () => {
 				<div className="explore-categories-grid">
 					{categories.map(({ category, image, layout }) => {
 						const categoryName = t(`Program discovery card.${category}`);
+						const compactImageSizes = layout === 'category-feature' || layout === 'category-yoga'
+							? '(max-width: 767px) calc(100vw - 40px), (max-width: 1023px) calc(100vw - 64px)'
+							: '(max-width: 359px) calc(100vw - 40px), (max-width: 767px) calc((100vw - 52px) / 2), (max-width: 1023px) calc((100vw - 80px) / 2)';
+						const desktopImageSizes = layout === 'category-feature' || layout === 'category-yoga'
+							? '(max-width: 1344px) calc((100vw - 80px) / 2), 632px'
+							: '(max-width: 1344px) calc((100vw - 112px) / 4), 308px';
 
 						return (
 							<Link
@@ -66,7 +65,7 @@ const ExploreCategories = () => {
 									src={image}
 									alt=""
 									fill
-									sizes="(max-width: 767px) calc(100vw - 40px), (max-width: 1023px) calc((100vw - 76px) / 2), 50vw"
+									sizes={`${compactImageSizes}, ${desktopImageSizes}`}
 								/>
 								<span className="explore-category-content">
 									<span>{categoryName}</span>
