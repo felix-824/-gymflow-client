@@ -30,6 +30,7 @@ function loadTs(file, mocks = {}, cache = new Map(), browserWindow = global.wind
 		if (name.endsWith('.css') || name.startsWith('swiper/css')) return {};
 		if (name.startsWith('.')) {
 			const resolved = path.resolve(path.dirname(file), name);
+			if (name.endsWith('.json') || name.endsWith('.js')) return require(resolved);
 			return loadTs(
 				fs.existsSync(resolved + '.ts') ? resolved + '.ts' : resolved + '.tsx',
 				mocks,
@@ -210,7 +211,8 @@ function legacyNavigation() {
 		assert.equal(communityMemberHref(undefined, 'TRAINER', false, 'owner'), undefined);
 		inspect(AdminMenu, { router: { pathname: '/_admin/users' } }, (document) => {
 			const titles = [...document.querySelectorAll('.MuiListItemText-primary')].map((node) => node.textContent);
-			assert.deepEqual(titles, ['Users', 'Programs', 'Community']);
+			assert.deepEqual(titles, ['Trainer Applications', 'Users', 'Programs', 'Community']);
+			assert(document.querySelector('a[href="/_admin/trainer-applications"]'));
 		});
 		const top = fs.readFileSync(path.join(__dirname, '../libs/components/Top.tsx'), 'utf8');
 		assert(!top.includes('NotificationsOutlinedIcon'));
