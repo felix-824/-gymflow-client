@@ -1,5 +1,61 @@
 import { gql } from '@apollo/client';
 
+/**************************
+ *           GYM          *
+ *************************/
+
+export const CREATE_GYM = gql`
+	mutation CreateGym($input: GymInput!) {
+		createGym(input: $input) {
+			_id
+			gymName
+			gymLocation
+			gymAddress
+			gymDesc
+			gymImages
+			gymPhone
+			openingHours {
+				dayOfWeek
+				isClosed
+				openTime
+				closeTime
+			}
+			amenities
+			createdAt
+			updatedAt
+			gymStatus
+			gymRevision
+			deletedAt
+		}
+	}
+`;
+
+export const UPDATE_GYM_BY_ADMIN = gql`
+	mutation UpdateGymByAdmin($input: GymUpdate!) {
+		updateGymByAdmin(input: $input) {
+			_id
+			gymName
+			gymLocation
+			gymAddress
+			gymDesc
+			gymImages
+			gymPhone
+			openingHours {
+				dayOfWeek
+				isClosed
+				openTime
+				closeTime
+			}
+			amenities
+			createdAt
+			updatedAt
+			gymStatus
+			gymRevision
+			deletedAt
+		}
+	}
+`;
+
 export const REVIEW_TRAINER_APPLICATION = gql`
 	mutation ReviewTrainerApplication($input: TrainerApplicationReview!) {
 		reviewTrainerApplication(input: $input) {

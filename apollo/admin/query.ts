@@ -1,5 +1,66 @@
 import { gql } from '@apollo/client';
 
+/**************************
+ *           GYM          *
+ *************************/
+
+export const GET_ALL_GYMS_BY_ADMIN = gql`
+	query GetAllGymsByAdmin($input: AllGymsInquiry!) {
+		getAllGymsByAdmin(input: $input) {
+			list {
+				_id
+				gymName
+				gymLocation
+				gymAddress
+				gymDesc
+				gymImages
+				gymPhone
+				openingHours {
+					dayOfWeek
+					isClosed
+					openTime
+					closeTime
+				}
+				amenities
+				createdAt
+				updatedAt
+				gymStatus
+				gymRevision
+				deletedAt
+			}
+			metaCounter {
+				total
+			}
+		}
+	}
+`;
+
+export const GET_GYM_BY_ADMIN = gql`
+	query GetGymByAdmin($gymId: String!) {
+		getGymByAdmin(gymId: $gymId) {
+			_id
+			gymName
+			gymLocation
+			gymAddress
+			gymDesc
+			gymImages
+			gymPhone
+			openingHours {
+				dayOfWeek
+				isClosed
+				openTime
+				closeTime
+			}
+			amenities
+			createdAt
+			updatedAt
+			gymStatus
+			gymRevision
+			deletedAt
+		}
+	}
+`;
+
 export const GET_TRAINER_APPLICATIONS_BY_ADMIN = gql`
 	query GetTrainerApplicationsByAdmin($input: TrainerApplicationsInquiry!) {
 		getTrainerApplicationsByAdmin(input: $input) {
