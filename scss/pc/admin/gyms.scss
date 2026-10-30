@@ -1,0 +1,139 @@
+#pc-wrap.admin #bunker .admin-gyms {
+	width: 100%;
+	min-width: 0;
+	max-width: 1200px;
+	color: #212121;
+	.admin-gym-heading {
+		margin-bottom: 28px;
+		h1 {
+			margin: 0 0 8px;
+			font-size: 28px;
+			line-height: 1.35;
+			font-weight: 600;
+		}
+		p {
+			margin: 0;
+			color: #616161;
+			font-size: 14px;
+			line-height: 1.6;
+		}
+	}
+	.table-wrap {
+		min-width: 0;
+		overflow: hidden;
+		border: 1px solid #e0e0e0;
+		border-radius: 8px;
+		background: #fff;
+	}
+	.MuiTabs-root {
+		border-bottom: 1px solid #e0e0e0;
+		padding: 0 12px;
+	}
+	.MuiTab-root {
+		text-transform: none;
+		min-height: 56px;
+	}
+	.admin-gym-filters {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 16px;
+		padding: 24px 16px;
+		.gym-search {
+			flex: 1 1 240px;
+			min-width: 0;
+		}
+		.gym-location {
+			flex: 0 1 220px;
+			min-width: 180px;
+		}
+		button,
+		.MuiInputBase-root {
+			min-height: 44px;
+		}
+	}
+	.MuiTableContainer-root {
+		overflow-x: auto;
+	}
+	.MuiTable-root {
+		min-width: 740px;
+		table-layout: fixed;
+	}
+	.MuiTableCell-root {
+		padding: 20px 16px;
+		overflow-wrap: anywhere;
+	}
+	.MuiTableCell-head {
+		background: #fafafa;
+		color: #616161;
+		font-size: 12px;
+		font-weight: 600;
+	}
+	.MuiTableCell-root:first-child {
+		width: 28%;
+	}
+	.MuiTableCell-root:nth-child(3) {
+		width: 25%;
+	}
+	.admin-gym-name {
+		display: flex;
+		align-items: center;
+		gap: 12px;
+		.MuiAvatar-root {
+			flex-shrink: 0;
+		}
+	}
+	.admin-gym-status {
+		display: inline-block;
+		padding: 4px 8px;
+		border-radius: 4px;
+		font-size: 12px;
+		font-weight: 600;
+	}
+	.is-active {
+		color: #166534;
+		background: #edf7ed;
+	}
+	.is-paused {
+		color: #854d0e;
+		background: #fff8e1;
+	}
+	.is-delete {
+		color: #616161;
+		background: #f2f2f2;
+	}
+	.MuiTableCell-root.admin-gym-empty {
+		padding: 48px 24px;
+		text-align: center;
+	}
+	.MuiTablePagination-root {
+		border-top: 1px solid #e0e0e0;
+	}
+	.MuiTablePagination-toolbar {
+		flex-wrap: wrap;
+		gap: 4px;
+		padding: 8px 16px;
+	}
+	.MuiTablePagination-spacer {
+		flex: 1 1 0;
+	}
+	.MuiTablePagination-actions button {
+		min-width: 44px;
+		min-height: 44px;
+	}
+	@media (max-width: 599px) {
+		.admin-gym-filters {
+			.gym-search,
+			.gym-location {
+				flex: 1 1 100%;
+				min-width: 0;
+			}
+		}
+		.MuiTablePagination-toolbar {
+			padding: 8px;
+		}
+		.MuiTablePagination-spacer {
+			display: none;
+		}
+	}
+}

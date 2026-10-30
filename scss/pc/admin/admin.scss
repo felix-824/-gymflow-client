@@ -41,12 +41,12 @@
   }
   .menu-list {
     padding: 8px 24px 8px 32px;
-    li {
+    .MuiListItemButton-root {
       padding: 8px 16px 8px 28px;
       border-radius: 4px;
       font-size: 14px;
     }
-    li.on {
+    .MuiListItemButton-root.on {
       font-weight: 600;
       background: #FDF4F4;
       color: #F54D56;
@@ -487,6 +487,23 @@
     }
     .MuiTableContainer-root {
       box-shadow: none;
+    }
+  }
+}
+
+#pc-wrap.admin {
+  width: 100%;
+  min-width: 0;
+  #bunker {
+    min-width: 0;
+    > .content { min-width: 0; }
+  }
+  @media (max-width: 1199px) {
+    .MuiAppBar-root { padding: 0 8px; }
+    #bunker {
+      width: 100%;
+      margin-left: 0;
+      padding: 96px 16px 48px;
     }
   }
 }

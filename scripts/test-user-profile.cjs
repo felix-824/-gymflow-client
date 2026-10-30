@@ -92,8 +92,8 @@ function legacyNavigation() {
 	let user = { _id: 'owner', memberType: 'USER' };
 	const router = { pathname: '/community', query: {}, locale: 'en' };
 	const store = { userVar: () => user };
-	const link = React.forwardRef(({ href, children, passHref, scroll, ...props }, ref) =>
-		React.createElement(
+	const link = React.forwardRef(({ href, children, passHref, scroll, legacyBehavior, ...props }, ref) =>
+		legacyBehavior ? React.cloneElement(children, { href, ref }) : React.createElement(
 			'a',
 			{
 				...props,
@@ -211,7 +211,7 @@ function legacyNavigation() {
 		assert.equal(communityMemberHref(undefined, 'TRAINER', false, 'owner'), undefined);
 		inspect(AdminMenu, { router: { pathname: '/_admin/users' } }, (document) => {
 			const titles = [...document.querySelectorAll('.MuiListItemText-primary')].map((node) => node.textContent);
-			assert.deepEqual(titles, ['Trainer Applications', 'Users', 'Programs', 'Community']);
+			assert.deepEqual(titles, ['Trainer Applications', 'Users', 'Programs', 'Gyms', 'Community']);
 			assert(document.querySelector('a[href="/_admin/trainer-applications"]'));
 		});
 		const top = fs.readFileSync(path.join(__dirname, '../libs/components/Top.tsx'), 'utf8');

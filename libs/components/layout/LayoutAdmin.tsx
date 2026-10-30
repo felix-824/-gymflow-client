@@ -5,7 +5,8 @@ import MenuList from '../admin/AdminMenuList';
 import Toolbar from '@mui/material/Toolbar';
 import Box from '@mui/material/Box';
 import Stack from '@mui/material/Stack';
-import { Menu, MenuItem } from '@mui/material';
+import { Menu, MenuItem, useMediaQuery } from '@mui/material';
+import MenuIcon from '@mui/icons-material/Menu';
 import Drawer from '@mui/material/Drawer';
 import AppBar from '@mui/material/AppBar';
 import Avatar from '@mui/material/Avatar';
@@ -13,11 +14,14 @@ import IconButton from '@mui/material/IconButton';
 import Divider from '@mui/material/Divider';
 import Typography from '@mui/material/Typography';
 import Tooltip from '@mui/material/Tooltip';
-import { getJwtToken, logOut, updateUserInfo } from '../../auth';
+import { logOut } from '../../auth';
 import { useReactiveVar } from '@apollo/client';
 import { userVar, authReadyVar, authErrorVar } from '../../../apollo/store';
 import { REACT_APP_API_URL } from '../../config';
 import { MemberType } from '../../enums/member.enum';
+import enGyms from '../../../public/locales/en/admin-gyms.json';
+import krGyms from '../../../public/locales/kr/admin-gyms.json';
+import ruGyms from '../../../public/locales/ru/admin-gyms.json';
 const drawerWidth = 280;
 
 const withAdminLayout = (Component: ComponentType) => {
@@ -26,7 +30,10 @@ const withAdminLayout = (Component: ComponentType) => {
 		const user = useReactiveVar(userVar);
 		const authReady = useReactiveVar(authReadyVar);
 		const authError = useReactiveVar(authErrorVar);
-		const [settingsState, setSettingsStateState] = useState(false);
+		const gymRoute = router.pathname === '/_admin/gyms' || router.pathname.startsWith('/_admin/gyms/');
+		const permanentDrawer = useMediaQuery('(min-width:1200px)');
+		const [drawerOpen, setDrawerOpen] = useState(false);
+		const navigation = (router.locale === 'kr' ? krGyms : router.locale === 'ru' ? ruGyms : enGyms).navigation;
 		const [anchorElUser, setAnchorElUser] = React.useState<null | HTMLElement>(null);
 		const [openMenu, setOpenMenu] = useState(false);
 		const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
@@ -39,10 +46,20 @@ const withAdminLayout = (Component: ComponentType) => {
 		}, []);
 
 		useEffect(() => {
-			if (authReady && !authError && !loading && user.memberType !== MemberType.ADMIN) {
+			const closeDrawer = () => setDrawerOpen(false);
+			router.events.on('routeChangeComplete', closeDrawer);
+			return () => router.events.off('routeChangeComplete', closeDrawer);
+		}, [router.events]);
+
+		useEffect(() => {
+			if (permanentDrawer) setDrawerOpen(false);
+		}, [permanentDrawer]);
+
+		useEffect(() => {
+			if (!gymRoute && authReady && !authError && !loading && user.memberType !== MemberType.ADMIN) {
 				router.push('/').then();
 			}
-		}, [authReady, authError, loading, user, router]);
+		}, [authReady, authError, loading, user, router, gymRoute]);
 
 		/** HANDLERS **/
 		const handleOpenUserMenu = (event: React.MouseEvent<HTMLElement>) => {
@@ -54,10 +71,13 @@ const withAdminLayout = (Component: ComponentType) => {
 		};
 
 		const logoutHandler = () => {
+			setDrawerOpen(false);
 			logOut();
 			router.push('/').then();
 		};
 
+		if (gymRoute && (authError || !authReady || !user._id || user.memberType !== MemberType.ADMIN))
+			return <Component {...props} />;
 		if (authError) return <p role="alert">{authError}</p>;
 		if (!authReady || !user || user?.memberType !== MemberType.ADMIN) return null;
 
@@ -67,13 +87,24 @@ const withAdminLayout = (Component: ComponentType) => {
 					<AppBar
 						position="fixed"
 						sx={{
-							width: `calc(100% - ${drawerWidth}px)`,
-							ml: `${drawerWidth}px`,
+							width: { xs: '100%', lg: `calc(100% - ${drawerWidth}px)` },
+							ml: { xs: 0, lg: `${drawerWidth}px` },
 							boxShadow: 'rgb(100 116 139 / 12%) 0px 1px 4px',
 							background: 'none',
 						}}
 					>
-						<Toolbar>
+						<Toolbar sx={{ width: '100%', justifyContent: { xs: 'space-between', lg: 'flex-end' } }}>
+							{!permanentDrawer && (
+								<IconButton
+									aria-label={navigation.openMenu}
+									aria-controls="admin-navigation"
+									aria-expanded={drawerOpen}
+									onClick={() => setDrawerOpen(true)}
+									sx={{ minWidth: 44, minHeight: 44 }}
+								>
+									<MenuIcon />
+								</IconButton>
+							)}
 							<Tooltip title="Open settings">
 								<IconButton onClick={handleOpenUserMenu} sx={{ p: 0 }}>
 									<Avatar
@@ -130,14 +161,19 @@ const withAdminLayout = (Component: ComponentType) => {
 
 					<Drawer
 						sx={{
-							width: drawerWidth,
+							width: permanentDrawer ? drawerWidth : undefined,
 							flexShrink: 0,
 							'& .MuiDrawer-paper': {
 								width: drawerWidth,
+								maxWidth: 'calc(100% - 24px)',
 								boxSizing: 'border-box',
 							},
 						}}
-						variant="permanent"
+						variant={permanentDrawer ? 'permanent' : 'temporary'}
+						open={permanentDrawer || drawerOpen}
+						onClose={() => setDrawerOpen(false)}
+						ModalProps={{ keepMounted: true, disablePortal: true }}
+						PaperProps={{ id: 'admin-navigation', role: 'navigation', 'aria-label': navigation.menu }}
 						anchor="left"
 						className="aside"
 					>
@@ -169,7 +205,7 @@ const withAdminLayout = (Component: ComponentType) => {
 
 						<Divider />
 
-						<MenuList />
+						<MenuList onNavigate={() => setDrawerOpen(false)} />
 					</Drawer>
 
 					<Box component={'div'} id="bunker" sx={{ flexGrow: 1 }}>

@@ -1,8 +1,8 @@
 {
-	"navigation": { "title": "Gyms" },
+	"navigation": { "title": "Gyms", "openMenu": "Open admin navigation", "menu": "Admin navigation" },
 	"list": {
 		"title": "Gyms",
-		"intro": "Manage gym details, photos and visibility in the catalog.",
+		"intro": "View gym catalog entries and their status.",
 		"create": "Create Gym",
 		"columns": {
 			"gym": "Gym",
@@ -23,7 +23,7 @@
 		"loading": "Loading gyms…",
 		"error": "Could not load gyms. Please try again.",
 		"retry": "Retry",
-		"empty": "No gyms yet. Create a gym to get started.",
+		"empty": "No gyms have been added yet.",
 		"filteredEmpty": "No gyms match these filters. Try another name or location.",
 		"rowsPerPage": "Rows per page:",
 		"pagination": "Showing {{from}}–{{to}} of {{total}}",

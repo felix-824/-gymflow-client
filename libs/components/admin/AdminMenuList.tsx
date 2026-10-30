@@ -6,22 +6,24 @@ import Collapse from '@mui/material/Collapse';
 import Typography from '@mui/material/Typography';
 import ExpandLess from '@mui/icons-material/ExpandLess';
 import ExpandMore from '@mui/icons-material/ExpandMore';
-import { ChatsCircle, User, UserCircleGear } from 'phosphor-react';
+import { Buildings, ChatsCircle, User, UserCircleGear } from 'phosphor-react';
 import cookies from 'js-cookie';
-import useDeviceDetect from '../../hooks/useDeviceDetect';
 import enApplications from '../../../public/locales/en/admin-trainer-applications.json';
 import krApplications from '../../../public/locales/kr/admin-trainer-applications.json';
 import ruApplications from '../../../public/locales/ru/admin-trainer-applications.json';
 import { adminTrainerApplicationsRoute } from '../../admin-trainer-applications';
+import enGyms from '../../../public/locales/en/admin-gyms.json';
+import krGyms from '../../../public/locales/kr/admin-gyms.json';
+import ruGyms from '../../../public/locales/ru/admin-gyms.json';
 
 const AdminMenuList = (props: any) => {
 	const router = useRouter();
 	const applicationLabels =
 		router.locale === 'kr' ? krApplications : router.locale === 'ru' ? ruApplications : enApplications;
-	const device = useDeviceDetect();
-	const [mobileLayout, setMobileLayout] = useState(false);
-	const [openSubMenu, setOpenSubMenu] = useState('Users');
-	const [openMenu, setOpenMenu] = useState(typeof window === 'object' ? cookies.get('admin_menu') === 'true' : false);
+	const gymLabels = router.locale === 'kr' ? krGyms : router.locale === 'ru' ? ruGyms : enGyms;
+	const gymsRoute = '/_admin/gyms';
+	const gymsActive = router.pathname === gymsRoute || router.pathname.startsWith(gymsRoute + '/');
+	const [openMenu] = useState(typeof window === 'object' ? cookies.get('admin_menu') === 'true' : false);
 	const [clickMenu, setClickMenu] = useState<any>([]);
 	const [clickSubMenu, setClickSubMenu] = useState('');
 
@@ -29,14 +31,13 @@ const AdminMenuList = (props: any) => {
 		router: { pathname },
 	} = props;
 
-	const pathnames = pathname.split('/').filter((x: any) => x);
-
 	/** LIFECYCLES **/
 	useEffect(() => {
-		if (device === 'mobile') setMobileLayout(true);
+		const pathnames = pathname.split('/').filter(Boolean);
 
 		switch (pathnames[1]) {
 			case 'trainer-applications':
+			case 'gyms':
 				setClickMenu([]);
 				break;
 			case 'programs':
@@ -73,15 +74,13 @@ const AdminMenuList = (props: any) => {
 				setClickSubMenu('List');
 				break;
 		}
-	}, []);
+	}, [pathname]);
 
 	/** HANDLERS **/
 	const subMenuChangeHandler = (target: string) => {
 		if (clickMenu.find((item: string) => item === target)) {
-			// setOpenSubMenu('');
 			setClickMenu(clickMenu.filter((menu: string) => target !== menu));
 		} else {
-			// setOpenSubMenu(target);
 			setClickMenu([...clickMenu, target]);
 		}
 	};
@@ -96,6 +95,10 @@ const AdminMenuList = (props: any) => {
 			title: 'Programs',
 			icon: <UserCircleGear size={20} color="#bdbdbd" weight="fill" />,
 			on_click: () => subMenuChangeHandler('Programs'),
+		},
+		{
+			title: 'Gyms',
+			icon: <Buildings size={20} color="#bdbdbd" weight="fill" />,
 		},
 		{
 			title: 'Community',
@@ -113,8 +116,10 @@ const AdminMenuList = (props: any) => {
 	return (
 		<>
 			<List className="menu_wrap" disablePadding>
-				<Link href={adminTrainerApplicationsRoute} passHref>
+				<Link href={adminTrainerApplicationsRoute} passHref legacyBehavior>
 					<ListItemButton
+						component="a"
+						onClick={props.onNavigate}
 						className={router.pathname.startsWith(adminTrainerApplicationsRoute) ? 'menu on' : 'menu'}
 						aria-current={router.pathname.startsWith(adminTrainerApplicationsRoute) ? 'page' : undefined}
 						sx={{ minHeight: 48, px: 2.5 }}
@@ -126,55 +131,76 @@ const AdminMenuList = (props: any) => {
 					</ListItemButton>
 				</Link>
 			</List>
-			{menu_set.map((item, index) => (
-				<List className={'menu_wrap'} key={index} disablePadding>
-					<ListItemButton
-						onClick={item.on_click}
-						component={'li'}
-						className={clickMenu[0] === item.title ? 'menu on' : 'menu'}
-						sx={{
-							minHeight: 48,
-							justifyContent: openMenu ? 'initial' : 'center',
-							px: 2.5,
-						}}
-					>
-						<ListItemIcon
+			{menu_set.map((item, index) =>
+				item.title === 'Gyms' ? (
+					<List className="menu_wrap" key={item.title} disablePadding>
+						<Link href={gymsRoute} passHref legacyBehavior>
+							<ListItemButton
+								component="a"
+								onClick={props.onNavigate}
+								className={gymsActive ? 'menu on' : 'menu'}
+								aria-current={gymsActive ? 'page' : undefined}
+								sx={{ minHeight: 48, px: 2.5 }}
+							>
+								<ListItemIcon>{item.icon}</ListItemIcon>
+								<ListItemText primary={gymLabels.navigation.title} />
+							</ListItemButton>
+						</Link>
+					</List>
+				) : (
+					<List className={'menu_wrap'} key={index} disablePadding>
+						<ListItemButton
+							onClick={item.on_click}
+							component="button"
+							type="button"
+							aria-expanded={clickMenu.includes(item.title)}
+							className={clickMenu[0] === item.title ? 'menu on' : 'menu'}
 							sx={{
-								minWidth: 0,
-								mr: openMenu ? 3 : 'auto',
-								justifyContent: 'center',
+								minHeight: 48,
+								width: '100%',
+								justifyContent: openMenu ? 'initial' : 'center',
+								px: 2.5,
 							}}
 						>
-							{item.icon}
-						</ListItemIcon>
-						<ListItemText>{item.title}</ListItemText>
-						{clickMenu.find((menu: string) => item.title === menu) ? <ExpandLess /> : <ExpandMore />}
-					</ListItemButton>
-					<Collapse
-						in={!!clickMenu.find((menu: string) => menu === item.title)}
-						className="menu"
-						timeout="auto"
-						component="li"
-						unmountOnExit
-					>
-						<List className="menu-list" disablePadding>
-							{sub_menu_set[item.title] &&
-								sub_menu_set[item.title].map((sub: any, i: number) => (
-									<Link href={sub.url} shallow={true} replace={true} key={i}>
-										<ListItemButton
-											component="li"
-											className={clickMenu[0] === item.title && clickSubMenu === sub.title ? 'li on' : 'li'}
-										>
-											<Typography variant={sub.title} component={'span'}>
-												{sub.title}
-											</Typography>
-										</ListItemButton>
-									</Link>
-								))}
-						</List>
-					</Collapse>
-				</List>
-			))}
+							<ListItemIcon
+								sx={{
+									minWidth: 0,
+									mr: openMenu ? 3 : 'auto',
+									justifyContent: 'center',
+								}}
+							>
+								{item.icon}
+							</ListItemIcon>
+							<ListItemText>{item.title}</ListItemText>
+							{clickMenu.find((menu: string) => item.title === menu) ? <ExpandLess /> : <ExpandMore />}
+						</ListItemButton>
+						<Collapse
+							in={!!clickMenu.find((menu: string) => menu === item.title)}
+							className="menu"
+							timeout="auto"
+							component="li"
+							unmountOnExit
+						>
+							<List className="menu-list" disablePadding>
+								{sub_menu_set[item.title] &&
+									sub_menu_set[item.title].map((sub: any, i: number) => (
+										<Link href={sub.url} shallow={true} replace={true} key={i} passHref legacyBehavior>
+											<ListItemButton
+												component="a"
+												onClick={props.onNavigate}
+												className={clickMenu[0] === item.title && clickSubMenu === sub.title ? 'li on' : 'li'}
+											>
+												<Typography variant={sub.title} component={'span'}>
+													{sub.title}
+												</Typography>
+											</ListItemButton>
+										</Link>
+									))}
+							</List>
+						</Collapse>
+					</List>
+				),
+			)}
 		</>
 	);
 };
