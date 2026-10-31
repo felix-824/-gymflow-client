@@ -739,15 +739,23 @@ body::-webkit-scrollbar {
 		flex-direction: row;
 		background: #181a20;
 		.footer-container {
-			width: 1300px;
+			width: calc(100% - 64px);
+			max-width: 1300px;
+			min-width: 0;
 			height: auto;
 			margin: 0 auto;
 			.main {
 				display: flex;
 				flex-direction: row;
 				justify-content: space-between;
+				gap: 48px;
 				.left {
-					height: 360px;
+					width: 280px;
+					max-width: 100%;
+					min-width: 0;
+					height: auto;
+					flex-shrink: 0;
+					gap: 24px;
 					display: flex;
 					flex-direction: column;
 					justify-content: space-between;
@@ -790,6 +798,8 @@ body::-webkit-scrollbar {
 				.right {
 					display: flex;
 					flex-direction: column;
+					flex: 1;
+					min-width: 0;
 					.top {
 						display: flex;
 						flex-direction: column;
@@ -838,22 +848,39 @@ body::-webkit-scrollbar {
 						}
 					}
 					.bottom {
-						margin-top: 60px;
-						display: flex;
-						flex-direction: row;
-						justify-content: space-between;
+						margin-top: 0;
+						display: grid;
+						grid-template-columns: repeat(3, minmax(0, 1fr));
+						gap: 32px;
 						div {
 							display: flex;
 							flex-direction: column;
+							min-width: 0;
+							gap: 4px;
 							strong {
-								margin-bottom: 3px;
+								margin-bottom: 8px;
 								color: #fff;
 								font-family: $font;
 								font-size: 15px;
 								font-style: normal;
 								font-weight: 600;
-								line-height: normal;
+								line-height: 1.5;
+								overflow-wrap: anywhere;
 								text-transform: capitalize;
+							}
+							a {
+								display: flex;
+								align-items: center;
+								min-width: 0;
+								min-height: 44px;
+								color: #bebdbd;
+								font-family: $font;
+								font-size: 14px;
+								line-height: 1.6;
+								white-space: normal;
+								overflow-wrap: anywhere;
+								&:hover { color: #fff; text-decoration: underline; text-underline-offset: 4px; }
+								&:focus-visible { outline: 2px solid #eb6753; outline-offset: 3px; }
 							}
 							span {
 								margin-top: 25px;
@@ -889,6 +916,24 @@ body::-webkit-scrollbar {
 					line-height: normal;
 				}
 			}
+		}
+	}
+}
+
+.footer-container {
+	@media (max-width: 1023px) {
+		#pc-wrap #footer & {
+			width: calc(100% - 48px);
+			.main { flex-direction: column; gap: 32px; }
+			.main .left { width: auto; }
+			.main .right { width: 100%; }
+			.main .right .bottom { gap: 24px; }
+		}
+	}
+	@media (max-width: 599px) {
+		#pc-wrap #footer & {
+			width: calc(100% - 32px);
+			.main .right .bottom { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px 20px; }
 		}
 	}
 }

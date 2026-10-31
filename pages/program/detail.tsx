@@ -149,7 +149,6 @@ const ProgramDetail: NextPage = () => {
 									{t('Program detail.Session capacity', { capacity: program.programCapacity })}
 								</span>
 							</div>
-							<ProgramGymVenue program={program} />
 						</div>
 						<div className="detail-gallery" role="group" aria-label={t('Program detail.Program images')}>
 							<div className="detail-main-image">
@@ -283,6 +282,7 @@ const ProgramDetail: NextPage = () => {
 									<Typography component="h2" id="detail-address-title">
 										{t('Program detail.Address')}
 									</Typography>
+									<ProgramGymVenue program={program} />
 									<Typography className="detail-address">
 										<LocationOnOutlinedIcon aria-hidden="true" />{address}
 									</Typography>

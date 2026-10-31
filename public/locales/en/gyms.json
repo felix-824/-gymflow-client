@@ -11,7 +11,8 @@
 		"loadError": "Gyms could not be loaded. Your current venue is unchanged.",
 		"page": "Page {{page}} of {{pages}}",
 		"empty": "No active gyms match your search.",
-		"atGym": "Gym / Fitness Center:",
+		"atGym": "Training venue",
+		"viewGym": "View gym",
 		"conflict": "Upcoming unfinished reservations protect this venue. Your draft is kept. Refresh and review the latest program before saving again.",
 		"invalid": "Choose an active gym for an in-person program, or leave the gym unlinked."
 	},

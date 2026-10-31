@@ -183,8 +183,11 @@ async function main() {
 			router.locale = locale;
 			render(Venue, { program: linked });
 			assert.equal(document.querySelector('.detail-gym-venue a').getAttribute('href'), '/gym/detail?id=' + id(1));
-			assert.equal(document.querySelector('.detail-gym-venue a').textContent, linked.gymData.gymName);
-			assert.equal(document.querySelector('.detail-gym-venue span').textContent, resources[locale].gyms.venue.atGym);
+			assert.equal(document.querySelector('.detail-gym-name').textContent, linked.gymData.gymName);
+			assert.equal(document.querySelector('.detail-gym-label').textContent, resources[locale].gyms.venue.atGym);
+			assert(document.querySelector('.detail-gym-action').textContent.includes(resources[locale].gyms.venue.viewGym));
+			document.querySelector('.detail-gym-link').focus();
+			assert.equal(document.activeElement, document.querySelector('.detail-gym-link'));
 		}
 		for (const change of [
 			{ programType: 'ONLINE' }, { gymId: null }, { gymId: 'invalid' }, { gymData: null },
@@ -195,6 +198,18 @@ async function main() {
 		}
 		router.locale = 'en';
 		pass('G5 authoritative venue links localize in EN/KR/RU; ONLINE/independent/missing/mismatched data render safely');
+		const detailSource = ts.createSourceFile('detail.tsx', fs.readFileSync(path.join(rootPath, 'pages/program/detail.tsx'), 'utf8'), ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
+		const venueUses = [];
+		const visitVenue = (node) => {
+			if (ts.isJsxSelfClosingElement(node) && node.tagName.getText(detailSource) === 'ProgramGymVenue') venueUses.push(node);
+			ts.forEachChild(node, visitVenue);
+		};
+		visitVenue(detailSource);
+		assert.equal(venueUses.length, 1);
+		let section = venueUses[0].parent;
+		while (section && !(ts.isJsxElement(section) && section.openingElement.tagName.getText(detailSource) === 'section')) section = section.parent;
+		assert(section?.openingElement.attributes.properties.some(attribute => attribute.name?.getText(detailSource) === 'aria-labelledby' && attribute.initializer?.text === 'detail-address-title'));
+		pass('Program venue is rendered once inside the existing Physical address content section');
 		const layoutMocks = { ...mocks,
 			'../Top': { __esModule: true, default: () => React.createElement('header', { id: 'existing-public-header' }) },
 			'../Footer': { __esModule: true, default: () => React.createElement('footer', { id: 'existing-public-footer' }) },
@@ -237,6 +252,81 @@ async function main() {
 			assert.equal(document.querySelector('a[href="/gym"]').textContent, messages.navigation);
 		}
 		pass('G5 Gym footer link stays within each existing footer variant');
+		// Static cascade checks at the requested widths; JSDOM does not establish layout geometry.
+		const allCss = ['app.scss', 'pc/main.scss', 'mobile/main.scss'].map(file => sass.renderSync({
+			file: path.join(rootPath, 'scss', file), logger: sass.Logger.silent,
+			importer: url => url.startsWith('/scss/') ? { file: path.join(rootPath, url.slice(1)) } : null,
+		}).css.toString()).join('\n');
+		const parsedCss = postcss.parse(allCss);
+		const cssAtWidth = (width) => {
+			const active = postcss.root();
+			parsedCss.walkRules(rule => {
+				if (!/footer|detail-gym|program-detail-content/.test(rule.selector) && rule.selector !== 'a') return;
+				for (let parent = rule.parent; parent; parent = parent.parent) {
+					if (parent.type !== 'atrule' || parent.name !== 'media') continue;
+					const matches = parent.params.split(',').some(query => !/print/.test(query) && [...query.matchAll(/\((min|max)-width:\s*([\d.]+)px\)/g)].every(([, bound, value]) => bound === 'min' ? width >= Number(value) : width <= Number(value)));
+					if (!matches) return;
+				}
+				active.append(rule.clone());
+			});
+			return active.toString();
+		};
+		const contrast = (foreground, background) => {
+			const luminance = color => color.match(/[\d.]+/g).slice(0, 3).map(Number).map(value => value / 255).map(value => value <= 0.04045 ? value / 12.92 : ((value + 0.055) / 1.055) ** 2.4).reduce((sum, value, index) => sum + value * [0.2126, 0.7152, 0.0722][index], 0);
+			const a = luminance(foreground), b = luminance(background);
+			return (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05);
+		};
+		const styles = document.createElement('style');
+		document.head.appendChild(styles);
+		const mount = document.getElementById('root');
+		for (const width of [1440, 768, 390]) {
+			styles.textContent = cssAtWidth(width);
+			for (const wrapper of ['pc-wrap', 'mobile-wrap']) {
+				const shell = document.createElement('div'), footerHost = document.createElement('div');
+				shell.id = wrapper; footerHost.id = 'footer'; mount.before(shell); shell.appendChild(footerHost); footerHost.appendChild(mount);
+				for (const locale of ['en', 'kr', 'ru']) {
+					router.locale = locale; render(Footer);
+					const computed = element => window.getComputedStyle(element);
+					const columns = document.querySelector('.footer-container .right .bottom');
+					assert.equal(computed(columns).display, 'grid');
+					assert.equal(computed(columns).gridTemplateColumns, 'repeat(' + (wrapper === 'mobile-wrap' || width < 600 ? 2 : 3) + ', minmax(0, 1fr))');
+					assert(parseFloat(computed(columns).gap) >= 20);
+					assert.equal(computed(document.querySelector('.footer-container .main')).flexDirection, wrapper === 'mobile-wrap' || width < 1024 ? 'column' : 'row');
+					assert.notEqual(computed(document.querySelector('.footer-container')).width, '1300px');
+					for (const link of columns.querySelectorAll('a')) {
+						const style = computed(link);
+						assert.equal(style.whiteSpace, 'normal'); assert.equal(style.overflowWrap, 'anywhere');
+						assert.equal(style.display, 'flex'); assert.equal(style.minHeight, '44px');
+						assert(contrast(style.color, computed(footerHost).backgroundColor) >= 4.5);
+					}
+					assert.equal(columns.querySelectorAll('a[href="/gym"]').length, 1);
+				}
+				shell.before(mount); shell.remove();
+			}
+			const shell = document.createElement('div'); shell.id = 'pc-wrap';
+			const content = document.createElement('div'); content.id = 'program-detail-page';
+			content.innerHTML = '<div class="program-detail-content"><section class="detail-content-section"></section></div>';
+			mount.before(shell); shell.appendChild(content); content.querySelector('section').appendChild(mount);
+			render(Venue, { program: { ...linked, gymData: { ...linked.gymData, gymName: 'AerinMovementSeongsu'.repeat(12) } } });
+			const venueLink = document.querySelector('.detail-gym-link');
+			assert.equal(window.getComputedStyle(venueLink).flexWrap, 'wrap');
+			assert.equal(window.getComputedStyle(venueLink).whiteSpace, 'normal');
+			assert.equal(window.getComputedStyle(venueLink).minHeight, '44px');
+			assert.equal(window.getComputedStyle(venueLink).textDecoration, 'underline');
+			venueLink.focus();
+			assert.equal(document.activeElement, venueLink);
+			// Inspect compiled keyboard-focus rules directly; JSDOM has incomplete :focus-visible styling.
+			let focusOutline;
+			postcss.parse(cssAtWidth(width)).walkRules(rule => {
+				if (rule.selectors.some(selector => selector.includes(':focus-visible') && venueLink.matches(selector.replace(/:focus-visible/g, '')))) {
+					rule.walkDecls('outline', declaration => { focusOutline = declaration.value; });
+				}
+			});
+			assert.equal(focusOutline, '3px solid #a53425');
+			shell.before(mount); shell.remove();
+			pass(width + 'px static footer/venue cascade: wrapping, column gaps, contrast and accessible link styling');
+		}
+		styles.remove(); router.locale = 'en';
 		const withLayout = load('libs/components/layout/LayoutBasic.tsx', layoutMocks).default;
 		render(withLayout(() => React.createElement('div', { id: 'public-detail-content' }))); await tick();
 		assert(document.querySelector('#pc-wrap.gym-detail-layout.program-discovery-layout #public-detail-content')); assert(document.querySelector('#existing-public-header')); assert(document.querySelector('#existing-public-footer'));
