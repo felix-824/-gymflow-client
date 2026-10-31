@@ -3,6 +3,10 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 const vm = require('node:vm');
+const os = require('node:os');
+const { spawnSync } = require('node:child_process');
+const sass = require('sass');
+const postcss = require('postcss');
 const ts = require('typescript');
 const { JSDOM } = require('jsdom');
 const base = path.resolve(__dirname, '..');
@@ -29,6 +33,98 @@ function loadTs(file, mocks, cache = new Map()) {
 	vm.runInThisContext('(function(require,module,exports){' + code + '\n})', { filename: file })(localRequire, module, module.exports);
 	return module.exports;
 }
+function mediaRegression(section) {
+	const compile = (file) => sass.renderSync({
+		file: path.join(base, 'scss', file),
+		importer: (url) => url.startsWith('/scss/') ? { file: path.join(base, url.slice(1)) } : null,
+	}).css.toString();
+	const css = ['app.scss', 'pc/main.scss', 'mobile/main.scss'].map(compile).join('\n');
+	const parsed = postcss.parse(css), styles = document.createElement('style');
+	const home = document.createElement('div'), list = document.createElement('main');
+	home.className = 'home-page'; home.innerHTML = section.outerHTML;
+	list.id = 'pc-wrap'; list.className = 'program-discovery-layout';
+	list.innerHTML = '<div id="program-list-page">' + section.querySelector('article').outerHTML + '</div>';
+	document.head.appendChild(styles); document.body.append(home, list);
+	try {
+		for (const width of [1440, 768, 390]) {
+			const active = postcss.root();
+			parsed.walkRules((rule) => {
+				if (!/discovery-program-card|home-discover-grid/.test(rule.selector)) return;
+				for (let parent = rule.parent; parent; parent = parent.parent) {
+					if (parent.type === 'atrule' && parent.name === 'media' && !parent.params.split(',').some((query) =>
+						!/print/.test(query) && [...query.matchAll(/\((min|max)-width:\s*([\d.]+)px\)/g)].every(([, bound, value]) => bound === 'min' ? width >= Number(value) : width <= Number(value)))) return;
+				}
+				active.append(rule.clone());
+			});
+			styles.textContent = active.toString();
+			const media = home.querySelector('.discovery-card-media'), link = media.querySelector('a');
+			assert.equal(window.getComputedStyle(media).overflow, 'hidden');
+			assert.equal(window.getComputedStyle(media).flexShrink, '0');
+			assert.equal(window.getComputedStyle(link).position, 'absolute');
+			assert.equal(window.getComputedStyle(link).width, '100%');
+			assert.equal(window.getComputedStyle(link).height, '100%');
+			assert.equal(window.getComputedStyle(link.querySelector('img')).objectFit, 'cover');
+			const listMedia = list.querySelector('.discovery-card-media');
+			assert.equal(window.getComputedStyle(listMedia).overflow, '');
+			assert.notEqual(window.getComputedStyle(listMedia.querySelector('a')).position, 'absolute');
+			pass(width + 'px compiled containment removes intrinsic media sizing only on Home; list/search card rules remain intact');
+		}
+	} finally { styles.remove(); home.remove(); list.remove(); }
+	if (process.argv.includes('--browser')) browserMedia(css, section);
+}
+function browserMedia(css, section) {
+	const browser = process.env.GYMFLOW_QA_BROWSER;
+	assert(browser && fs.existsSync(browser), '--browser requires GYMFLOW_QA_BROWSER pointing to Chromium/Edge');
+	const temporary = fs.mkdtempSync(path.join(os.tmpdir(), 'gymflow-home-media-'));
+	try {
+		const sample = section.cloneNode(true);
+		const images = ['strength-dumbbells.webp', 'pilates-studio.webp'].map((name) =>
+			'data:image/webp;base64,' + fs.readFileSync(path.join(base, 'public/img/fiber', name)).toString('base64'));
+		[...sample.querySelectorAll('.discovery-card-image img')].forEach((image, index) => {
+			image.src = images[index % 2]; image.removeAttribute('loading');
+		});
+		const markup = '<!doctype html><html><head><meta charset="utf-8"><style>html{box-sizing:border-box}*,::before,::after{box-sizing:inherit}body{margin:0}' + css + '</style></head><body><main id="pc-wrap"><div class="home-page">' + sample.outerHTML + '</div></main></body></html>';
+		const measure = () => [...document.querySelectorAll('iframe')].map((frame) => {
+			const win = frame.contentWindow, doc = frame.contentDocument, rect = (element) => element.getBoundingClientRect();
+			return { width: win.innerWidth, scrollWidth: doc.documentElement.scrollWidth, cards: [...doc.querySelectorAll('article')].map((card) => {
+				const media = card.querySelector('.discovery-card-media'), image = media.querySelector('img'), link = media.querySelector('a');
+				const body = card.querySelector('.discovery-card-body'), footer = card.querySelector('.discovery-card-footer');
+				const price = card.querySelector('.discovery-price'), favorite = card.querySelector('.discovery-like-button');
+				link.focus();
+				return { x: rect(card).x, width: rect(media).width, height: rect(media).height, imageHeight: rect(image).height,
+					natural: [image.naturalWidth, image.naturalHeight], fit: win.getComputedStyle(image).objectFit,
+					linkFillsFrame: Math.abs(rect(link).x - rect(media).x) < 1 && Math.abs(rect(link).y - rect(media).y) < 1 && Math.abs(rect(link).width - rect(media).width) < 1 && Math.abs(rect(link).height - rect(media).height) < 1,
+					bodyVisible: rect(body).top >= rect(media).bottom - 1 && rect(footer).bottom <= rect(card).bottom + 1 && rect(price).left >= rect(card).left && rect(price).right <= rect(card).right,
+					contentFits: card.scrollWidth <= card.clientWidth + 1,
+					favoriteReachable: doc.elementFromPoint(rect(favorite).x + rect(favorite).width / 2, rect(favorite).y + rect(favorite).height / 2)?.closest('.discovery-like-button') === favorite,
+					focusable: doc.activeElement === link, focusOutline: win.getComputedStyle(link).outlineStyle };
+			}) };
+		});
+		const file = path.join(temporary, 'media.html');
+		fs.writeFileSync(file, '<!doctype html><html><body>' + [1440, 768, 390].map((width) => '<iframe style="border:0;width:' + width + 'px;height:3000px"></iframe>').join('') + '<pre id="result"></pre><script>const markup=' + JSON.stringify(markup).replace(/</g, '\\u003c') + ';document.querySelectorAll("iframe").forEach(frame=>frame.srcdoc=markup);window.onload=()=>document.getElementById("result").textContent=JSON.stringify((' + measure.toString() + ')());</script></body></html>');
+		const result = spawnSync(browser, ['--headless', '--disable-gpu', '--disable-background-networking', '--no-first-run', '--no-default-browser-check', '--user-data-dir=' + path.join(temporary, 'profile'), '--virtual-time-budget=2000', '--dump-dom', require('node:url').pathToFileURL(file).href], { encoding: 'utf8', timeout: 45000, maxBuffer: 20 * 1024 * 1024, windowsHide: true });
+		assert.equal(result.status, 0, result.error?.message);
+		const match = result.stdout.match(/<pre id="result">([^<]+)<\/pre>/); assert(match, 'Browser geometry results missing');
+		for (const row of JSON.parse(match[1])) {
+			assert(row.scrollWidth <= row.width + 1, 'Horizontal overflow at ' + row.width);
+			assert.equal(row.cards.length, 4);
+			assert.equal(new Set(row.cards.map((card) => Math.round(card.x))).size, row.width === 1440 ? 4 : row.width === 768 ? 2 : 1);
+			assert(Math.max(...row.cards.map((card) => card.height)) - Math.min(...row.cards.map((card) => card.height)) < 1);
+			for (const card of row.cards) {
+				assert(card.natural[0] > 0 && card.natural[1] > 0);
+				assert(Math.abs(card.width / card.height - (row.width < 768 ? 16 / 9 : 16 / 10)) < 0.01);
+				assert(Math.abs(card.imageHeight - card.height) < 1);
+				assert.equal(card.fit, 'cover'); assert(card.linkFillsFrame && card.bodyVisible && card.contentFits && card.favoriteReachable && card.focusable); assert.notEqual(card.focusOutline, 'none');
+			}
+			assert(row.cards.some((card) => card.natural[0] > card.natural[1]) && row.cards.some((card) => card.natural[0] < card.natural[1]));
+			pass(row.width + 'px browser: 4/2/1 columns, equal landscape/portrait crop, no overflow, visible footer and keyboard focus');
+			console.log(JSON.stringify(row));
+		}
+	} finally {
+		assert.equal(path.dirname(temporary), os.tmpdir());
+		fs.rmSync(temporary, { recursive: true, force: true });
+	}
+}
 async function main() {
 	const dom = new JSDOM('<div id="root"></div>', { url: 'http://localhost/' });
 	for (const key of ['window', 'document', 'HTMLElement', 'Element', 'Node', 'DocumentFragment']) global[key] = dom.window[key];
@@ -53,6 +149,7 @@ async function main() {
 	const link = React.forwardRef(({ href, children, passHref, ...props }, ref) => React.createElement('a', {
 		...props, ref, href: typeof href === 'string' ? href : href.pathname + '?' + new URLSearchParams(href.query),
 	}, children));
+	link.displayName = 'HomepageTestLink';
 	const mocks = {
 		'next/link': { __esModule: true, default: link },
 		'next-i18next': { useTranslation: () => ({ t: i18n.getFixedT(locale), i18n }) },
@@ -187,6 +284,10 @@ async function main() {
 		assert.equal(cards()[0].querySelector('.discovery-likes').textContent, '4');
 		assert(alerts.some((item) => item.success));
 		pass('guest guard and authenticated Like keep the mutation, same-inquiry refetch and updated favorite state');
+		loaded(fixtures.slice(0, 4).map((program) => ({ ...program,
+			programName: '긴프로그램이름 ДлинноеНазвание '.repeat(4), programAddress: '서울특별시 ДлинныйАдрес '.repeat(8),
+		}))); await render();
+		mediaRegression(document.querySelector('.home-discover-programs'));
 		console.log(checks + ' homepage Programs checks passed.');
 	} finally {
 		await act(async () => root.unmount());

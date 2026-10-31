@@ -87,6 +87,14 @@
 		width: 100%;
 		border-radius: 12px;
 		box-shadow: none;
+		.discovery-card-media {
+			flex-shrink: 0;
+			overflow: hidden;
+		}
+		.discovery-card-image {
+			position: absolute;
+			inset: 0;
+		}
 		.discovery-card-body { gap: 10px; padding: 16px; }
 		.discovery-card-badges span { border-radius: 6px; }
 		.discovery-category { background: #f7f8fa; }
