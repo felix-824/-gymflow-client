@@ -30,11 +30,13 @@ const isDestinationActive = (pathname: string, href: string, category?: string |
 	pathname === '/mypage' && (category === 'writeArticle' || category === 'editArticle' || category === 'myArticles') ? href === '/community?articleCategory=FREE' :
 	pathname === href.split('?')[0] || (pathname === '/trainer/detail' && href === '/trainer') ||
 	(pathname === '/program/booking' && href === '/program') ||
+	(pathname === '/gym/detail' && href === '/gym') ||
 	(pathname === '/mypage/review' && href === '/mypage');
 
 export const ProgramsHeader = () => {
 	const router = useRouter();
 	const { t } = useTranslation('common');
+	const { t: gymT } = useTranslation('gyms');
 	const user = useReactiveVar(userVar);
 	const isCompact = useMediaQuery('(max-width:1199px)');
 	const shouldReduceMotion = useMediaQuery('(prefers-reduced-motion: reduce)');
@@ -45,7 +47,9 @@ export const ProgramsHeader = () => {
 	const locale = router.locale ?? 'en';
 	const memberName = user.memberFullName?.trim() || user.memberNick?.trim();
 	const destinations = [
-		...programDestinations.filter((destination) => destination.href !== '/mypage' || user._id),
+		...programDestinations.slice(0, 2),
+		{ label: 'Gyms', href: '/gym' },
+		...programDestinations.slice(2).filter((destination) => destination.href !== '/mypage' || user._id),
 		{ label: 'CS', href: '/help' },
 	];
 
@@ -75,7 +79,7 @@ export const ProgramsHeader = () => {
 				>
 					{destinations.map(({ href, label }) => (
 						<Link key={href} href={href} aria-current={isDestinationActive(router.pathname, href, router.query.category) ? 'page' : undefined}>
-							{t(label)}
+							{href === '/gym' ? gymT('navigation') : t(label)}
 						</Link>
 					))}
 				</Box>
@@ -195,7 +199,7 @@ export const ProgramsHeader = () => {
 						aria-current={isDestinationActive(router.pathname, href, router.query.category) ? 'page' : undefined}
 						selected={isDestinationActive(router.pathname, href, router.query.category)}
 					>
-						{t(label)}
+						{href === '/gym' ? gymT('navigation') : t(label)}
 					</MenuItem>
 				))}
 			</Menu>

@@ -66,9 +66,11 @@ export function isProgramRevision(value: unknown): value is number {
 	return Number.isInteger(value) && (value as number) >= 0 && (value as number) < 2147483647;
 }
 
-export function programUpdateError(error: any): 'stale' | 'contention' | 'unavailable' | 'rejected' | 'unknown' {
+export function programUpdateError(error: any): 'stale' | 'contention' | 'unavailable' | 'rejected' | 'unknown' | 'venue' {
 	if (error?.networkError || !error?.graphQLErrors?.length) return 'unknown';
 	for (const item of error.graphQLErrors) {
+		if (/^Program (Gym|location|address) cannot be changed while upcoming reservations exist\.$/.test(item.message))
+			return 'venue';
 		const reason = item.extensions?.reason ?? item.extensions?.originalError?.reason;
 		if (
 			reason === 'PROGRAM_REVISION_CONFLICT' ||
@@ -282,6 +284,8 @@ export async function findTrainerProgram(
 }
 
 export function programFormError(input: ProgramInput): string {
+	if (input.gymId != null && (!/^[a-f\d]{24}$/i.test(input.gymId) || input.programType === ProgramType.ONLINE))
+		return 'Invalid Gym';
 	if (
 		!Object.values(ProgramType).includes(input.programType) ||
 		!Object.values(ProgramCategory).includes(input.programCategory) ||
@@ -312,6 +316,9 @@ export function programFormError(input: ProgramInput): string {
 
 export function programPayload(input: ProgramInput, updating = false): ProgramInput {
 	return {
+		...(input.gymId != null && input.programType !== ProgramType.ONLINE
+			? { gymId: input.gymId }
+			: updating || input.gymId !== undefined ? { gymId: null } : {}),
 		programType: input.programType,
 		programCategory: input.programCategory,
 		programLocation: input.programLocation,

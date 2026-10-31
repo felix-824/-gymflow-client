@@ -21,6 +21,7 @@ import { useTranslation } from 'next-i18next';
 import withLayoutFull from '../../libs/components/layout/LayoutFull';
 import ProgramCard from '../../libs/components/program/ProgramCard';
 import ProgramReviews from '../../libs/components/program/ProgramReviews';
+import ProgramGymVenue from '../../libs/components/program/ProgramGymVenue';
 import { Program } from '../../libs/types/program/program';
 import { ProgramType } from '../../libs/enums/program.enum';
 import { Direction } from '../../libs/enums/common.enum';
@@ -148,6 +149,7 @@ const ProgramDetail: NextPage = () => {
 									{t('Program detail.Session capacity', { capacity: program.programCapacity })}
 								</span>
 							</div>
+							<ProgramGymVenue program={program} />
 						</div>
 						<div className="detail-gallery" role="group" aria-label={t('Program detail.Program images')}>
 							<div className="detail-main-image">

@@ -27,6 +27,7 @@ const DefaultTop = () => {
 	const mobileViewport = useMediaQuery('(max-width:767px)');
 	const user = useReactiveVar(userVar);
 	const { t, i18n } = useTranslation('common');
+	const { t: gymT } = useTranslation('gyms');
 	const router = useRouter();
 	const isHome = router.pathname === '/';
 	const shouldReduceMotion = useReducedMotion();
@@ -149,6 +150,9 @@ const DefaultTop = () => {
 				<Link href={'/program'}>
 					<div>{t('Programs')}</div>
 				</Link>
+				<Link href={'/gym'} passHref>
+					<div>{gymT('navigation')}</div>
+				</Link>
 				<Link href={'/trainer'}>
 					<div> {t('Trainers')} </div>
 				</Link>
@@ -184,6 +188,9 @@ const DefaultTop = () => {
 							</Link>
 							<Link href={'/program'}>
 								<div>{t('Programs')}</div>
+							</Link>
+							<Link href={'/gym'} passHref>
+								<div>{gymT('navigation')}</div>
 							</Link>
 							<Link href={'/trainer'}>
 								<div> {t('Trainers')} </div>

@@ -7,6 +7,7 @@ import useDeviceDetect from '../hooks/useDeviceDetect';
 
 const Footer = ({ variant = 'default' }: { variant?: 'default' | 'programs' | 'home' }) => {
 	const { t } = useTranslation('common');
+	const { t: gymT } = useTranslation('gyms');
 	const device = useDeviceDetect();
 	const mobile = useMediaQuery('(max-width:767px)') || device === 'mobile';
 	if (variant === 'home') {
@@ -26,6 +27,7 @@ const Footer = ({ variant = 'default' }: { variant?: 'default' | 'programs' | 'h
 							<Link href="/program" passHref>
 								{t('Programs')}
 							</Link>
+							<Link href="/gym" passHref>{gymT('navigation')}</Link>
 							<Link href="/trainer" passHref>
 								{t('Trainers')}
 							</Link>
@@ -67,6 +69,7 @@ const Footer = ({ variant = 'default' }: { variant?: 'default' | 'programs' | 'h
 							label: 'Programs',
 							links: [
 								['/program', 'Program Search'],
+								['/gym', 'Gyms'],
 								['/trainer', 'Trainers'],
 							],
 						},
@@ -89,7 +92,7 @@ const Footer = ({ variant = 'default' }: { variant?: 'default' | 'programs' | 'h
 							<strong>{t(label)}</strong>
 							{links.filter(([href]) => !mobile || href !== '/about').map(([href, text]) => (
 								<Link key={href} href={href}>
-									{t(text)}
+									{href === '/gym' ? gymT('navigation') : t(text)}
 								</Link>
 							))}
 						</Box>
@@ -120,6 +123,7 @@ const Footer = ({ variant = 'default' }: { variant?: 'default' | 'programs' | 'h
 						<div>
 							<strong>{t('Programs')}</strong>
 							<Link href="/program">{t('Program Search')}</Link>
+							<Link href="/gym">{gymT('navigation')}</Link>
 							<Link href="/trainer">{t('Trainers')}</Link>
 						</div>
 						<div>

@@ -2,6 +2,7 @@ import { ProgramCategory, ProgramLocation, ProgramStatus, ProgramType } from '..
 import { Direction } from '../../enums/common.enum';
 
 export interface ProgramInput {
+	gymId?: string | null;
 	programType: ProgramType;
 	programCategory: ProgramCategory;
 	programLocation: ProgramLocation;

@@ -176,6 +176,9 @@ async function main() {
 		assert.match(css, /repeat\(3, minmax\(0, 1fr\)\)/); assert.match(css, /repeat\(2, minmax\(0, 1fr\)\)/); assert.match(css, /grid-template-columns: minmax\(0, 1fr\)/);
 		assert.match(css, /max-width: 1023px/); assert.match(css, /max-width: 767px/); assert.match(css, /aspect-ratio: 16\/10/);
 		assert.match(css, /min-height: 44px/); assert.match(css, /overflow-wrap: anywhere/); assert.match(css, /overflow-y: auto/); assert.match(css, /100dvh/); assert.match(css, /safe-area-inset-bottom/); pass('SCSS compiles with 3/2/1 grid, 16:10 covers, wrapping, touch targets and scrollable safe-area-aware drawer');
+		assert.match(css, /\.gym-name-search:focus-within\s*\{[^}]*outline: 2px solid #a53425;[^}]*outline-offset: 3px;/);
+		assert.match(css, /\.gym-name-search input:focus,[^}]*\.gym-name-search input:focus-visible,[^}]*\.gym-name-search \.MuiIconButton-root:focus-visible\s*\{\s*outline: none;/);
+		pass('Gym search retains one shared focus boundary without nested input/button outlines');
 		assert.match(fs.readFileSync(path.join(rootPath, 'scss/pc/program/program.scss'), 'utf8'), /padding-bottom: calc\(88px \+ env\(safe-area-inset-bottom/);
 		assert.match(fs.readFileSync(path.join(rootPath, 'scss/pc/main.scss'), 'utf8'), /@import '\/scss\/pc\/gym\/catalog'/); pass('catalog SCSS is wired into existing pipeline and inherits fixed bottom-nav clearance');
 		const { isGymImagePath } = load('libs/gym.ts', mocks);

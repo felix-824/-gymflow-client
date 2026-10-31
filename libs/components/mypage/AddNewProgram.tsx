@@ -14,6 +14,7 @@ import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import { ProgramCategory, ProgramLocation, ProgramType } from '../../enums/program.enum';
 import { ProgramCreateInput, ProgramInput } from '../../types/program/program.input';
 import { Programs } from '../../types/program/program';
+import ProgramGymSelector, { ProgramGym } from '../program/ProgramGymSelector';
 import { TrainerReservations } from '../../types/reservation/trainer-reservation';
 import axios from 'axios';
 import { ensureAccessToken, getAuthSessionId, invalidateSession, isAuthenticationError } from '../../auth';
@@ -55,6 +56,8 @@ const initialValues: ProgramInput = {
 
 const AddProgram = () => {
 	const { t } = useTranslation('common');
+	const { t: gymT } = useTranslation('gyms');
+	const [currentGym, setCurrentGym] = useState<ProgramGym | null>(null);
 	const compactViewport = useMediaQuery('(max-width:767px)');
 	const router = useRouter();
 	const user = useReactiveVar(userVar);
@@ -175,6 +178,7 @@ const AddProgram = () => {
 				}
 				if (!isProgramRevision(program.programRevision)) throw new Error('Missing Program revision');
 				setInsertProgramData(programPayload(program));
+			setCurrentGym(program.gymData ?? null);
 				setLoadedCapacity(program.programCapacity);
 				setLoadedRevision(program.programRevision);
 				setLoadedScope(scope);
@@ -323,6 +327,7 @@ const AddProgram = () => {
 
 	useEffect(() => {
 		setLoadedScope('');
+		setCurrentGym(null);
 		setLoadError('');
 		setFormError('');
 		setLoadedRevision(null);
@@ -367,9 +372,11 @@ const AddProgram = () => {
 
 	/** HANDLERS **/
 	const typeHandler = (type: ProgramType) => {
+		if (type === ProgramType.ONLINE) setCurrentGym(null);
 		setInsertProgramData({
 			...insertProgramData,
 			programType: type,
+			gymId: type === ProgramType.ONLINE ? null : insertProgramData.gymId,
 			programLocation:
 				type === ProgramType.ONLINE
 					? ProgramLocation.ONLINE
@@ -497,7 +504,7 @@ const AddProgram = () => {
 					const kind = programUpdateError(err);
 					if (kind !== 'rejected') setWriteBlocked(true);
 					const messages = { stale: 'Conflict', contention: 'Contention', unavailable: 'Unavailable', unknown: 'Uncertain update' };
-					setFormError(kind === 'rejected' ? err.message ?? 'Could not save this program.' : messages[kind]);
+					setFormError(kind === 'rejected' ? err.message ?? 'Could not save this program.' : kind === 'venue' ? 'Venue conflict' : messages[kind]);
 					setValidationAttempt((attempt) => attempt + 1);
 				}
 			} else setFormError(err.message ?? 'Could not save this program.');
@@ -544,7 +551,7 @@ const AddProgram = () => {
 		'Program address cannot be changed while upcoming reservations exist.': 'Address locked',
 		'Program capacity cannot be reduced below occupied session seats.': 'Capacity locked',
 	};
-	const errorMessage = ['Conflict', 'Contention', 'Uncertain update', 'Refresh failed', 'Unavailable', 'Updated', 'Created', 'Uncertain create', 'Create payload conflict', 'Create unavailable', 'Create storage failed'].includes(formError)
+	const errorMessage = formError === 'Venue conflict' ? gymT('venue.conflict') : formError === 'Invalid Gym' ? gymT('venue.invalid') : ['Conflict', 'Contention', 'Uncertain update', 'Refresh failed', 'Unavailable', 'Updated', 'Created', 'Uncertain create', 'Create payload conflict', 'Create unavailable', 'Create storage failed'].includes(formError)
 		? t('Trainer program form.' + formError)
 		: messageKeys[formError] ? t('Trainer program form.' + messageKeys[formError]) : formError;
 
@@ -820,6 +827,13 @@ const AddProgram = () => {
 										</h2>
 										<p>{t('Trainer program form.Location intro')}</p>
 									</div>
+									{!online && <ProgramGymSelector key={scope} gymId={insertProgramData.gymId} currentGym={currentGym}
+										disabled={sensitiveLocked || busy || createHeld || writeBlocked}
+										onChange={(gym) => {
+											setCurrentGym(gym);
+											setInsertProgramData((previous) => ({ ...previous, gymId: gym?._id ?? null,
+												...(gym ? { programLocation: gym.gymLocation as ProgramLocation, programAddress: gym.gymAddress } : {}) }));
+										}} />}
 									<div className="editor-location-fields">
 										<div className="editor-field">
 											<label htmlFor="program-location">
@@ -829,7 +843,7 @@ const AddProgram = () => {
 												id="program-location"
 												name="programLocation"
 												value={insertProgramData.programLocation}
-												disabled={online || sensitiveLocked}
+												disabled={online || sensitiveLocked || Boolean(insertProgramData.gymId)}
 												aria-describedby={sensitiveLocked ? 'editor-reservation-note' : undefined}
 												onChange={(e) =>
 													setInsertProgramData({
@@ -855,7 +869,7 @@ const AddProgram = () => {
 												<input
 													id="program-address"
 													name="programAddress"
-													disabled={sensitiveLocked}
+													disabled={sensitiveLocked || Boolean(insertProgramData.gymId)}
 													aria-describedby={sensitiveLocked ? 'editor-reservation-note' : undefined}
 													value={insertProgramData.programAddress ?? ''}
 													maxLength={100}

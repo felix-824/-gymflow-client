@@ -6,12 +6,22 @@ import { handleAuthStorage, updateUserInfo } from '../libs/auth';
 import { light } from '../scss/MaterialTheme';
 import { ApolloProvider } from '@apollo/client';
 import { useApollo } from '../apollo/client';
-import { appWithTranslation } from 'next-i18next';
+import { appWithTranslation, useTranslation } from 'next-i18next';
+import enGyms from '../public/locales/en/gyms.json';
+import krGyms from '../public/locales/kr/gyms.json';
+import ruGyms from '../public/locales/ru/gyms.json';
 import '../scss/app.scss';
 import '../scss/pc/main.scss';
 import '../scss/mobile/main.scss';
 
 const App = ({ Component, pageProps }: AppProps) => {
+	// Shared navigation needs the feature namespace on every route, including SSR.
+	const { i18n } = useTranslation('common');
+	if (typeof i18n.hasResourceBundle === 'function' && typeof i18n.addResourceBundle === 'function') {
+		for (const [locale, messages] of Object.entries({ en: enGyms, kr: krGyms, ru: ruGyms })) {
+			if (!i18n.hasResourceBundle(locale, 'gyms')) i18n.addResourceBundle(locale, 'gyms', messages);
+		}
+	}
 	// @ts-ignore
 	const [theme, setTheme] = useState(createTheme(light));
 	const client = useApollo(pageProps.initialApolloState);

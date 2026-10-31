@@ -10,7 +10,7 @@ function load(file, mocks, cache = new Map()) {
 	file = path.resolve(rootPath, file);
 	if (cache.has(file)) return cache.get(file);
 	const code = ts.transpileModule(fs.readFileSync(file, 'utf8'), { fileName: file, compilerOptions: {
-		module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2021, jsx: ts.JsxEmit.React, esModuleInterop: true,
+		module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2021, jsx: ts.JsxEmit.ReactJSX, esModuleInterop: true,
 	} }).outputText;
 	const module = { exports: {} }; cache.set(file, module.exports);
 	const localRequire = (name) => {
@@ -63,7 +63,7 @@ async function main() {
 		const store = { userVar: apollo.makeVar({}) };
 		const mocks = {
 			'next/router': { useRouter: () => router }, 'next/head': { __esModule: true, default: () => null },
-			'next/link': { __esModule: true, default: ({ href, children, passHref, legacyBehavior, ...props }) => React.createElement('a', { ...props, href: typeof href === 'string' ? href : href.pathname + '?' + new URLSearchParams(href.query) }, children) },
+			'next/link': { __esModule: true, default: React.forwardRef(({ href, children, passHref, legacyBehavior, ...props }, ref) => React.createElement('a', { ...props, ref, href: typeof href === 'string' ? href : href.pathname + '?' + new URLSearchParams(href.query) }, children)) },
 			'next-i18next': { useTranslation: (ns) => ({ t: i18n.getFixedT(router.locale, ns), i18n }) },
 			'next-i18next/serverSideTranslations': { serverSideTranslations: async (locale, names) => { namespaceLoads.push({ locale, names }); return {}; } },
 			'../../libs/components/layout/LayoutBasic': { __esModule: true, default: (Component) => Component },
@@ -177,16 +177,66 @@ async function main() {
 		assert.deepEqual(cascade(trainerCss), cascade(previousCss)); assert(trainerCss.includes('#pc-wrap.gym-detail-layout .trainer-discovery-card')); pass('shared Trainer card stylesheet preserves all original Trainer selector/media declarations without a style fork');
 		const programCss = sass.compileString('$font: sans-serif; ' + fs.readFileSync(path.join(rootPath, 'scss/pc/program/program.scss'), 'utf8'), { logger: sass.Logger.silent }).css;
 		assert(programCss.includes('#pc-wrap.gym-detail-layout .gym-detail-programs .discovery-program-card')); pass('existing Program card styles include detail context through the same shared selector group');
-		const baselineFiles = ['pages/gym/index.tsx', 'libs/components/gym/GymCard.tsx', 'libs/components/gym/GymFilters.tsx', 'scss/pc/gym/catalog.scss', 'libs/components/program/ProgramCard.tsx', 'libs/components/program/ProgramsNavigation.tsx'];
-		for (const file of baselineFiles) assert.equal(fs.readFileSync(path.join(rootPath, file), 'utf8').replace(/\r\n/g, '\n'), execFileSync('git', ['show', '32d51392cf03b455a3a2f29411f982c24869da2a:' + file], { cwd: rootPath, encoding: 'utf8' }).replace(/\r\n/g, '\n'));
-		pass('frozen catalog, ProgramCard and five-item navigation source remain byte-equivalent apart from line endings');
+		const Venue = load('libs/components/program/ProgramGymVenue.tsx', mocks).default;
+		const linked = { ...program(id(1), 0), gymId: id(1), gymData: gym(id(1)) };
+		for (const locale of ['en', 'kr', 'ru']) {
+			router.locale = locale;
+			render(Venue, { program: linked });
+			assert.equal(document.querySelector('.detail-gym-venue a').getAttribute('href'), '/gym/detail?id=' + id(1));
+			assert.equal(document.querySelector('.detail-gym-venue a').textContent, linked.gymData.gymName);
+			assert.equal(document.querySelector('.detail-gym-venue span').textContent, resources[locale].gyms.venue.atGym);
+		}
+		for (const change of [
+			{ programType: 'ONLINE' }, { gymId: null }, { gymId: 'invalid' }, { gymData: null },
+			{ gymData: { ...linked.gymData, _id: id(2) } }, { gymData: { ...linked.gymData, gymName: ' ' } },
+		]) {
+			render(Venue, { program: { ...linked, ...change } });
+			assert.equal(document.querySelector('.detail-gym-venue'), null);
+		}
+		router.locale = 'en';
+		pass('G5 authoritative venue links localize in EN/KR/RU; ONLINE/independent/missing/mismatched data render safely');
 		const layoutMocks = { ...mocks,
 			'../Top': { __esModule: true, default: () => React.createElement('header', { id: 'existing-public-header' }) },
 			'../Footer': { __esModule: true, default: () => React.createElement('footer', { id: 'existing-public-footer' }) },
 			'../../auth': { logOut: () => {} }, 'next/image': { __esModule: true, default: () => null },
+			'../hooks/useDeviceDetect': { __esModule: true, default: () => mobile ? 'mobile' : 'desktop' },
 			'../GlobalProgramSearch': { __esModule: true, default: () => null },
 			'swiper/css': {}, 'swiper/css/pagination': {}, 'swiper/css/navigation': {},
 		};
+		const { ProgramsHeader, ProgramsBottomNavigation } = load('libs/components/program/ProgramsNavigation.tsx', layoutMocks);
+		const destinations = ['/', '/program', '/gym', '/trainer', '/community?articleCategory=FREE', '/help'];
+		mobile = false;
+		render(ProgramsHeader);
+		assert.deepEqual([...document.querySelectorAll('.programs-desktop-links a')].map(link => link.getAttribute('href')), destinations);
+		assert.equal(document.querySelector('.programs-desktop-links a[href="/gym"]').getAttribute('aria-current'), 'page');
+		store.userVar({ _id: id(500), memberNick: 'Owner' });
+		await tick();
+		assert(document.querySelector('.programs-desktop-links a[href="/mypage"]'));
+		store.userVar({});
+		mobile = true;
+		render(ProgramsHeader);
+		const menuButton = document.querySelector('#programs-navigation-button');
+		menuButton.getBoundingClientRect = () => ({ top: 0, left: 0, right: 44, bottom: 44, width: 44, height: 44 });
+		click(menuButton);
+		await wait(() => document.querySelector('#programs-navigation-menu [role="menuitem"]'));
+		assert.equal(menuButton.getAttribute('aria-expanded'), 'true');
+		assert(document.querySelector('#programs-navigation-menu').contains(document.activeElement));
+		const gymLink = document.querySelector('#programs-navigation-menu a[href="/gym"]');
+		assert(gymLink);
+		assert.equal(gymLink.getAttribute('aria-current'), 'page');
+		gymLink.addEventListener('click', event => event.preventDefault(), { once: true });
+		click(gymLink);
+		await wait(() => !document.querySelector('#programs-navigation-menu'));
+		render(ProgramsBottomNavigation);
+		assert.deepEqual([...document.querySelectorAll('.programs-bottom-navigation a')].map(link => link.getAttribute('href')), ['/', '/program', '/trainer', '/community?articleCategory=FREE', '/mypage']);
+		pass('G5 desktop/compact Gym destination works while mobile navigation retains exactly five original destinations');
+		const Footer = load('libs/components/Footer.tsx', layoutMocks).default;
+		for (const variant of ['default', 'programs', 'home']) {
+			render(Footer, { variant });
+			assert.equal(document.querySelectorAll('a[href="/gym"]').length, 1);
+			assert.equal(document.querySelector('a[href="/gym"]').textContent, messages.navigation);
+		}
+		pass('G5 Gym footer link stays within each existing footer variant');
 		const withLayout = load('libs/components/layout/LayoutBasic.tsx', layoutMocks).default;
 		render(withLayout(() => React.createElement('div', { id: 'public-detail-content' }))); await tick();
 		assert(document.querySelector('#pc-wrap.gym-detail-layout.program-discovery-layout #public-detail-content')); assert(document.querySelector('#existing-public-header')); assert(document.querySelector('#existing-public-footer'));

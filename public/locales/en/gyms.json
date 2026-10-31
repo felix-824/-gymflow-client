@@ -1,4 +1,20 @@
 {
+	"navigation": "Gyms",
+	"venue": {
+		"label": "Gym / Fitness Center (optional)",
+		"search": "Search active gyms",
+		"none": "No linked Gym",
+		"optional": "Choose a gym, or enter your own venue below.",
+		"derived": "Location and address come from the selected gym. Unlink it to enter your own venue.",
+		"unavailable": "Current gym unavailable",
+		"historical": "The current gym is unavailable for new assignments. You can keep it for other edits, choose an active gym, or unlink it. Reactivation requires an active venue.",
+		"loadError": "Gyms could not be loaded. Your current venue is unchanged.",
+		"page": "Page {{page}} of {{pages}}",
+		"empty": "No active gyms match your search.",
+		"atGym": "Gym / Fitness Center:",
+		"conflict": "Upcoming unfinished reservations protect this venue. Your draft is kept. Refresh and review the latest program before saving again.",
+		"invalid": "Choose an active gym for an in-person program, or leave the gym unlinked."
+	},
 	"catalog": {
 		"title": "Gyms",
 		"eyebrow": "GymFlow Places",

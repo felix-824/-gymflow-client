@@ -17,10 +17,13 @@ module.exports = async function runFormChecks(loadTs, forms, options = {}) {
 				common: JSON.parse(
 					require('node:fs').readFileSync(path.join(__dirname, '../public/locales', locale, 'common.json'), 'utf8'),
 				),
+				gyms: JSON.parse(
+					require('node:fs').readFileSync(path.join(__dirname, '../public/locales', locale, 'gyms.json'), 'utf8'),
+				),
 			},
 		]),
 	);
-	await i18n.init({ resources, lng: 'en', ns: ['common'], defaultNS: 'common', initImmediate: false });
+	await i18n.init({ resources, lng: 'en', ns: ['common', 'gyms'], defaultNS: 'common', initImmediate: false });
 	const { createRoot } = require('react-dom/client');
 	const { act, Simulate } = require('react-dom/test-utils');
 	const program = { _id: 'a'.repeat(24), programRevision: 0, programName: 'Paused strength', programType: 'PT_1ON1', programCategory: 'MUSCLE_GAIN', programLocation: 'SEOUL', programPrice: 0, programDuration: 60, programCapacity: 1, programAddress: 'Seoul gym', programImages: ['uploads/program/a.png'], programStatus: 'PAUSED' };
@@ -46,6 +49,7 @@ module.exports = async function runFormChecks(loadTs, forms, options = {}) {
 		reservationRead: null, failReservations: false, policyError: '',
 		confirmRefresh: true, confirmations: [], unknownMutation: false, feedbackError: false, navigationError: false,
 		generatedKeys: [], createError: null, createMalformed: false,
+		gyms: [], failGyms: false,
 	};
 	Object.defineProperty(dom.window, 'crypto', { value: { randomUUID: () => { const key = require('node:crypto').randomUUID(); state.generatedKeys.push(key); return key; } } });
 	dom.window.HTMLElement.prototype.scrollIntoView = function () { state.scrolled.push(this); };
@@ -55,6 +59,14 @@ module.exports = async function runFormChecks(loadTs, forms, options = {}) {
 		state.queries.push(request);
 		assert.equal(request.fetchPolicy, 'no-cache');
 		assert.deepEqual(request.context, { queryDeduplication: false, handleErrorLocally: true });
+		if (request.query === 'GET_GYMS') {
+			const { page, limit, search } = request.variables.input;
+			assert.equal(limit, 20);
+			assert.equal(search.gymStatus, undefined);
+			if (state.failGyms) throw new Error('Gym read failed');
+			const list = state.gyms.filter((gym) => !search.text || gym.gymName.includes(search.text));
+			return { data: { getGyms: { list: list.slice((page - 1) * limit, page * limit), metaCounter: [{ total: list.length }] } } };
+		}
 		if (request.query === 'GET_TRAINER_RESERVATIONS') {
 			assert.deepEqual(request.variables.input, { page: request.variables.input.page, limit: 100, search: { programId: router.query.programId.toLowerCase(), period: 'UPCOMING' } });
 			if (state.failReservations) throw new Error('Reservation read failed');
@@ -96,7 +108,7 @@ module.exports = async function runFormChecks(loadTs, forms, options = {}) {
 					children,
 				),
 		},
-		'next-i18next': { useTranslation: () => ({ t: i18n.t.bind(i18n) }) },
+		'next-i18next': { useTranslation: (namespace) => ({ t: i18n.getFixedT(null, namespace) }) },
 		'./TrainerWorkspaceNavigation': { TrainerWorkspaceHeader: () => null, TrainerWorkspaceNavigation: () => null },
 		'@mui/material': { useMediaQuery: () => state.mobile },
 		'../../program': forms,
@@ -104,7 +116,7 @@ module.exports = async function runFormChecks(loadTs, forms, options = {}) {
 		'../../../apollo/store': variables,
 		'@apollo/client': { useApolloClient: () => client, useMutation, useReactiveVar: (variable) => variable() },
 		'../../../apollo/user/mutation': { CREATE_PROGRAM: 'CREATE_PROGRAM', UPDATE_PROGRAM: 'UPDATE_PROGRAM' },
-		'../../../apollo/user/query': { GET_TRAINER_PROGRAMS: 'GET_TRAINER_PROGRAMS', GET_TRAINER_RESERVATIONS: 'GET_TRAINER_RESERVATIONS' },
+		'../../../apollo/user/query': { GET_GYMS: 'GET_GYMS', GET_TRAINER_PROGRAMS: 'GET_TRAINER_PROGRAMS', GET_TRAINER_RESERVATIONS: 'GET_TRAINER_RESERVATIONS' },
 		'../../sweetAlert': { sweetMixinSuccessAlert: async (message) => { state.success.push(message); if (router.query.programId === undefined) assert.equal(forms.readProgramCreateEnvelope(trainer._id)?.status, 'confirmed'); if (state.feedbackError) throw new Error('Feedback failed'); }, sweetConfirmAlert: async (message) => { state.confirmations.push(message); return state.confirmRefresh; } },
 		'axios': { post: async (url, body, config) => {
 			state.authEvents.push('post');
@@ -287,7 +299,7 @@ module.exports = async function runFormChecks(loadTs, forms, options = {}) {
 		document.activeElement.blur();
 		await act(async () => Simulate.submit(document.querySelector('form')));
 		assert.equal(document.activeElement, document.querySelector('.editor-error'));
-		assert.ok(document.querySelector('[role=alert]').textContent.includes('3–100'));
+		assert.ok(document.querySelector('.editor-error').textContent.includes('3–100'));
 		assert.equal(state.mutations.length, writesBeforeValidation);
 		await act(async () => {
 			Simulate.change(document.querySelector('#program-name'), { target: { value: 'Real group training' } });
@@ -806,6 +818,163 @@ module.exports = async function runFormChecks(loadTs, forms, options = {}) {
 		assert.equal(document.querySelectorAll('.editor-photo').length, 1);
 		state.uploadResult = null;
 		pass('17C obsolete logical-session response ignored; uncertain upload is never replayed and retains the draft');
+
+		// Continue through the real editor and selector; all reads/writes remain fixture-only.
+		const gymA = { _id: 'c'.repeat(24), gymName: 'Active Seoul Gym', gymLocation: 'SEOUL', gymAddress: 'Seoul physical address' };
+		const gymB = { _id: 'd'.repeat(24), gymName: 'Active Busan Gym', gymLocation: 'BUSAN', gymAddress: 'Busan physical address' };
+		Object.assign(state, {
+			gyms: [gymA, gymB], failGyms: false, read: null, reservationRead: null, failReservations: false,
+			failLookup: false, failMutation: false, unknownMutation: false, persistMutations: false, policyError: '',
+			waitMutation: null, uploadResult: null, uploadError: false, confirmRefresh: true,
+			feedbackError: false, navigationError: false,
+			program: { ...program, gymId: gymA._id, gymData: gymA, programAddress: gymA.gymAddress },
+		});
+		router.query = { programId: program._id };
+		const settleGyms = async () => act(async () => { await new Promise(resolve => setTimeout(resolve, 300)); });
+		const renderGymEditor = async (key) => { await render(key); await settleGyms(); };
+		const selectGym = async (value) => act(async () => Simulate.change(document.querySelector('#program-gym'), { target: { value } }));
+		const changeGymType = async (value) => act(async () => Simulate.change(document.querySelector('input[value="' + value + '"]')));
+		const submitGymEditor = async () => act(async () => Simulate.submit(document.querySelector('form')));
+		const searchGyms = async (value) => {
+			await act(async () => Simulate.change(document.querySelector('#program-gym-search'), { target: { value } }));
+			await settleGyms();
+		};
+		await renderGymEditor('g5-linked');
+		assert.equal(document.querySelector('#program-gym').value, gymA._id);
+		assert.equal(document.querySelector('#program-location').disabled, true);
+		assert.equal(document.querySelector('#program-address').disabled, true);
+		await act(async () => Simulate.change(document.querySelector('#program-name'), { target: { value: 'Allowed renamed class' } }));
+		await submitGymEditor();
+		assert.equal(state.mutations.at(-1).variables.input.gymId, gymA._id);
+		assert.equal(state.mutations.at(-1).variables.input.expectedRevision, 0);
+		assert.equal(state.mutations.at(-1).variables.input.__v, undefined);
+		pass('G5 linked edit initializes authoritative Gym, protects derived fields and uses expectedRevision');
+
+		await selectGym(gymB._id);
+		assert.equal(document.querySelector('#program-location').value, 'BUSAN');
+		assert.equal(document.querySelector('#program-address').value, gymB.gymAddress);
+		await submitGymEditor();
+		assert.equal(state.mutations.at(-1).variables.input.gymId, gymB._id);
+		assert.equal(state.mutations.at(-1).variables.input.programLocation, 'BUSAN');
+		assert.equal(state.mutations.at(-1).variables.input.programAddress, gymB.gymAddress);
+		assert.equal(state.mutations.at(-1).variables.input.expectedRevision, 1);
+		pass('G5 selecting an ACTIVE Gym prefills and submits matching Gym/location/address');
+
+		await changeGymType('GROUP_CLASS');
+		assert.equal(document.querySelector('#program-gym').value, gymB._id);
+		await changeGymType('PT_1ON1');
+		assert.equal(document.querySelector('#program-gym').value, gymB._id);
+		await changeGymType('ONLINE');
+		assert.equal(document.querySelector('#program-gym'), null);
+		await submitGymEditor();
+		assert.equal(state.mutations.at(-1).variables.input.gymId, null);
+		assert.equal(state.mutations.at(-1).variables.input.programLocation, 'ONLINE');
+		await changeGymType('PT_1ON1');
+		assert.equal(document.querySelector('#program-gym').value, '');
+		assert.equal(document.querySelector('#program-address').value, '');
+		await settleGyms();
+		pass('G5 physical types retain Gym; ONLINE submits no Gym and returning never restores a stale venue');
+
+		await selectGym(gymA._id);
+		await selectGym('');
+		assert.equal(document.querySelector('#program-location').disabled, false);
+		assert.equal(document.querySelector('#program-address').disabled, false);
+		await act(async () => Simulate.change(document.querySelector('#program-address'), { target: { value: 'Independent venue' } }));
+		await submitGymEditor();
+		assert.equal(state.mutations.at(-1).variables.input.gymId, null);
+		assert.equal(state.mutations.at(-1).variables.input.programAddress, 'Independent venue');
+		pass('G5 unlink restores independent venue editing and explicitly clears the submitted association');
+
+		state.gyms = [gymA, gymB, ...Array.from({ length: 20 }, (_, index) => ({ ...gymA, _id: 'e' + index.toString(16).padStart(23, '0'), gymName: 'Extra Gym ' + index }))];
+		await searchGyms('Extra');
+		await searchGyms('');
+		await act(async () => document.querySelectorAll('.editor-gym-pagination button')[1].click());
+		await settleGyms();
+		assert.equal(state.queries.filter(query => query.query === 'GET_GYMS').at(-1).variables.input.page, 2);
+		await searchGyms('Busan');
+		assert.equal(state.queries.filter(query => query.query === 'GET_GYMS').at(-1).variables.input.page, 1);
+		assert.equal(document.querySelector('#program-gym').options.length, 2);
+		await selectGym(gymB._id);
+		state.failGyms = true;
+		await searchGyms('Active Busan');
+		assert.equal(document.querySelector('#program-gym').value, gymB._id);
+		assert(document.querySelector('.editor-gym-results [role=alert]').textContent.includes(resources.en.gyms.venue.loadError));
+		state.failGyms = false;
+		await act(async () => document.querySelector('.editor-gym-results button').click());
+		await settleGyms();
+		assert.equal(document.querySelector('.editor-gym-results [role=alert]'), null);
+		assert.equal(document.querySelector('#program-gym').value, gymB._id);
+		await searchGyms('No matching Gym');
+		assert(document.querySelector('.editor-gym-results').textContent.includes(resources.en.gyms.venue.empty));
+		pass('G5 Gym search/pagination/empty/error/retry use fixture totals and preserve the selected venue');
+
+		state.gyms = [gymB];
+		state.program = { ...program, gymId: gymA._id, gymData: null, programAddress: gymA.gymAddress, programRevision: 7 };
+		for (const locale of ['en', 'kr', 'ru']) {
+			await i18n.changeLanguage(locale);
+			await renderGymEditor('g5-historical-' + locale);
+			assert.equal(document.querySelector('#program-gym').value, gymA._id);
+			assert.equal([...document.querySelector('#program-gym').options].find(option => option.value === gymA._id).disabled, true);
+			assert.equal(document.querySelector('#program-gym-note').textContent.trim(), resources[locale].gyms.venue.historical);
+			await submitGymEditor();
+			assert.equal(state.mutations.at(-1).variables.input.gymId, gymA._id);
+			assert.equal(state.mutations.at(-1).variables.input.expectedRevision, 7);
+		}
+		await i18n.changeLanguage('en');
+		pass('G5 historical Gym remains unavailable for new assignment while unrelated edits and EN/KR/RU guidance work');
+
+		state.gyms = [gymA, gymB];
+		state.program = { ...program, gymId: gymA._id, gymData: gymA, programAddress: gymA.gymAddress };
+		state.policyError = 'Program Gym cannot be changed while upcoming reservations exist.';
+		await renderGymEditor('g5-conflict');
+		await selectGym(gymB._id);
+		const venueWrites = state.mutations.length;
+		await submitGymEditor();
+		assert.equal(state.mutations.length, venueWrites + 1);
+		assert.equal(document.querySelector('#program-gym').value, gymB._id);
+		assert.equal(document.querySelector('button[type=submit]').disabled, true);
+		assert.equal(document.querySelector('.editor-error').textContent, resources.en.gyms.venue.conflict);
+		await submitGymEditor();
+		assert.equal(state.mutations.length, venueWrites + 1);
+		state.policyError = '';
+		await act(async () => refreshButton().click());
+		assert.equal(document.querySelector('#program-gym').value, gymA._id);
+		assert.equal(state.mutations.length, venueWrites + 1);
+		pass('G5 venue conflict retains draft and blocks blind replay; explicit refresh reloads authoritative Gym');
+
+		forms.clearProgramCreateEnvelope(trainer._id);
+		router.query = {};
+		await renderGymEditor('g5-create');
+		const gymCreateKeys = state.generatedKeys.length;
+		await selectGym(gymA._id);
+		await selectGym(gymB._id);
+		assert.equal(state.generatedKeys.length, gymCreateKeys);
+		await act(async () => Simulate.change(document.querySelector('#program-name'), { target: { value: 'New linked class' } }));
+		await chooseFile();
+		state.unknownMutation = true;
+		await submitGymEditor();
+		const gymEnvelope = forms.readProgramCreateEnvelope(trainer._id);
+		assert.equal(gymEnvelope.payload.gymId, gymB._id);
+		assert.equal(gymEnvelope.payload.programLocation, 'BUSAN');
+		assert.equal(gymEnvelope.payload.programAddress, gymB.gymAddress);
+		assert.equal(gymEnvelope.status, 'unresolved');
+		assert.equal(state.generatedKeys.length, gymCreateKeys + 1);
+		const unresolvedGymWrites = state.mutations.length;
+		await renderGymEditor('g5-create-recovery');
+		assert.equal(state.mutations.length, unresolvedGymWrites);
+		assert.equal(document.querySelector('#program-gym').value, gymB._id);
+		assert.equal(document.querySelector('#program-gym').disabled, true);
+		await act(async () => recoverCreate().click());
+		assert.deepEqual(state.mutations.at(-1).variables.input, { ...gymEnvelope.payload, createRequestId: gymEnvelope.createRequestId });
+		assert.equal(state.generatedKeys.length, gymCreateKeys + 1);
+		state.unknownMutation = false;
+		await act(async () => recoverCreate().click());
+		assert.equal(forms.readProgramCreateEnvelope(trainer._id).status, 'confirmed');
+		await act(async () => newCreate().click());
+		assert.equal(document.querySelector('#program-gym').value, '');
+		assert.equal(document.querySelector('#program-address').disabled, false);
+		pass('G5 selection allocates no create key; linked frozen receipt survives remount/retry and Start New clears the venue');
+
 		const passthrough = ({ children }) => React.createElement('div', null, children);
 		const action = ({ children, onClick, disabled }) => React.createElement('button', { onClick, disabled }, children);
 		const adminActions = [];

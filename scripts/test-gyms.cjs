@@ -152,7 +152,11 @@ for (const language of ['en', 'kr', 'ru']) check(language + ' gyms namespace has
 check('EN/KR/RU have exact Gym key and interpolation parity', () => {
 	for (const locale of [locales.kr, locales.ru]) {
 		assert.deepEqual(Object.keys(locale).sort(), Object.keys(locales.en).sort());
-		for (const key of Object.keys(locale)) assert.deepEqual(locale[key].match(/{{[^}]+}}/g), locales.en[key].match(/{{[^}]+}}/g));
+		for (const key of Object.keys(locale)) assert.deepEqual(
+			(locale[key].match(/{{[^}]+}}/g) ?? []).sort(),
+			(locales.en[key].match(/{{[^}]+}}/g) ?? []).sort(),
+			key,
+		);
 	}
 });
 check('protected common.json retains its pre-existing SHA-256', () => {

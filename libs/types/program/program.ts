@@ -12,6 +12,8 @@ export interface TotalCounter {
 }
 
 export interface Program {
+	gymId?: string | null;
+	gymData?: { _id: string; gymName: string; gymLocation: string; gymAddress: string } | null;
 	_id: string;
 	/** Selected by management documents; public documents may omit it. */
 	programRevision?: number;

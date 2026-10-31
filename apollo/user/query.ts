@@ -240,6 +240,8 @@ export const GET_PROGRAM = gql`
 	query GetProgram($input: String!) {
 		getProgram(programId: $input) {
 			_id
+			gymId
+			gymData { _id gymName gymLocation gymAddress }
 			programType
 			programStatus
 			programLocation
@@ -335,6 +337,8 @@ export const GET_TRAINER_PROGRAMS = gql`
 		getTrainerPrograms(input: $input) {
 			list {
 				_id
+				gymId
+				gymData { _id gymName gymLocation gymAddress }
 				programRevision
 				programType
 				programStatus

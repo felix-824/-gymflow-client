@@ -14,7 +14,10 @@ function loadTs(file, mocks = {}, cache = new Map()) {
 	cache.set(file, module.exports);
 	const localRequire = (name) => {
 		if (Object.hasOwn(mocks, name)) return mocks[name];
-		if (name.startsWith('.')) return loadTs(path.resolve(path.dirname(file), name + '.ts'), mocks, cache);
+		if (name.startsWith('.')) {
+			const target = path.resolve(path.dirname(file), name);
+			return loadTs(fs.existsSync(target + '.ts') ? target + '.ts' : target + '.tsx', mocks, cache);
+		}
 		return require(name);
 	};
 	vm.runInThisContext('(function(require,module,exports){' + output + '\n})', { filename: file })(localRequire, module, module.exports);
@@ -108,6 +111,22 @@ check('create payload whitelists fields and omits blank optional values', () => 
 check('update payload uses null to clear optional fields', () => {
 	const result = forms.programPayload({ ...valid, programAddress: '', programDesc: '' }, true);
 	assert.equal(result.programAddress, null); assert.equal(result.programDesc, null);
+});
+check('G5 Gym payload preserves a physical link and clears ONLINE/unlinked associations', () => {
+	const gymId = 'c'.repeat(24);
+	assert.equal(forms.programPayload({ ...valid, gymId }).gymId, gymId);
+	assert.equal(forms.programPayload({ ...valid, gymId, programType: ProgramType.ONLINE }).gymId, null);
+	assert.equal(forms.programPayload({ ...valid, gymId: null }, true).gymId, null);
+	assert.equal(Object.hasOwn(forms.programPayload(valid), 'gymId'), false);
+});
+check('G5 invalid and ONLINE Gym links reject before dispatch', () => {
+	assert.equal(forms.programFormError({ ...valid, gymId: 'invalid' }), 'Invalid Gym');
+	assert.equal(forms.programFormError({ ...valid, gymId: 'c'.repeat(24) }), '');
+	assert.equal(forms.programFormError({ ...valid, gymId: 'c'.repeat(24), programType: ProgramType.ONLINE, programLocation: ProgramLocation.ONLINE }), 'Invalid Gym');
+});
+check('G5 venue conflicts remain distinct from stale revision conflicts', () => {
+	for (const field of ['Gym', 'location', 'address']) assert.equal(forms.programUpdateError({ graphQLErrors: [{ message: 'Program ' + field + ' cannot be changed while upcoming reservations exist.' }] }), 'venue');
+	assert.equal(forms.programUpdateError({ graphQLErrors: [{ message: 'Changed', extensions: { reason: 'PROGRAM_REVISION_CONFLICT' } }] }), 'stale');
 });
 
 const createVar = (initial) => { let state = initial; return (...args) => { if (args.length) state = args[0]; return state; }; };
