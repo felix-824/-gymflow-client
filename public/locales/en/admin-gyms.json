@@ -1,6 +1,7 @@
 {
 	"navigation": { "title": "Gyms", "openMenu": "Open admin navigation", "menu": "Admin navigation" },
 	"list": {
+		"detailAction": "View details for {{name}}",
 		"title": "Gyms",
 		"intro": "View gym catalog entries and their status.",
 		"create": "Create Gym",
@@ -35,6 +36,12 @@
 		"coverAlt": "Cover photo of {{name}}"
 	},
 	"form": {
+		"createIntro": "Add a gym and prepare its photos, amenities and opening hours.",
+		"editIntro": "Update this gym’s details and visibility in the catalog.",
+		"openCreated": "Open the created gym",
+		"completeRequired": "Complete the required details and check the form before saving.",
+		"unsaved": "You have unsaved changes.",
+		"noChanges": "No unsaved changes.",
 		"createTitle": "Create Gym",
 		"editTitle": "Edit Gym",
 		"viewTitle": "Gym Details",
@@ -51,6 +58,7 @@
 		"validationSummary": "Check the highlighted fields before saving."
 	},
 	"basic": {
+		"chooseLocation": "Choose a location",
 		"title": "Basic Information",
 		"name": "Gym name",
 		"location": "Location",
@@ -61,6 +69,7 @@
 		"phoneHelper": "Optional. Include 7–15 digits; spaces, parentheses, hyphens and a leading + are allowed."
 	},
 	"photos": {
+		"editTitle": "Venue Photography",
 		"makeCoverAction": "Make cover",
 		"empty": "Choose photos that show the gym and its training spaces.",
 		"removeAction": "Remove",
@@ -83,6 +92,7 @@
 		"count": "{{count}} / 5 photos"
 	},
 	"amenities": {
+		"editTitle": "Included Amenities",
 		"title": "Amenities",
 		"PARKING": "Parking",
 		"SHOWER": "Showers",
@@ -119,13 +129,17 @@
 		"note": "Informational gym hours in Asia/Seoul time. These do not set trainer booking availability. Overnight hours and multiple intervals are not supported."
 	},
 	"lifecycle": {
+		"publishingTitle": "Publishing Status",
+		"editTitle": "Status & Visibility",
+		"dangerTitle": "Danger Zone",
+		"deletionNote": "Deleting a gym is permanent. Existing reservations remain unchanged.",
 		"title": "Status",
 		"active": "Active",
 		"paused": "Paused",
 		"deleted": "Deleted",
 		"publish": "Publish gym",
 		"pause": "Pause gym",
-		"createdPaused": "New gyms are saved as paused. Review the details before publishing.",
+		"createdPaused": "New gyms are created as paused. You can activate the gym after it has been created.",
 		"markDeleted": "Mark as deleted",
 		"confirmTitle": "Mark this gym as deleted?",
 		"confirmBody": "This permanently closes editing and removes the gym from public discovery. It does not physically delete the record or cancel existing reservations. Unsaved changes will not be saved.",

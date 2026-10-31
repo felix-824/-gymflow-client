@@ -54,7 +54,7 @@ module.exports = async function gymListTests() {
 			'../../../auth': { getAuthSessionId: () => session }, '../../auth': { logOut: () => {} },
 			'../../../config': { REACT_APP_API_URL: 'http://localhost:3007' }, '../../config': { REACT_APP_API_URL: 'http://localhost:3007' },
 			'next/router': { useRouter: () => router, withRouter: (Component) => (props) => React.createElement(Component, { ...props, router }) },
-			'next/link': { __esModule: true, default: ({ href, children, legacyBehavior }) => legacyBehavior ? React.cloneElement(children, { href }) : React.createElement('a', { href }, children) },
+			'next/link': { __esModule: true, default: ({ href, children, legacyBehavior, ...props }) => { const url = typeof href === 'string' ? href : href.pathname + '?' + new URLSearchParams(href.query); return legacyBehavior ? React.cloneElement(children, { href: url, ...props }) : React.createElement('a', { href: url, ...props }, children); } },
 			'next-i18next': { useTranslation: (ns) => ({ t: i18n.getFixedT(router.locale, ns), i18n }) },
 			'@mui/material': { ...mui, useMediaQuery: () => desktop },
 		};
@@ -104,10 +104,10 @@ module.exports = async function gymListTests() {
 		router.isReady = false; flushSync(() => store.authErrorVar('')); render(Gyms); await tick(); assert(document.querySelector('[role="status"]')); assert.equal(requests.length, 0); router.isReady = true;
 		render(Gyms); await wait(() => document.querySelector('tbody time'));
 		assert.deepEqual(last(), { page: 1, limit: 10, sort: 'createdAt', direction: 'DESC', search: {} }); pass('ACTIVE ADMIN allowed; router readiness; exact initial inquiry');
-		assert.equal(document.querySelectorAll('thead th').length, 5); assert.equal(document.querySelectorAll('tbody tr').length, 10);
+		assert.equal(document.querySelectorAll('thead th').length, 6); assert.equal(document.querySelectorAll('tbody tr').length, 10);
 		assert(document.querySelector('tbody').textContent.includes('123 Seoul Test Street')); assert.equal(document.querySelector('time').dateTime, fixtures[0].updatedAt);
 		assert(document.querySelector('tbody').textContent.includes(messages.lifecycle.active)); assert(document.querySelector('tbody').textContent.includes(resources.en.common.SEOUL));
-		assert(document.body.textContent.includes('25')); assert(!document.querySelector('a[href*="gyms/detail"]')); pass('five read-only columns, address/status/location/date and backend total');
+		assert(document.body.textContent.includes('25')); assert(document.querySelector('a[href="/_admin/gyms/detail"]')); assert(document.querySelector('tbody a[href="/_admin/gyms/detail?id=0"]')); pass('read-only rows with detail actions, address/status/location/date and backend total');
 		await wait(() => document.querySelector('tbody img')); assert.equal(document.querySelector('tbody img').src, 'http://localhost:3007/' + fixtures[0].gymImages[0]); assert.equal(document.querySelector('tbody img').alt, 'Cover photo of Gym 0');
 		assert(!document.querySelector('img[src*="untrusted"]')); flushSync(() => imageProbes.find((probe) => probe.src === 'http://localhost:3007/' + fixtures[0].gymImages[0]).onerror()); await tick(); assert(document.querySelector('tbody svg[aria-label="Cover photo of Gym 0"]')); pass('canonical first cover, external URL rejected, image-error fallback');
 		await queryChange(() => click(button(messages.list.nextPage))); assert.equal(last().page, 2); pass('MUI next page maps to backend page 2');
@@ -162,9 +162,9 @@ module.exports = async function gymListTests() {
 		const sass = require('sass'); const shellCss = sass.compileString('$font: sans-serif; @import "scss/pc/admin/admin.scss";', { loadPaths: [rootPath], logger: sass.Logger.silent }).css;
 		assert.match(shellCss, /@media \(max-width: 1199px\)/); assert.match(shellCss, /#pc-wrap.admin #bunker \{\s*width: 100%;\s*margin-left: 0;/);
 		const css = sass.compile(path.join(rootPath, 'scss/pc/admin/gyms.scss'), { logger: sass.Logger.silent }).css;
-		assert.match(css, /overflow-x: auto/); assert.match(css, /min-width: 740px/); assert.match(css, /flex-wrap: wrap/); assert.match(css, /max-width: 599px/); assert.match(css, /min-height: 44px/); assert.match(css, /overflow-wrap: anywhere/); pass('compiled SCSS contracts: narrow offset removed, internal table scroll, wrapping and touch sizes');
-		assert(!fs.existsSync(path.join(rootPath, 'pages/_admin/gyms/detail.tsx')));
-		assert.doesNotMatch(fs.readFileSync(path.join(rootPath, 'libs/components/admin/gyms/Gyms.tsx'), 'utf8'), /useMutation|CREATE_GYM|UPDATE_GYM_BY_ADMIN|gym\/detail/); pass('read-only scope; no detail page or mutation execution');
+		assert.match(css, /overflow-x: auto/); assert.match(css, /min-width: 840px/); assert.match(css, /flex-wrap: wrap/); assert.match(css, /max-width: 599px/); assert.match(css, /min-height: 44px/); assert.match(css, /overflow-wrap: anywhere/); pass('compiled SCSS contracts: narrow offset removed, internal table scroll, wrapping and touch sizes');
+		assert.match(fs.readFileSync(path.join(rootPath, 'pages/_admin/gyms/detail.tsx'), 'utf8'), /withAdminLayout\(GymDetail\)/);
+		assert.doesNotMatch(fs.readFileSync(path.join(rootPath, 'libs/components/admin/gyms/Gyms.tsx'), 'utf8'), /useMutation|CREATE_GYM|UPDATE_GYM_BY_ADMIN/); pass('list remains read-only; detail route delegates to the Admin editor');
 		console.log(`${checks} G3C DOM/query/responsive contract groups passed. Browser viewport QA not performed.`);
 		return checks;
 	} finally {

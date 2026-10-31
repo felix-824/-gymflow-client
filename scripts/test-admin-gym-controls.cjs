@@ -187,7 +187,7 @@ module.exports = async function gymControlTests() {
 		const css = require('sass').compile(path.join(project, 'scss/pc/admin/gyms.scss'), { logger: require('sass').Logger.silent }).css;
 		assert.match(css, /object-fit: cover/); assert.match(css, /aspect-ratio: 16\/9/); assert.match(css, /max-width: 899px/); assert.match(css, /max-width: 599px/); assert.match(css, /grid-template-columns: repeat\(2, minmax\(0, 1fr\)\)/); assert.match(css, /min-height: 44px/); assert.match(css, /:focus-visible/); pass('SCSS compiles: cover hierarchy, wrapping gallery, reflowing weekly rows, touch sizes and visible focus');
 		for (const filename of ['GymImages', 'GymOpeningHours']) assert.doesNotMatch(fs.readFileSync(path.join(project, 'libs/components/admin/gyms', filename + '.tsx'), 'utf8'), /CREATE_GYM|UPDATE_GYM_BY_ADMIN|useMutation|deleteFile|unlink/);
-		assert(!fs.existsSync(path.join(project, 'pages/_admin/gyms/detail.tsx'))); pass('controls contain no final Gym mutation, file deletion or temporary detail route');
+		assert.match(fs.readFileSync(path.join(project, 'pages/_admin/gyms/detail.tsx'), 'utf8'), /withAdminLayout\(GymDetail\)/); pass('reusable controls contain no final Gym mutation or file deletion; editor owns integration');
 		console.log(`${checks} G3D control/helper/DOM groups passed. Upload transport intercepted; no Gym create/update mutations executed. Browser QA not run.`);
 		return checks;
 	} finally {

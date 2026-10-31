@@ -1,6 +1,7 @@
 {
 	"navigation": { "title": "헬스장", "openMenu": "관리자 메뉴 열기", "menu": "관리자 메뉴" },
 	"list": {
+		"detailAction": "{{name}} 상세 보기",
 		"title": "헬스장 관리",
 		"intro": "등록된 헬스장과 공개 상태를 확인하세요.",
 		"create": "헬스장 등록",
@@ -35,6 +36,12 @@
 		"coverAlt": "{{name}} 대표 사진"
 	},
 	"form": {
+		"createIntro": "헬스장을 등록하고 사진, 편의시설과 운영 시간을 준비하세요.",
+		"editIntro": "헬스장 정보와 카탈로그 공개 상태를 수정하세요.",
+		"openCreated": "등록된 헬스장 열기",
+		"completeRequired": "필수 정보를 입력하고 저장 전에 양식을 확인하세요.",
+		"unsaved": "저장하지 않은 변경 사항이 있습니다.",
+		"noChanges": "저장하지 않은 변경 사항이 없습니다.",
 		"createTitle": "헬스장 등록",
 		"editTitle": "헬스장 수정",
 		"viewTitle": "헬스장 상세 정보",
@@ -51,6 +58,7 @@
 		"validationSummary": "표시된 항목을 확인한 후 저장해 주세요."
 	},
 	"basic": {
+		"chooseLocation": "지역 선택",
 		"title": "기본 정보",
 		"name": "헬스장 이름",
 		"location": "지역",
@@ -61,6 +69,7 @@
 		"phoneHelper": "선택 항목입니다. 숫자 7–15자리를 포함하세요. 공백, 괄호, 하이픈과 맨 앞의 +를 사용할 수 있습니다."
 	},
 	"photos": {
+		"editTitle": "시설 사진",
 		"makeCoverAction": "대표 사진으로",
 		"empty": "헬스장과 운동 공간을 보여 주는 사진을 선택하세요.",
 		"removeAction": "삭제",
@@ -83,6 +92,7 @@
 		"count": "사진 {{count}} / 5장"
 	},
 	"amenities": {
+		"editTitle": "제공 편의시설",
 		"title": "편의 시설",
 		"PARKING": "주차장",
 		"SHOWER": "샤워 시설",
@@ -119,13 +129,17 @@
 		"note": "한국 시간(Asia/Seoul) 기준의 헬스장 안내용 운영 시간입니다. 트레이너 예약 가능 시간을 설정하지 않습니다. 자정을 넘기는 영업이나 하루 여러 운영 구간은 지원하지 않습니다."
 	},
 	"lifecycle": {
+		"publishingTitle": "공개 상태",
+		"editTitle": "상태 및 공개 설정",
+		"dangerTitle": "주의 영역",
+		"deletionNote": "헬스장 삭제는 되돌릴 수 없습니다. 기존 예약은 유지됩니다.",
 		"title": "상태",
 		"active": "공개",
 		"paused": "공개 중지",
 		"deleted": "삭제됨",
 		"publish": "헬스장 공개",
 		"pause": "공개 중지",
-		"createdPaused": "새 헬스장은 공개 중지 상태로 저장됩니다. 내용을 확인한 후 공개하세요.",
+		"createdPaused": "새 헬스장은 일시 중지 상태로 등록됩니다. 등록한 후 활성화할 수 있습니다.",
 		"markDeleted": "삭제 처리",
 		"confirmTitle": "이 헬스장을 삭제 처리할까요?",
 		"confirmBody": "삭제 처리하면 더 이상 수정할 수 없으며 공개 목록에서 제외됩니다. 데이터 자체를 지우거나 기존 예약을 취소하지는 않습니다. 저장하지 않은 변경 사항은 반영되지 않습니다.",

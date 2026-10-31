@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { useQuery } from '@apollo/client';
 import { useTranslation } from 'next-i18next';
@@ -69,6 +70,11 @@ const GymList = () => {
 			<header className="admin-gym-heading">
 				<h1>{t('list.title')}</h1>
 				<p>{t('list.intro')}</p>
+				<Link href="/_admin/gyms/detail" legacyBehavior passHref>
+					<Button component="a" variant="outlined">
+						{t('list.create')}
+					</Button>
+				</Link>
 			</header>
 			<div className="table-wrap">
 				<Tabs
@@ -141,7 +147,7 @@ const GymList = () => {
 					<Table aria-label={t('list.tableLabel')} aria-busy={loading}>
 						<TableHead>
 							<TableRow>
-								{['gym', 'location', 'address', 'status', 'updated'].map((column) => (
+								{['gym', 'location', 'address', 'status', 'updated', 'action'].map((column) => (
 									<TableCell key={column}>{t(`list.columns.${column}`)}</TableCell>
 								))}
 							</TableRow>
@@ -149,7 +155,7 @@ const GymList = () => {
 						<TableBody>
 							{loading || error || !gyms?.list.length ? (
 								<TableRow>
-									<TableCell colSpan={5} className="admin-gym-empty">
+									<TableCell colSpan={6} className="admin-gym-empty">
 										{loading ? (
 											<p role="status">{t('list.loading')}</p>
 										) : error ? (
@@ -202,6 +208,14 @@ const GymList = () => {
 														timeZone: 'Asia/Seoul',
 													})}
 												</time>
+											</TableCell>
+											<TableCell>
+												<Link
+													href={{ pathname: '/_admin/gyms/detail', query: { id: gym._id } }}
+													aria-label={t('list.detailAction', { name: gym.gymName })}
+												>
+													{t(gym.gymStatus === GymStatus.DELETE ? 'list.view' : 'list.edit')}
+												</Link>
 											</TableCell>
 										</TableRow>
 									);

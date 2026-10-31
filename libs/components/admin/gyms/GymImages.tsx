@@ -18,6 +18,7 @@ import { gymImagesError } from '../../../admin-gyms';
 import { MemberStatus, MemberType } from '../../../enums/member.enum';
 
 export interface GymImagesProps {
+	title?: string;
 	images: string[];
 	onChange: (images: string[]) => void;
 	// Identity of the owning form/draft; change it when replacing the draft, even on the same route.
@@ -40,6 +41,7 @@ const GymPhotoPreview = ({ path, alt }: { path: string; alt: string }) => {
 };
 
 const GymImages = ({
+	title,
 	images,
 	onChange,
 	scopeKey,
@@ -208,7 +210,7 @@ const GymImages = ({
 			aria-describedby={`${hintId}${error ? ' ' + errorId : ''}`}
 			aria-busy={uploading}
 		>
-			<legend>{t('photos.title')}</legend>
+			<legend>{title ?? t('photos.title')}</legend>
 			<div className="gym-photo-heading">
 				<p>{t('photos.intro')}</p>
 				<span>{t('photos.count', { count: images.length })}</span>

@@ -1,6 +1,6 @@
 import { GymAmenity, GymLocation, GymStatus } from './enums/gym.enum';
 import { TrainerScheduleDayOfWeek } from './enums/trainer-schedule.enum';
-import { GymOpeningHoursDay } from './types/gym/gym';
+import { AdminGym, GymOpeningHoursDay } from './types/gym/gym';
 import { GymInput, GymOpeningHoursDayInput } from './types/gym/gym.input';
 
 export const gymStatusLabelKeys: Record<GymStatus, string> = {
@@ -99,23 +99,38 @@ export function createGymOpeningHoursForm(hours: readonly GymOpeningHoursDayInpu
 	});
 }
 
-export function gymFormError(input: GymInput): string | null {
+export function gymBasicErrors(
+	input: GymInput,
+): Partial<Record<'gymName' | 'gymLocation' | 'gymAddress' | 'gymDesc' | 'gymPhone', string>> {
+	const errors: ReturnType<typeof gymBasicErrors> = {};
 	if (typeof input.gymName !== 'string' || input.gymName.trim().length < 3 || input.gymName.trim().length > 100)
-		return 'validation.name';
-	if (!Object.values(GymLocation).includes(input.gymLocation)) return 'validation.location';
+		errors.gymName = 'validation.name';
+	if (!Object.values(GymLocation).includes(input.gymLocation)) errors.gymLocation = 'validation.location';
 	if (
 		typeof input.gymAddress !== 'string' ||
 		input.gymAddress.trim().length < 3 ||
 		input.gymAddress.trim().length > 100
 	)
-		return 'validation.address';
-	if (input.gymDesc != null && typeof input.gymDesc !== 'string') return 'validation.description';
-	if (input.gymPhone != null && typeof input.gymPhone !== 'string') return 'validation.phone';
-	const description = normalizeGymOptionalText(input.gymDesc);
-	if (description !== null && (description.length < 5 || description.length > 2000)) return 'validation.description';
-	const phone = normalizeGymOptionalText(input.gymPhone);
-	if (phone !== null && (phone.length > 25 || !/^(?=(?:\D*\d){7,15}\D*$)\+?[0-9 ()-]+$/.test(phone)))
-		return 'validation.phone';
+		errors.gymAddress = 'validation.address';
+	if (input.gymDesc != null && typeof input.gymDesc !== 'string') errors.gymDesc = 'validation.description';
+	else {
+		const description = normalizeGymOptionalText(input.gymDesc);
+		if (description !== null && (description.length < 5 || description.length > 2000))
+			errors.gymDesc = 'validation.description';
+	}
+	if (input.gymPhone != null && typeof input.gymPhone !== 'string') errors.gymPhone = 'validation.phone';
+	else {
+		const phone = normalizeGymOptionalText(input.gymPhone);
+		if (phone !== null && (phone.length > 25 || !/^(?=(?:\D*\d){7,15}\D*$)\+?[0-9 ()-]+$/.test(phone)))
+			errors.gymPhone = 'validation.phone';
+	}
+	return errors;
+}
+
+export function gymFormError(input: GymInput): string | null {
+	const basic = gymBasicErrors(input);
+	const basicError = basic.gymName ?? basic.gymLocation ?? basic.gymAddress ?? basic.gymDesc ?? basic.gymPhone;
+	if (basicError) return basicError;
 	if (
 		input.amenities !== undefined &&
 		(!Array.isArray(input.amenities) ||
@@ -123,6 +138,83 @@ export function gymFormError(input: GymInput): string | null {
 	)
 		return 'validation.amenities';
 	return gymImagesError(input.gymImages) ?? gymOpeningHoursError(input.openingHours);
+}
+
+export interface GymEditorDraft extends Omit<GymInput, 'gymLocation'> {
+	gymLocation: GymLocation | '';
+	gymStatus: GymStatus;
+	amenities: GymAmenity[];
+	openingHours: GymOpeningHoursDayInput[] | null;
+}
+
+export function gymEditorId(value: unknown): string {
+	return typeof value === 'string' && /^[a-f\d]{24}$/i.test(value) ? value.toLowerCase() : '';
+}
+
+export function gymEditorDraft(gym?: AdminGym): GymEditorDraft {
+	return {
+		gymName: gym?.gymName ?? '',
+		gymLocation: gym?.gymLocation ?? '',
+		gymAddress: gym?.gymAddress ?? '',
+		gymDesc: gym?.gymDesc ?? null,
+		gymPhone: gym?.gymPhone ?? null,
+		gymImages: [...(gym?.gymImages ?? [])],
+		amenities: [...(gym?.amenities ?? [])],
+		openingHours:
+			gym?.openingHours?.map((day) => ({
+				dayOfWeek: day.dayOfWeek,
+				isClosed: day.isClosed,
+				openTime: day.openTime,
+				closeTime: day.closeTime,
+			})) ?? null,
+		gymStatus: gym?.gymStatus ?? GymStatus.PAUSED,
+	};
+}
+
+// Dirty comparison also works for incomplete drafts; image order is meaningful, amenity order is not.
+export function gymEditorKey(draft: GymEditorDraft): string {
+	return JSON.stringify({
+		gymName: draft.gymName.trim(),
+		gymLocation: draft.gymLocation,
+		gymAddress: draft.gymAddress.trim(),
+		gymDesc: normalizeGymOptionalText(draft.gymDesc),
+		gymPhone: normalizeGymOptionalText(draft.gymPhone),
+		gymImages: draft.gymImages,
+		amenities: Array.from(new Set(draft.amenities)).sort(),
+		gymStatus: draft.gymStatus,
+		openingHours:
+			draft.openingHours === null
+				? null
+				: [...draft.openingHours]
+						.sort(
+							(left, right) =>
+								Object.values(TrainerScheduleDayOfWeek).indexOf(left.dayOfWeek) -
+								Object.values(TrainerScheduleDayOfWeek).indexOf(right.dayOfWeek),
+						)
+						.map((day) => ({
+							dayOfWeek: day.dayOfWeek,
+							isClosed: day.isClosed,
+							openTime: day.isClosed ? null : day.openTime ?? '',
+							closeTime: day.isClosed ? null : day.closeTime ?? '',
+						})),
+	});
+}
+
+export function gymEditorReceipt(gym: AdminGym | null | undefined): gym is AdminGym {
+	if (
+		!gym ||
+		!gymEditorId(gym._id) ||
+		!Object.values(GymStatus).includes(gym.gymStatus) ||
+		!Number.isInteger(gym.gymRevision) ||
+		gym.gymRevision < 0 ||
+		gym.gymRevision > 2147483647
+	)
+		return false;
+	try {
+		return !gymFormError(gymEditorDraft(gym) as GymInput);
+	} catch {
+		return false;
+	}
 }
 
 // Whitelist a complete form's editable fields. Omitted optionals remain omitted so that
