@@ -2,6 +2,13 @@ import { Direction } from './enums/common.enum';
 import { GymAmenity, GymLocation } from './enums/gym.enum';
 import { GymsInquiry } from './types/gym/gym.input';
 
+export function isGymImagePath(value: unknown): value is string {
+	return (
+		typeof value === 'string' &&
+		/^uploads\/gym\/[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}\.(jpg|png|webp)$/.test(value)
+	);
+}
+
 export const initialGymsInquiry: GymsInquiry = {
 	page: 1,
 	limit: 9,

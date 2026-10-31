@@ -1,6 +1,19 @@
 {
 	"catalog": {
 		"title": "헬스장",
+		"eyebrow": "GymFlow 공간",
+		"description": "전국의 피트니스 센터와 각 공간에서 제공하는 프로그램 및 트레이너를 둘러보세요.",
+		"descriptionMobile": "전국의 피트니스 센터를 둘러보세요.",
+		"search": "검색",
+		"coverAlt": "{{name}} 대표 사진",
+		"moreAmenities": "추가 편의시설: {{count}}개",
+		"results_one": "헬스장 {{count}}곳",
+		"results_few": "헬스장 {{count}}곳",
+		"results_many": "헬스장 {{count}}곳",
+		"results_other": "헬스장 {{count}}곳",
+		"emptyDescription": "이용 가능한 헬스장이 등록되면 여기에 표시됩니다.",
+		"filteredEmptyDescription": "검색어나 필터를 조정해 보세요.",
+		"pageEmpty": "이 페이지에 헬스장이 없습니다",
 		"intro": "나의 운동에 맞는 헬스장을 찾아보세요",
 		"searchPlaceholder": "헬스장 이름으로 검색",
 		"viewGym": "헬스장 보기",
@@ -10,6 +23,11 @@
 		"error": "헬스장 목록을 불러오지 못했습니다. 다시 시도해 주세요."
 	},
 	"filters": {
+		"title": "필터",
+		"applied": "적용된 필터",
+		"remove": "{{name}} 필터 해제",
+		"close": "필터 닫기",
+		"clearFilters": "필터 지우기",
 		"location": "지역",
 		"amenities": "편의시설",
 		"amenitiesHint": "선택한 편의시설을 모두 포함",
@@ -17,7 +35,11 @@
 		"clearAll": "모두 지우기",
 		"apply": "필터 적용"
 	},
-	"sort": { "newest": "최신순", "updated": "최근 수정순" },
+	"sort": { "label": "정렬", "newest": "최신순", "updated": "최근 수정순" },
+	"pagination": {
+		"label": "헬스장 페이지 이동", "previous": "이전", "next": "다음",
+		"page": "{{page}} / {{total}} 페이지", "first": "첫 페이지", "goToPage": "{{page}}페이지로 이동"
+	},
 	"retry": "다시 시도",
 	"detail": {
 		"back": "헬스장 목록으로",

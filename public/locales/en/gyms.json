@@ -1,6 +1,19 @@
 {
 	"catalog": {
 		"title": "Gyms",
+		"eyebrow": "GymFlow Places",
+		"description": "Discover fitness centers across Korea and explore the programs and trainers available at each location.",
+		"descriptionMobile": "Discover fitness centers across Korea.",
+		"search": "Search",
+		"coverAlt": "Cover photo of {{name}}",
+		"moreAmenities": "Additional amenities: {{count}}",
+		"results_one": "{{count}} gym",
+		"results_few": "{{count}} gyms",
+		"results_many": "{{count}} gyms",
+		"results_other": "{{count}} gyms",
+		"emptyDescription": "Public gyms will appear here when they become available.",
+		"filteredEmptyDescription": "Try adjusting your search or filters.",
+		"pageEmpty": "No gyms on this page",
 		"intro": "Find a gym that fits your training",
 		"searchPlaceholder": "Search gyms by name",
 		"viewGym": "View Gym",
@@ -10,6 +23,11 @@
 		"error": "Could not load gyms. Please try again."
 	},
 	"filters": {
+		"title": "Filters",
+		"applied": "Applied filters",
+		"remove": "Remove {{name}} filter",
+		"close": "Close filters",
+		"clearFilters": "Clear filters",
 		"location": "Location",
 		"amenities": "Amenities",
 		"amenitiesHint": "Includes all selected amenities",
@@ -17,7 +35,11 @@
 		"clearAll": "Clear all",
 		"apply": "Apply filters"
 	},
-	"sort": { "newest": "Newest", "updated": "Recently updated" },
+	"sort": { "label": "Sort by", "newest": "Newest", "updated": "Recently updated" },
+	"pagination": {
+		"label": "Gym pagination", "previous": "Previous", "next": "Next",
+		"page": "Page {{page}} of {{total}}", "first": "First page", "goToPage": "Go to page {{page}}"
+	},
 	"retry": "Retry",
 	"detail": {
 		"back": "Back to Gyms",

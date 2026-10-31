@@ -2,6 +2,7 @@ import { GymAmenity, GymLocation, GymStatus } from './enums/gym.enum';
 import { TrainerScheduleDayOfWeek } from './enums/trainer-schedule.enum';
 import { AdminGym, GymOpeningHoursDay } from './types/gym/gym';
 import { GymInput, GymOpeningHoursDayInput } from './types/gym/gym.input';
+import { isGymImagePath } from './gym';
 
 export const gymStatusLabelKeys: Record<GymStatus, string> = {
 	ACTIVE: 'lifecycle.active',
@@ -21,8 +22,7 @@ export function gymImagesError(images: readonly string[]): string | null {
 	if (!Array.isArray(images) || images.length < 1) return 'photos.minimum';
 	if (images.length > 5) return 'photos.maximum';
 	if (new Set(images).size !== images.length) return 'photos.duplicate';
-	const path = /^uploads\/gym\/[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}\.(jpg|png|webp)$/;
-	if (Array.from(images).some((image) => typeof image !== 'string' || !path.test(image))) return 'photos.invalidPath';
+	if (Array.from(images).some((image) => !isGymImagePath(image))) return 'photos.invalidPath';
 	return null;
 }
 
