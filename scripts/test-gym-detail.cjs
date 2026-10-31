@@ -186,7 +186,13 @@ async function main() {
 		};
 		const originalRules = detailRules(originalDetailCss), currentRules = detailRules(detailCss);
 		for (const [key, rule] of originalRules) assert.deepEqual(currentRules.get(key), rule, 'Existing Gym gallery/Program/layout rule changed: ' + key);
-		const compactRules = [...currentRules].filter(([key]) => !originalRules.has(key)).map(([, rule]) => rule);
+		const approvedDetailCss = sass.compileString(execFileSync('git', ['show', 'c622a2dca3dd1fd2347d86402808b438436b6404:scss/pc/gym/detail.scss'], { cwd: rootPath, encoding: 'utf8' }), { logger: sass.Logger.silent }).css;
+		const approvedRules = detailRules(approvedDetailCss);
+		for (const [key, rule] of approvedRules) assert.deepEqual(currentRules.get(key), rule, 'Approved G6I/Gym rule changed: ' + key);
+		const programRules = [...currentRules].filter(([key]) => !approvedRules.has(key)).map(([, rule]) => rule);
+		assert(programRules.length > 0);
+		for (const rule of programRules) assert(rule.selector.startsWith('#pc-wrap.gym-detail-layout #gym-detail-page .gym-detail-programs '), 'G6J styles escaped Gym Detail Programs: ' + rule.selector);
+		const compactRules = [...currentRules].filter(([key]) => !originalRules.has(key) && approvedRules.has(key)).map(([, rule]) => rule);
 		assert(compactRules.length > 0);
 		for (const rule of compactRules) assert(rule.selector.startsWith('#pc-wrap.gym-detail-layout #gym-detail-page .gym-detail-trainers '), 'Compact styles escaped Gym Detail trainers: ' + rule.selector);
 		pass('G6I additions are confined to Gym Detail trainers; all original Gym/Program/gallery declarations remain identical');
@@ -210,6 +216,23 @@ async function main() {
 		}
 		const programCss = sass.compileString('$font: sans-serif; ' + fs.readFileSync(path.join(rootPath, 'scss/pc/program/program.scss'), 'utf8'), { logger: sass.Logger.silent }).css;
 		assert(programCss.includes('#pc-wrap.gym-detail-layout .gym-detail-programs .discovery-program-card')); pass('existing Program card styles include detail context through the same shared selector group');
+		for (const width of [1440, 768, 390]) {
+			const scoped = (selector) => Object.assign({}, ...programRules.filter(rule => rule.selector.endsWith(selector) && rule.media.every(query => [...query.matchAll(/\((min|max)-width:\s*([\d.]+)px\)/g)].every(([, bound, value]) => bound === 'min' ? width >= Number(value) : width <= Number(value)))).map(rule => rule.declarations));
+			const columns = width >= 1024 ? 3 : width >= 768 ? 2 : 1;
+			assert.equal(scoped(' .gym-child-grid')['grid-template-columns'], width < 768 ? 'minmax(0, 1fr)' : `repeat(${columns}, minmax(0, 340px))`);
+			assert.equal(scoped(' .gym-child-grid')['align-items'], 'start');
+			assert.equal(scoped(' .discovery-program-card').height, 'auto');
+			assert.equal(scoped(' .discovery-card-media')['flex-shrink'], '0');
+			assert.equal(scoped(' .discovery-card-media').overflow, 'hidden');
+			assert.equal(scoped(' .discovery-card-image').position, 'absolute');
+			assert.equal(scoped(' .discovery-card-image').inset, '0');
+			assert.equal(scoped(' .discovery-card-body').flex, '0 1 auto');
+			assert.equal(scoped(' .discovery-card-footer')['margin-top'], '0');
+			const container = Math.min(1232, width - (width < 768 ? 32 : 48));
+			assert((width < 768 ? container : 340) * columns + 24 * (columns - 1) <= container);
+			pass(`G6J ${width}px compact Program tracks, contained media and natural body/footer flow without horizontal overflow`);
+		}
+		pass('G6J preserves every approved G6I trainer rule and confines all additions to Gym Detail Programs');
 		const Venue = load('libs/components/program/ProgramGymVenue.tsx', mocks).default;
 		const linked = { ...program(id(1), 0), gymId: id(1), gymData: gym(id(1)) };
 		for (const locale of ['en', 'kr', 'ru']) {
