@@ -23,6 +23,7 @@ const withLayoutBasic = (Component: any) => {
 		const user = useReactiveVar(userVar);
 		const compactViewport = useMediaQuery('(max-width:767px)');
 		const gymCatalog = router.pathname === '/gym';
+		const gymDetail = router.pathname === '/gym/detail';
 		const compactTrainer = compactViewport && router.pathname === '/trainer';
 		const trainerDetail = router.pathname === '/trainer/detail';
 		const compactTrainerDetail = compactViewport && trainerDetail;
@@ -47,7 +48,7 @@ const withLayoutBasic = (Component: any) => {
 		const trainerApplication = router.pathname === '/mypage' && router.query.category === 'trainerApplication';
 		const theme = useTheme();
 		const programTheme = useMemo(() => {
-			if (router.pathname !== '/program' && !gymCatalog && !helpCenter && !communityDiscovery && !communityArticle && !communityWrite && !communityMyArticles && !myBookings && !userProfile && !userFavorites && !trainerReservations && !trainerDashboard && !trainerProfile && !trainerPrograms && !trainerProgramEditor && !trainerApplication) return theme;
+			if (router.pathname !== '/program' && !gymCatalog && !gymDetail && !helpCenter && !communityDiscovery && !communityArticle && !communityWrite && !communityMyArticles && !myBookings && !userProfile && !userFavorites && !trainerReservations && !trainerDashboard && !trainerProfile && !trainerPrograms && !trainerProgramEditor && !trainerApplication) return theme;
 			const fontFamily = "'Plus Jakarta Sans', sans-serif";
 			const typography = Object.fromEntries(
 				Object.entries(theme.typography).map(([variant, value]) => [
@@ -61,7 +62,7 @@ const withLayoutBasic = (Component: any) => {
 				},
 				typography: { ...typography, fontFamily },
 			});
-		}, [theme, router.pathname, gymCatalog, helpCenter, communityDiscovery, communityArticle, communityWrite, communityMyArticles, myBookings, userProfile, userFavorites, trainerReservations, trainerDashboard, trainerProfile, trainerPrograms, trainerProgramEditor, trainerApplication]);
+		}, [theme, router.pathname, gymCatalog, gymDetail, helpCenter, communityDiscovery, communityArticle, communityWrite, communityMyArticles, myBookings, userProfile, userFavorites, trainerReservations, trainerDashboard, trainerProfile, trainerPrograms, trainerProgramEditor, trainerApplication]);
 
 		const memoizedValues = useMemo(() => {
 			let title = '',
@@ -154,7 +155,7 @@ const withLayoutBasic = (Component: any) => {
 			);
 		}
 
-		if (router.pathname === '/program' || gymCatalog || helpCenter || compactTrainer || trainerDetail || communityDiscovery || communityArticle || communityWrite || communityMyArticles || myBookings || userProfile || userFavorites || trainerApplication) {
+		if (router.pathname === '/program' || gymCatalog || gymDetail || helpCenter || compactTrainer || trainerDetail || communityDiscovery || communityArticle || communityWrite || communityMyArticles || myBookings || userProfile || userFavorites || trainerApplication) {
 			return (
 				<ThemeProvider theme={programTheme}>
 					<Head>
@@ -167,7 +168,7 @@ const withLayoutBasic = (Component: any) => {
 					</Head>
 					<Stack
 						id="pc-wrap"
-						className={`program-discovery-layout${gymCatalog ? ' gym-catalog-layout' : ''}${helpCenter ? ' help-center-layout' : ''}${compactTrainer || trainerDetail ? ' trainer-discovery-layout' : ''}${
+						className={`program-discovery-layout${gymCatalog ? ' gym-catalog-layout' : ''}${gymDetail ? ' gym-detail-layout' : ''}${helpCenter ? ' help-center-layout' : ''}${compactTrainer || trainerDetail ? ' trainer-discovery-layout' : ''}${
 							trainerDetail ? ' trainer-detail-layout' : ''
 						}${device === 'mobile' || compactTrainer ? ' is-mobile' : ''}${communityDiscovery ? ' community-discovery-layout' : ''}${communityArticle ? ' community-article-layout' : ''}${communityWrite ? ' community-write-layout' : ''}${communityMyArticles ? ' community-my-articles-layout' : ''}${myBookings ? ' my-bookings-layout' : ''}${userProfile ? ' user-profile-layout' : ''}${userFavorites ? ' user-favorites-layout' : ''}`}
 					>

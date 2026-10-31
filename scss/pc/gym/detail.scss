@@ -1,0 +1,471 @@
+#pc-wrap.gym-detail-layout {
+	background: #f7f8fa;
+	--trainer-font: 'Plus Jakarta Sans', sans-serif;
+	#gym-detail-page {
+		padding: 24px 24px 80px;
+		color: #17191f;
+		font-family: 'Plus Jakarta Sans', sans-serif;
+		line-height: 1.6;
+		*,
+		*::before,
+		*::after {
+			box-sizing: border-box;
+		}
+		h1,
+		h2,
+		p {
+			margin: 0;
+		}
+		a {
+			text-decoration: none;
+		}
+		.gym-detail-container {
+			width: 100%;
+			max-width: 1232px;
+			min-width: 0;
+			margin: 0 auto;
+		}
+		.gym-detail-back {
+			display: inline-flex;
+			align-items: center;
+			gap: 6px;
+			min-height: 44px;
+			margin-bottom: 16px;
+			color: #4f5661;
+			font-size: 13px;
+		}
+		.gym-detail-back svg {
+			width: 18px;
+		}
+		.gym-gallery-grid {
+			display: grid;
+			grid-template-columns: 2.8fr 1fr 1fr;
+			grid-template-rows: repeat(2, minmax(0, 1fr));
+			gap: 8px;
+			height: clamp(300px, 34vw, 520px);
+		}
+		.gym-gallery-cell {
+			min-width: 0;
+			min-height: 0;
+			overflow: hidden;
+			border-radius: 12px;
+			background: #e7e9ee;
+		}
+		.gym-gallery-cell:first-child {
+			grid-row: 1 / span 2;
+		}
+		.gym-gallery img {
+			display: block;
+			width: 100%;
+			height: 100%;
+			object-fit: cover;
+		}
+		.gym-gallery-fallback {
+			display: grid;
+			place-items: center;
+			width: 100%;
+			height: 100%;
+			background: #e7e9ee;
+			color: #737985;
+		}
+		.gym-gallery.is-count-0 .gym-gallery-cell,
+		.gym-gallery.is-count-1 .gym-gallery-cell {
+			grid-column: 1 / -1;
+		}
+		.gym-gallery.is-count-2 .gym-gallery-cell:first-child,
+		.gym-gallery.is-count-3 .gym-gallery-cell:first-child {
+			grid-column: 1 / span 2;
+		}
+		.gym-gallery.is-count-2 .gym-gallery-cell:last-child {
+			grid-row: 1 / span 2;
+		}
+		.gym-gallery.is-count-4 .gym-gallery-cell:last-child {
+			grid-column: 2 / -1;
+		}
+		.gym-detail-identity {
+			display: flex;
+			justify-content: space-between;
+			align-items: center;
+			gap: 24px;
+			margin: 32px 0 40px;
+			padding: 24px;
+			border-radius: 12px;
+			background: #fff;
+		}
+		.gym-detail-identity > div {
+			min-width: 0;
+		}
+		h1 {
+			font-size: clamp(26px, 3vw, 36px);
+			line-height: 1.25;
+			font-weight: 700;
+			letter-spacing: -0.03em;
+			overflow-wrap: anywhere;
+			text-wrap: balance;
+		}
+		.gym-detail-identity p {
+			color: #646b76;
+			font-size: 13px;
+			overflow-wrap: anywhere;
+		}
+		.gym-detail-identity .gym-detail-location {
+			margin: 8px 0 2px;
+			color: #a53425;
+			font-size: 12px;
+			font-weight: 600;
+		}
+		.gym-browse-programs {
+			display: inline-flex;
+			align-items: center;
+			justify-content: center;
+			gap: 8px;
+			flex-shrink: 0;
+			min-height: 48px;
+			max-width: 100%;
+			padding: 12px 20px;
+			border-radius: 6px;
+			background: #eb6753;
+			color: #12151d;
+			font-size: 14px;
+			font-weight: 600;
+			text-align: center;
+			overflow-wrap: anywhere;
+		}
+		.gym-browse-programs svg {
+			width: 18px;
+			flex-shrink: 0;
+		}
+		.gym-detail-information {
+			display: grid;
+			grid-template-columns: minmax(0, 2fr) minmax(280px, 1fr);
+			gap: 48px;
+		}
+		.gym-detail-overview,
+		.gym-detail-practical {
+			display: flex;
+			flex-direction: column;
+			gap: 32px;
+			min-width: 0;
+		}
+		.gym-detail-information h2 {
+			margin-bottom: 14px;
+			font-size: 22px;
+			line-height: 1.4;
+			letter-spacing: -0.02em;
+		}
+		.gym-detail-about p {
+			font-size: 15px;
+			line-height: 1.8;
+			color: #646b76;
+			white-space: pre-line;
+			overflow-wrap: anywhere;
+			max-width: 70ch;
+		}
+		.gym-detail-amenities ul {
+			list-style: none;
+			padding: 0;
+			margin: 0;
+			display: grid;
+			grid-template-columns: repeat(3, minmax(0, 1fr));
+			gap: 12px;
+		}
+		.gym-detail-amenities li {
+			display: flex;
+			align-items: center;
+			gap: 10px;
+			padding: 16px;
+			background: #fff;
+			border-radius: 8px;
+			font-size: 13px;
+			min-width: 0;
+			overflow-wrap: anywhere;
+		}
+		.gym-detail-amenities svg {
+			color: #a53425;
+			width: 22px;
+			flex-shrink: 0;
+		}
+		.gym-detail-hours,
+		.gym-detail-contact {
+			padding: 24px;
+			background: #fff;
+			border-radius: 12px;
+		}
+		.gym-detail-practical h2 {
+			font-size: 18px;
+			margin-bottom: 8px;
+		}
+		.gym-detail-hours .gym-detail-timezone {
+			margin-bottom: 16px;
+			font-size: 11px;
+			color: #646b76;
+		}
+		.gym-detail-hours > p {
+			color: #646b76;
+			font-size: 13px;
+		}
+		.gym-detail-hours dl {
+			margin: 0;
+			display: flex;
+			flex-direction: column;
+			gap: 12px;
+		}
+		.gym-detail-hours dl > div {
+			display: flex;
+			justify-content: space-between;
+			align-items: baseline;
+			gap: 8px 16px;
+			flex-wrap: wrap;
+		}
+		.gym-detail-hours dt {
+			color: #646b76;
+			font-size: 12px;
+		}
+		.gym-detail-hours dd {
+			margin: 0;
+			font-size: 12px;
+			font-variant-numeric: tabular-nums;
+		}
+		.gym-detail-contact p {
+			color: #4f5661;
+			font-size: 14px;
+			overflow-wrap: anywhere;
+		}
+		.gym-detail-contact a {
+			display: inline-flex;
+			align-items: center;
+			gap: 6px;
+			min-height: 44px;
+			color: #a53425;
+			font-size: 14px;
+			font-weight: 600;
+		}
+		.gym-detail-contact svg {
+			width: 18px;
+		}
+		.gym-detail-offerings {
+			margin-top: 64px;
+			scroll-margin-top: calc(88px + env(safe-area-inset-top, 0px));
+		}
+		.gym-detail-offerings > header {
+			margin-bottom: 24px;
+		}
+		.gym-detail-offerings > header h2 {
+			font-size: clamp(24px, 3vw, 32px);
+			line-height: 1.35;
+			letter-spacing: -0.03em;
+			font-weight: 700;
+		}
+		.gym-detail-offerings > header p {
+			margin-top: 8px;
+			font-size: 14px;
+			color: #646b76;
+		}
+		.gym-detail-trainers > header h2 {
+			font-size: clamp(22px, 2.6vw, 28px);
+		}
+		.gym-child-grid {
+			display: grid;
+			grid-template-columns: repeat(3, minmax(0, 1fr));
+			gap: 24px;
+			min-width: 0;
+		}
+		.gym-section-pagination {
+			display: flex;
+			justify-content: center;
+			align-items: center;
+			gap: 12px;
+			margin-top: 24px;
+		}
+		.gym-section-pagination .MuiPaginationItem-root,
+		.gym-section-pagination .MuiButton-root {
+			min-width: 44px;
+			min-height: 44px;
+			border-radius: 8px;
+			text-transform: none;
+		}
+		.gym-section-pagination .MuiPagination-ul {
+			justify-content: center;
+			flex-wrap: wrap;
+		}
+		.gym-section-pagination .Mui-selected {
+			background: #eb6753;
+			color: #12151d;
+		}
+		.gym-section-state,
+		.gym-detail-state {
+			display: flex;
+			align-items: center;
+			flex-direction: column;
+			justify-content: center;
+			gap: 16px;
+			padding: 48px 24px;
+			text-align: center;
+			background: #fff;
+			border-radius: 12px;
+		}
+		.gym-detail-state {
+			min-height: 360px;
+		}
+		.gym-detail-state h1 {
+			font-size: 28px;
+		}
+		.gym-section-state p,
+		.gym-detail-state p {
+			font-size: 14px;
+			color: #646b76;
+			max-width: 55ch;
+		}
+		.gym-detail-state > div {
+			display: flex;
+			flex-wrap: wrap;
+			justify-content: center;
+			gap: 12px;
+		}
+		.gym-detail-state a,
+		.gym-section-state .MuiButton-root,
+		.gym-detail-state .MuiButton-root {
+			display: inline-flex;
+			align-items: center;
+			justify-content: center;
+			padding: 10px 16px;
+			min-height: 44px;
+			background: #eb6753;
+			color: #12151d;
+			border-radius: 6px;
+			font-size: 14px;
+			text-transform: none;
+		}
+		.gym-detail-skeleton .gym-gallery-skeleton {
+			height: clamp(300px, 34vw, 520px);
+			border-radius: 12px;
+		}
+		.gym-identity-skeleton {
+			padding: 24px 0;
+		}
+		.gym-info-skeleton {
+			display: grid;
+			grid-template-columns: repeat(3, minmax(0, 1fr));
+			gap: 32px;
+		}
+		.gym-section-skeleton {
+			margin-top: 48px;
+		}
+		.gym-child-skeleton {
+			height: 340px;
+			border-radius: 12px;
+		}
+		@media (max-width: 1023px) {
+			.gym-detail-identity {
+				align-items: flex-start;
+				flex-direction: column;
+			}
+			.gym-detail-information {
+				grid-template-columns: minmax(0, 1.25fr) minmax(260px, 1fr);
+				gap: 24px;
+			}
+			.gym-detail-amenities ul,
+			.gym-child-grid {
+				grid-template-columns: repeat(2, minmax(0, 1fr));
+			}
+		}
+		@media (max-width: 767px) {
+			padding: 12px 16px 48px;
+			.gym-detail-back {
+				margin-bottom: 12px;
+			}
+			.gym-gallery-track {
+				display: flex;
+				overflow-x: auto;
+				scroll-snap-type: x mandatory;
+				overscroll-behavior-x: contain;
+				scrollbar-width: thin;
+				border-radius: 12px;
+			}
+			.gym-gallery-slide {
+				flex: 0 0 100%;
+				min-width: 0;
+				aspect-ratio: 16 / 10;
+				scroll-snap-align: start;
+				overflow: hidden;
+				background: #e7e9ee;
+			}
+			.gym-gallery-controls {
+				display: flex;
+				align-items: center;
+				justify-content: center;
+				gap: 12px;
+				margin-top: 4px;
+				font-size: 12px;
+				font-variant-numeric: tabular-nums;
+			}
+			.gym-gallery-controls button {
+				width: 44px;
+				height: 44px;
+			}
+			.gym-detail-identity {
+				margin: 24px 0 32px;
+				padding: 0;
+				background: transparent;
+				gap: 16px;
+			}
+			.gym-browse-programs {
+				width: 100%;
+			}
+			.gym-detail-information {
+				display: flex;
+				flex-direction: column;
+				gap: 28px;
+			}
+			.gym-detail-overview,
+			.gym-detail-practical {
+				gap: 28px;
+			}
+			.gym-detail-information h2 {
+				font-size: 20px;
+			}
+			.gym-detail-amenities li {
+				padding: 12px;
+				gap: 8px;
+			}
+			.gym-detail-hours,
+			.gym-detail-contact {
+				padding: 20px;
+			}
+			.gym-detail-offerings {
+				margin-top: 40px;
+			}
+			.gym-child-grid,
+			.gym-info-skeleton {
+				grid-template-columns: minmax(0, 1fr);
+				gap: 20px;
+			}
+			.gym-section-pagination {
+				justify-content: space-between;
+				gap: 8px;
+				font-size: 12px;
+				font-variant-numeric: tabular-nums;
+			}
+			.gym-section-pagination > span {
+				text-align: center;
+				overflow-wrap: anywhere;
+			}
+			.gym-section-pagination > button {
+				flex-shrink: 0;
+				background: #fff;
+				color: #17191f;
+				padding: 8px 12px;
+			}
+			.gym-section-pagination .Mui-disabled {
+				color: #737985;
+			}
+			.gym-detail-skeleton .gym-gallery-skeleton {
+				height: auto;
+				aspect-ratio: 16 / 10;
+			}
+			.gym-info-skeleton > div {
+				min-height: 130px;
+			}
+		}
+	}
+}

@@ -1,3 +1,222 @@
+#pc-wrap.trainer-discovery-layout .trainer-list-page .trainer-discovery-card,
+#mobile-wrap.trainer-discovery-layout .trainer-list-page .trainer-discovery-card,
+#pc-wrap.gym-detail-layout .trainer-discovery-card {
+	min-width: 0;
+	border-radius: 12px;
+	overflow: hidden;
+	background: #fff;
+	box-shadow: 0 2px 8px rgba(18, 21, 29, 0.06);
+	.trainer-card-media {
+		position: relative;
+	}
+	.trainer-card-like {
+		position: absolute;
+		top: 12px;
+		right: 12px;
+		min-width: 64px;
+		min-height: 44px;
+		gap: 6px;
+		padding: 8px 12px;
+		border-radius: 24px;
+		color: #595f6a;
+		background: #fff;
+		font-size: 13px;
+		font-weight: 600;
+		font-variant-numeric: tabular-nums;
+		svg {
+			font-size: 19px;
+		}
+		&:hover {
+			background: #f2f4f6;
+		}
+		&[aria-pressed='true'] {
+			color: #a53425;
+		}
+	}
+	.trainer-card-photo {
+		display: block;
+		aspect-ratio: 4 / 3;
+		background: #e7e8ea;
+		overflow: hidden;
+		flex-shrink: 0;
+		img {
+			display: block;
+			width: 100%;
+			height: 100%;
+			object-fit: cover;
+			object-position: center;
+		}
+		img[src='/img/profile/defaultUser.svg'] {
+			object-fit: contain;
+			padding: 48px;
+		}
+		&:focus-visible {
+			outline-offset: -4px;
+		}
+	}
+	.trainer-card-body {
+		padding: 20px;
+		display: flex;
+		flex-direction: column;
+		gap: 16px;
+		flex: 1;
+		min-width: 0;
+	}
+	.trainer-card-copy {
+		flex: 1;
+		min-width: 0;
+	}
+	.trainer-card-heading {
+		display: flex;
+		flex-wrap: wrap;
+		justify-content: space-between;
+		align-items: baseline;
+		gap: 4px 12px;
+		margin-bottom: 8px;
+		h2 {
+			min-width: 0;
+			margin: 0;
+			font-size: 18px;
+			font-weight: 700;
+			line-height: 1.45;
+			letter-spacing: -0.02em;
+			overflow-wrap: anywhere;
+		}
+		h2 a {
+			color: #12151d;
+			&:hover {
+				color: #a53425;
+			}
+		}
+		.trainer-card-nickname {
+			min-width: 0;
+			color: #595f6a;
+			font-size: 12px;
+			line-height: 1.5;
+			overflow-wrap: anywhere;
+		}
+	}
+	.trainer-card-address {
+		display: flex;
+		align-items: flex-start;
+		gap: 4px;
+		margin: 0 0 8px;
+		color: #595f6a;
+		font-size: 13px;
+		line-height: 1.5;
+		svg {
+			color: #a53425;
+			font-size: 18px;
+			flex-shrink: 0;
+		}
+		span {
+			line-height: inherit;
+			overflow-wrap: anywhere;
+		}
+	}
+	.trainer-card-description {
+		margin: 0;
+		color: #5b5e68;
+		font-size: 14px;
+		line-height: 1.6;
+		overflow-wrap: anywhere;
+		display: -webkit-box;
+		-webkit-line-clamp: 2;
+		-webkit-box-orient: vertical;
+		overflow: hidden;
+	}
+	.trainer-card-stats {
+		display: grid;
+		grid-template-columns: repeat(3, minmax(0, 1fr));
+		gap: 12px;
+		margin: 0;
+		padding: 12px;
+		background: #f2f4f6;
+		border-radius: 8px;
+		> div {
+			display: flex;
+			flex-direction: column;
+			align-items: center;
+			text-align: center;
+			gap: 4px 8px;
+			min-width: 0;
+		}
+		dt {
+			font-size: 12px;
+			line-height: 1.5;
+			color: #595f6a;
+			overflow-wrap: anywhere;
+		}
+		dd {
+			margin: 0;
+			font-size: 14px;
+			line-height: 1.5;
+			font-weight: 700;
+			font-variant-numeric: tabular-nums;
+			overflow-wrap: anywhere;
+		}
+	}
+	.trainer-card-actions {
+		display: flex;
+		align-items: stretch;
+		gap: 8px;
+		min-width: 0;
+		.trainer-card-profile {
+			display: flex;
+			justify-content: center;
+			align-items: center;
+			gap: 8px;
+			flex: 1;
+			min-width: 0;
+			min-height: 44px;
+			padding: 10px 14px;
+			border-radius: 24px;
+			background: #12151d;
+			color: #fff;
+			font-size: 14px;
+			line-height: 1.5;
+			font-weight: 600;
+			text-align: center;
+			svg {
+				font-size: 18px;
+				flex-shrink: 0;
+			}
+			&:hover {
+				background: #2e313b;
+			}
+		}
+		.trainer-card-follow {
+			min-width: 0;
+			gap: 6px;
+			padding: 8px 12px;
+			border-radius: 24px;
+			color: #12151d;
+			background: #f2f4f6;
+			font-size: 13px;
+			line-height: 1.5;
+			font-weight: 600;
+			text-transform: none;
+			flex: 1;
+			span {
+				overflow-wrap: anywhere;
+			}
+			svg {
+				font-size: 19px;
+				flex-shrink: 0;
+			}
+			&:hover {
+				background: #edeef0;
+			}
+			&[aria-pressed='true'] {
+				color: #a53425;
+				background: #fcece8;
+			}
+			&.Mui-disabled {
+				opacity: 0.6;
+			}
+		}
+	}
+}
 #pc-wrap.trainer-discovery-layout {
 	#top .navbar .navbar-main {
 		background: #12151d;
@@ -172,218 +391,6 @@
 			overflow: hidden;
 			background: #fff;
 			box-shadow: 0 2px 8px rgba(18, 21, 29, 0.06);
-		}
-		.trainer-discovery-card {
-			.trainer-card-media {
-				position: relative;
-			}
-			.trainer-card-like {
-				position: absolute;
-				top: 12px;
-				right: 12px;
-				min-width: 64px;
-				min-height: 44px;
-				gap: 6px;
-				padding: 8px 12px;
-				border-radius: 24px;
-				color: #595f6a;
-				background: #fff;
-				font-size: 13px;
-				font-weight: 600;
-				font-variant-numeric: tabular-nums;
-				svg {
-					font-size: 19px;
-				}
-				&:hover {
-					background: #f2f4f6;
-				}
-				&[aria-pressed='true'] {
-					color: #a53425;
-				}
-			}
-			.trainer-card-photo {
-				display: block;
-				aspect-ratio: 4 / 3;
-				background: #e7e8ea;
-				overflow: hidden;
-				flex-shrink: 0;
-				img {
-					display: block;
-					width: 100%;
-					height: 100%;
-					object-fit: cover;
-					object-position: center;
-				}
-				img[src='/img/profile/defaultUser.svg'] {
-					object-fit: contain;
-					padding: 48px;
-				}
-				&:focus-visible {
-					outline-offset: -4px;
-				}
-			}
-			.trainer-card-body {
-				padding: 20px;
-				display: flex;
-				flex-direction: column;
-				gap: 16px;
-				flex: 1;
-				min-width: 0;
-			}
-			.trainer-card-copy {
-				flex: 1;
-				min-width: 0;
-			}
-			.trainer-card-heading {
-				display: flex;
-				flex-wrap: wrap;
-				justify-content: space-between;
-				align-items: baseline;
-				gap: 4px 12px;
-				margin-bottom: 8px;
-				h2 {
-					min-width: 0;
-					margin: 0;
-					font-size: 18px;
-					font-weight: 700;
-					line-height: 1.45;
-					letter-spacing: -0.02em;
-					overflow-wrap: anywhere;
-				}
-				h2 a {
-					color: #12151d;
-					&:hover {
-						color: #a53425;
-					}
-				}
-				.trainer-card-nickname {
-					min-width: 0;
-					color: #595f6a;
-					font-size: 12px;
-					line-height: 1.5;
-					overflow-wrap: anywhere;
-				}
-			}
-			.trainer-card-address {
-				display: flex;
-				align-items: flex-start;
-				gap: 4px;
-				margin: 0 0 8px;
-				color: #595f6a;
-				font-size: 13px;
-				line-height: 1.5;
-				svg {
-					color: #a53425;
-					font-size: 18px;
-					flex-shrink: 0;
-				}
-				span {
-					line-height: inherit;
-					overflow-wrap: anywhere;
-				}
-			}
-			.trainer-card-description {
-				margin: 0;
-				color: #5b5e68;
-				font-size: 14px;
-				line-height: 1.6;
-				overflow-wrap: anywhere;
-				display: -webkit-box;
-				-webkit-line-clamp: 2;
-				-webkit-box-orient: vertical;
-				overflow: hidden;
-			}
-			.trainer-card-stats {
-				display: grid;
-				grid-template-columns: repeat(3, minmax(0, 1fr));
-				gap: 12px;
-				margin: 0;
-				padding: 12px;
-				background: #f2f4f6;
-				border-radius: 8px;
-				> div {
-					display: flex;
-					flex-direction: column;
-					align-items: center;
-					text-align: center;
-					gap: 4px 8px;
-					min-width: 0;
-				}
-				dt {
-					font-size: 12px;
-					line-height: 1.5;
-					color: #595f6a;
-					overflow-wrap: anywhere;
-				}
-				dd {
-					margin: 0;
-					font-size: 14px;
-					line-height: 1.5;
-					font-weight: 700;
-					font-variant-numeric: tabular-nums;
-					overflow-wrap: anywhere;
-				}
-			}
-			.trainer-card-actions {
-				display: flex;
-				align-items: stretch;
-				gap: 8px;
-				min-width: 0;
-				.trainer-card-profile {
-					display: flex;
-					justify-content: center;
-					align-items: center;
-					gap: 8px;
-					flex: 1;
-					min-width: 0;
-					min-height: 44px;
-					padding: 10px 14px;
-					border-radius: 24px;
-					background: #12151d;
-					color: #fff;
-					font-size: 14px;
-					line-height: 1.5;
-					font-weight: 600;
-					text-align: center;
-					svg {
-						font-size: 18px;
-						flex-shrink: 0;
-					}
-					&:hover {
-						background: #2e313b;
-					}
-				}
-				.trainer-card-follow {
-					min-width: 0;
-					gap: 6px;
-					padding: 8px 12px;
-					border-radius: 24px;
-					color: #12151d;
-					background: #f2f4f6;
-					font-size: 13px;
-					line-height: 1.5;
-					font-weight: 600;
-					text-transform: none;
-					flex: 1;
-					span {
-						overflow-wrap: anywhere;
-					}
-					svg {
-						font-size: 19px;
-						flex-shrink: 0;
-					}
-					&:hover {
-						background: #edeef0;
-					}
-					&[aria-pressed='true'] {
-						color: #a53425;
-						background: #fcece8;
-					}
-					&.Mui-disabled {
-						opacity: 0.6;
-					}
-				}
-			}
 		}
 		.trainer-discovery-skeleton {
 			.trainer-skeleton-image {

@@ -14,13 +14,14 @@ import { PublicMember } from '../../types/member/member';
 
 interface TrainerCardProps {
 	trainer: PublicMember;
-	likeMemberHandler: (user: any, id: string) => Promise<void>;
-	followMemberHandler: (user: any, id: string, following: boolean) => Promise<void>;
-	followPending: boolean;
+	likeMemberHandler?: (user: any, id: string) => Promise<void>;
+	followMemberHandler?: (user: any, id: string, following: boolean) => Promise<void>;
+	followPending?: boolean;
+	showStats?: boolean;
 }
 
 const TrainerCard = (props: TrainerCardProps) => {
-	const { trainer, likeMemberHandler, followMemberHandler, followPending } = props;
+	const { trainer, likeMemberHandler, followMemberHandler, followPending = false, showStats = true } = props;
 	const { t } = useTranslation('common');
 	const user = useReactiveVar(userVar);
 	const name = trainer.memberFullName?.trim() || trainer.memberNick;
@@ -49,19 +50,21 @@ const TrainerCard = (props: TrainerCardProps) => {
 						}}
 					/>
 				</Link>
-				<Button
-					className={'trainer-card-like'}
-					aria-pressed={liked}
-					aria-label={t(liked ? 'Trainer discovery.Unlike trainer' : 'Trainer discovery.Like trainer', { name })}
-					onClick={(event) => {
-						event.preventDefault();
-						event.stopPropagation();
-						void likeMemberHandler(user, trainer._id);
-					}}
-				>
-					{liked ? <FavoriteIcon aria-hidden={'true'} /> : <FavoriteBorderIcon aria-hidden={'true'} />}
-					<span>{trainer.memberLikes ?? 0}</span>
-				</Button>
+				{likeMemberHandler && (
+					<Button
+						className={'trainer-card-like'}
+						aria-pressed={liked}
+						aria-label={t(liked ? 'Trainer discovery.Unlike trainer' : 'Trainer discovery.Like trainer', { name })}
+						onClick={(event) => {
+							event.preventDefault();
+							event.stopPropagation();
+							void likeMemberHandler(user, trainer._id);
+						}}
+					>
+						{liked ? <FavoriteIcon aria-hidden={'true'} /> : <FavoriteBorderIcon aria-hidden={'true'} />}
+						<span>{trainer.memberLikes ?? 0}</span>
+					</Button>
+				)}
 			</div>
 			<div className={'trainer-card-body'}>
 				<div className={'trainer-card-copy'}>
@@ -73,26 +76,28 @@ const TrainerCard = (props: TrainerCardProps) => {
 					</div>
 					{trainer.memberDesc?.trim() && <p className={'trainer-card-description'}>{trainer.memberDesc}</p>}
 				</div>
-				<dl className={'trainer-card-stats'}>
-					<div>
-						<dt>{t('Trainer discovery.Programs')}</dt>
-						<dd>{trainer.memberPrograms ?? 0}</dd>
-					</div>
-					<div>
-						<dt>{t('Trainer discovery.Followers')}</dt>
-						<dd>{trainer.memberFollowers ?? 0}</dd>
-					</div>
-					<div>
-						<dt>{t('Trainer discovery.Views')}</dt>
-						<dd>{trainer.memberViews ?? 0}</dd>
-					</div>
-				</dl>
+				{showStats && (
+					<dl className={'trainer-card-stats'}>
+						<div>
+							<dt>{t('Trainer discovery.Programs')}</dt>
+							<dd>{trainer.memberPrograms ?? 0}</dd>
+						</div>
+						<div>
+							<dt>{t('Trainer discovery.Followers')}</dt>
+							<dd>{trainer.memberFollowers ?? 0}</dd>
+						</div>
+						<div>
+							<dt>{t('Trainer discovery.Views')}</dt>
+							<dd>{trainer.memberViews ?? 0}</dd>
+						</div>
+					</dl>
+				)}
 				<div className={'trainer-card-actions'}>
 					<Link href={profileHref} passHref className={'trainer-card-profile'}>
 						{t('Trainer discovery.View Profile')}
 						<ArrowForwardRoundedIcon aria-hidden={'true'} />
 					</Link>
-					{trainer._id !== user._id && (
+					{followMemberHandler && trainer._id !== user._id && (
 						<Button
 							className={'trainer-card-follow'}
 							aria-pressed={following}
