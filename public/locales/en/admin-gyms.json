@@ -36,6 +36,7 @@
 		"coverAlt": "Cover photo of {{name}}"
 	},
 	"form": {
+		"validationError": "The server could not accept these details. Check the form before saving. Your changes are still here.",
 		"createIntro": "Add a gym and prepare its photos, amenities and opening hours.",
 		"editIntro": "Update this gym’s details and visibility in the catalog.",
 		"openCreated": "Open the created gym",
@@ -129,10 +130,14 @@
 		"note": "Informational gym hours in Asia/Seoul time. These do not set trainer booking availability. Overnight hours and multiple intervals are not supported."
 	},
 	"lifecycle": {
+		"deleteSuccess": "Gym marked as deleted.",
+		"historyIntro": "Historical reference only. This gym is unavailable for new operations or bookings. Existing reservation and booking records remain intact.",
+		"notSupplied": "Not supplied",
+		"noAmenities": "No amenities recorded.",
 		"publishingTitle": "Publishing Status",
 		"editTitle": "Status & Visibility",
 		"dangerTitle": "Danger Zone",
-		"deletionNote": "Deleting a gym is permanent. Existing reservations remain unchanged.",
+		"deletionNote": "Marking this gym as deleted ends normal public operations and discovery. Historical reservation and booking records remain intact. This action is terminal; the gym cannot be restored.",
 		"title": "Status",
 		"active": "Active",
 		"paused": "Paused",
@@ -142,25 +147,31 @@
 		"createdPaused": "New gyms are created as paused. You can activate the gym after it has been created.",
 		"markDeleted": "Mark as deleted",
 		"confirmTitle": "Mark this gym as deleted?",
-		"confirmBody": "This permanently closes editing and removes the gym from public discovery. It does not physically delete the record or cancel existing reservations. Unsaved changes will not be saved.",
+		"confirmBody": "This is a terminal lifecycle action. Normal public operations and discovery will end. Unsaved changes on this form will NOT be saved. Historical reservation and booking records remain intact. The gym cannot be edited or restored afterward.",
 		"confirmAction": "Mark as deleted",
 		"deleting": "Marking as deleted…",
 		"terminal": "This gym is deleted and can only be viewed. It cannot be edited or restored.",
 		"visibilityNote": "Pausing or deleting a gym hides its linked programs and prevents new bookings. Existing reservations remain unchanged."
 	},
 	"conflict": {
-		"stale": "Another administrator changed this gym. Your draft is preserved. Reload the latest details before saving again.",
+		"staleTitle": "This gym has changed since you opened it.",
+		"reviewTitle": "Review the latest saved gym.",
+		"reloading": "Reloading latest…",
+		"reloadFailed": "Could not reload this gym. Your unsaved draft is still here. Try again.",
+		"saveBlocked": "Reload latest before saving again.",
+		"stale": "A newer server version exists. Your draft is preserved. Reload the latest details before saving again.",
 		"busy": "The gym changed during this request. Your draft is preserved. Reload the latest details before saving again.",
 		"reload": "Reload latest",
 		"discardTitle": "Replace your unsaved changes?",
-		"discardWarning": "Reloading replaces your current draft with the latest saved details.",
+		"discardWarning": "A newer server version may exist. Reloading will replace all current unsaved changes with the latest saved details.",
 		"unknown": "The save result could not be confirmed. Your draft is preserved. Reload and check the saved details before trying again.",
 		"unknownCreate": "The creation result could not be confirmed. Check the gym list before creating it again to avoid a duplicate."
 	},
 	"venue": {
+		"saveBlocked": "Revert the location and address before saving.",
 		"referenced": "This gym is already used by programs. Its location and address cannot be changed.",
 		"helper": "Once any program references a gym, its location and address are protected, including spelling corrections.",
-		"resetFields": "Restore saved location and address"
+		"resetFields": "Revert Location & Address"
 	},
 	"auth": {
 		"loading": "Checking your administrator account…",

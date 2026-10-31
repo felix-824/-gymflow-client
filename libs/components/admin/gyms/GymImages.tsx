@@ -29,7 +29,7 @@ export interface GymImagesProps {
 	onUploadingChange?: (uploading: boolean) => void;
 }
 
-const GymPhotoPreview = ({ path, alt }: { path: string; alt: string }) => {
+export const GymPhotoPreview = ({ path, alt }: { path: string; alt: string }) => {
 	const [failed, setFailed] = useState(false);
 	return !failed && !gymImagesError([path]) ? (
 		<img src={`${REACT_APP_API_URL}/${path}`} alt={alt} onError={() => setFailed(true)} />

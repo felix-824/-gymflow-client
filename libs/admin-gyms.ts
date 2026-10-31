@@ -234,13 +234,41 @@ export function gymPayload(input: GymInput): GymInput {
 	};
 }
 
-export type GymUpdateError = 'stale' | 'contention' | 'referenced-venue' | 'rejected' | 'unknown';
+export type GymUpdateError =
+	| 'stale'
+	| 'contention'
+	| 'referenced-venue'
+	| 'session'
+	| 'forbidden'
+	| 'validation'
+	| 'rejected'
+	| 'unknown';
 
 // Temporary compatibility with the actual formatter: it strips Gym-specific reasons
 // and HTTP status details. Never infer a Gym conflict from a generic code or retry it.
 export function gymUpdateError(error: unknown): GymUpdateError {
-	const failure = error as { networkError?: unknown; graphQLErrors?: { message?: string }[] } | null;
-	const errors = failure?.graphQLErrors;
+	const failure = error as {
+		networkError?: { statusCode?: number };
+		graphQLErrors?: {
+			message?: string;
+			code?: string;
+			extensions?: { code?: string; originalError?: { statusCode?: number } };
+		}[];
+	} | null;
+	const responseErrors = failure?.graphQLErrors;
+	const errors = Array.isArray(responseErrors) ? responseErrors : [];
+	if (failure?.networkError?.statusCode === 401) return 'session';
+	if (failure?.networkError?.statusCode === 403) return 'forbidden';
+	if (
+		errors?.some(
+			(item) =>
+				(item?.extensions?.code ?? item?.code) === 'UNAUTHENTICATED' ||
+				item?.extensions?.originalError?.statusCode === 401 ||
+				item?.message === 'Unauthorized',
+		)
+	)
+		return 'session';
+	if (errors.some((item) => (item?.extensions?.code ?? item?.code) === 'FORBIDDEN')) return 'forbidden';
 	if (failure?.networkError || !Array.isArray(errors) || !errors.length) return 'unknown';
 	for (const item of errors) {
 		if (item?.message === 'Gym has changed. Refresh and review the latest data.') return 'stale';
@@ -248,5 +276,11 @@ export function gymUpdateError(error: unknown): GymUpdateError {
 		if (item?.message === 'Gym location and address cannot change while any Program references it')
 			return 'referenced-venue';
 	}
+	if (
+		errors.some((item) =>
+			['BAD_USER_INPUT', 'BAD_REQUEST', 'GRAPHQL_VALIDATION_FAILED'].includes(item?.extensions?.code ?? item?.code ?? ''),
+		)
+	)
+		return 'validation';
 	return 'rejected';
 }

@@ -3,7 +3,20 @@ import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { useMutation, useQuery } from '@apollo/client';
 import { useTranslation } from 'next-i18next';
-import { Button, Checkbox, FormControlLabel, MenuItem, Radio, RadioGroup, TextField } from '@mui/material';
+import {
+	Button,
+	Checkbox,
+	Dialog,
+	DialogActions,
+	DialogContent,
+	DialogContentText,
+	DialogTitle,
+	FormControlLabel,
+	MenuItem,
+	Radio,
+	RadioGroup,
+	TextField,
+} from '@mui/material';
 import { GET_GYM_BY_ADMIN } from '../../../../apollo/admin/query';
 import { CREATE_GYM, UPDATE_GYM_BY_ADMIN } from '../../../../apollo/admin/mutation';
 import { authErrorVar, authReadyVar, userVar } from '../../../../apollo/store';
@@ -30,6 +43,7 @@ import { sweetTopSmallSuccessAlert } from '../../../sweetAlert';
 import AdminGymAccess from './AdminGymAccess';
 import GymImages from './GymImages';
 import GymOpeningHours from './GymOpeningHours';
+import GymHistory from './GymHistory';
 
 const GymEditor = ({ gymId, invalidId }: { gymId: string; invalidId: boolean }) => {
 	const { t } = useTranslation(['admin-gyms', 'common']);
@@ -47,12 +61,17 @@ const GymEditor = ({ gymId, invalidId }: { gymId: string; invalidId: boolean }) 
 	const [draft, setDraft] = useState(() => gymEditorDraft());
 	const [baseline, setBaseline] = useState(() => gymEditorDraft());
 	const [revision, setRevision] = useState<number | null>(null);
+	const [record, setRecord] = useState<AdminGym | null>(null);
 	const [loaded, setLoaded] = useState(!editing && !invalidId);
 	const [readFailure, setReadFailure] = useState<'invalid' | 'missing' | null>(null);
 	const [failure, setFailure] = useState<GymUpdateError | null>(null);
 	const [createdId, setCreatedId] = useState('');
 	const [submitting, setSubmitting] = useState(false);
 	const [uploading, setUploading] = useState(false);
+	const [reloading, setReloading] = useState(false);
+	const [reloadFailed, setReloadFailed] = useState(false);
+	const [deleteOpen, setDeleteOpen] = useState(false);
+	const [deleting, setDeleting] = useState(false);
 	const [showValidation, setShowValidation] = useState(false);
 	const [touched, setTouched] = useState<Record<string, boolean>>({});
 	const active = () =>
@@ -89,8 +108,14 @@ const GymEditor = ({ gymId, invalidId }: { gymId: string; invalidId: boolean }) 
 		setDraft(next);
 		setBaseline(next);
 		setRevision(gym.gymRevision);
+		setRecord(gym);
 		setLoaded(true);
 		setReadFailure(null);
+		setFailure(null);
+		setReloadFailed(false);
+		setDeleteOpen(false);
+		setTouched({});
+		setShowValidation(false);
 	};
 	const query = useQuery<{ getGymByAdmin: AdminGym | null }, { gymId: string }>(GET_GYM_BY_ADMIN, {
 		variables: { gymId },
@@ -125,17 +150,24 @@ const GymEditor = ({ gymId, invalidId }: { gymId: string; invalidId: boolean }) 
 	const invalid = gymFormError(input);
 	const basicErrors = gymBasicErrors(input);
 	const dirty = gymEditorKey(draft) !== gymEditorKey(baseline);
-	const terminal = draft.gymStatus === GymStatus.DELETE;
-	const blocked = failure === 'unknown' || failure === 'stale' || failure === 'contention';
-	const locked = terminal || submitting || uploading || Boolean(createdId);
+	const terminal = baseline.gymStatus === GymStatus.DELETE;
+	const reloadRequired = failure === 'unknown' || failure === 'stale' || failure === 'contention';
+	const blocked = reloadRequired || failure === 'session' || failure === 'forbidden';
+	const venueConflict = failure === 'referenced-venue';
+	const venueChanged =
+		draft.gymLocation !== baseline.gymLocation || draft.gymAddress.trim() !== baseline.gymAddress.trim();
+	const locked = terminal || submitting || uploading || reloading || deleteOpen || Boolean(createdId);
+	const deleteDisabled = locked || !loaded || blocked || revision === null || revision >= 2147483647;
 	const saveDisabled =
 		locked ||
 		!loaded ||
 		Boolean(invalid) ||
 		blocked ||
+		(venueConflict && venueChanged) ||
 		(editing && (!dirty || revision === null || revision >= 2147483647));
 	const change = (patch: Partial<GymEditorDraft>) => {
-		if (!active() || writeLock.current || uploadLock.current || terminal || createdId) return;
+		if (!active() || writeLock.current || readLock.current || uploadLock.current || terminal || deleteOpen || createdId)
+			return;
 		setDraft((current) => ({ ...current, ...patch }));
 		if (!blocked && failure !== 'referenced-venue') setFailure(null);
 	};
@@ -151,16 +183,108 @@ const GymEditor = ({ gymId, invalidId }: { gymId: string; invalidId: boolean }) 
 			readLock.current = false;
 		}
 	};
+	const reloadLatest = async () => {
+		if (
+			!active() ||
+			!editing ||
+			!reloadRequired ||
+			writeLock.current ||
+			readLock.current ||
+			uploadLock.current ||
+			terminal ||
+			deleteOpen
+		)
+			return;
+		const generation = epoch.current;
+		readLock.current = true;
+		setReloading(true);
+		setReloadFailed(false);
+		try {
+			const result = await query.refetch({ gymId });
+			if (!active() || epoch.current !== generation) return;
+			if (
+				result.errors?.length ||
+				!gymEditorReceipt(result.data?.getGymByAdmin) ||
+				result.data.getGymByAdmin._id !== gymId
+			)
+				throw new Error('Unconfirmed Gym reload');
+			accept(result.data.getGymByAdmin);
+		} catch {
+			if (active() && epoch.current === generation) setReloadFailed(true);
+		} finally {
+			readLock.current = false;
+			if (mounted.current) setReloading(false);
+		}
+	};
+	const revertVenue = () => {
+		if (!active() || locked || writeLock.current || readLock.current || uploadLock.current || !venueConflict) return;
+		setDraft((current) => ({ ...current, gymLocation: baseline.gymLocation, gymAddress: baseline.gymAddress }));
+		setFailure(null);
+	};
+	const confirmDelete = async () => {
+		if (
+			!active() ||
+			!editing ||
+			!deleteOpen ||
+			!loaded ||
+			terminal ||
+			blocked ||
+			writeLock.current ||
+			readLock.current ||
+			uploadLock.current ||
+			revision === null ||
+			revision >= 2147483647
+		)
+			return;
+		const generation = epoch.current;
+		const current = () => active() && epoch.current === generation;
+		writeLock.current = true;
+		setSubmitting(true);
+		setDeleting(true);
+		try {
+			// A lifecycle-only write must never include the unsaved form payload.
+			const result = await updateGym({
+				variables: { input: { _id: gymId, expectedRevision: revision, gymStatus: GymStatus.DELETE } },
+			});
+			if (!current()) return;
+			if (result.errors?.length)
+				throw Object.assign(new Error('Gym deletion rejected'), { graphQLErrors: result.errors });
+			const gym = result.data?.updateGymByAdmin;
+			if (
+				!gymEditorReceipt(gym) ||
+				gym._id !== gymId ||
+				gym.gymRevision !== revision + 1 ||
+				gym.gymStatus !== GymStatus.DELETE
+			)
+				throw new Error('Unconfirmed Gym deletion');
+			accept(gym);
+			void sweetTopSmallSuccessAlert(t('lifecycle.deleteSuccess')).catch(() => undefined);
+		} catch (error) {
+			if (current()) {
+				setDeleteOpen(false);
+				setFailure(gymUpdateError(error));
+			}
+		} finally {
+			writeLock.current = false;
+			if (mounted.current) {
+				setSubmitting(false);
+				setDeleting(false);
+			}
+		}
+	};
 	const submit = async (event: FormEvent) => {
 		event.preventDefault();
 		if (
 			!active() ||
 			writeLock.current ||
+			readLock.current ||
 			uploadLock.current ||
+			deleteOpen ||
 			!loaded ||
 			terminal ||
 			confirmedCreate.current ||
-			blocked
+			blocked ||
+			(venueConflict && venueChanged)
 		)
 			return;
 		setShowValidation(true);
@@ -228,6 +352,12 @@ const GymEditor = ({ gymId, invalidId }: { gymId: string; invalidId: boolean }) 
 				: 'conflict.unknownCreate'
 			: failure === 'referenced-venue'
 			? 'venue.referenced'
+			: failure === 'session'
+			? 'auth.session'
+			: failure === 'forbidden'
+			? 'auth.forbidden'
+			: failure === 'validation'
+			? 'form.validationError'
 			: 'form.saveError';
 	const field = (name: 'gymName' | 'gymAddress' | 'gymDesc' | 'gymPhone') => {
 		const error = showValidation || touched[name] ? basicErrors[name] : undefined;
@@ -282,7 +412,7 @@ const GymEditor = ({ gymId, invalidId }: { gymId: string; invalidId: boolean }) 
 			<header className="gym-editor-heading">
 				<div>
 					<h1>{t(editing ? (terminal ? 'form.viewTitle' : 'form.editTitle') : 'form.createTitle')}</h1>
-					<p>{t(editing ? 'form.editIntro' : 'form.createIntro')}</p>
+					<p>{t(terminal ? 'lifecycle.historyIntro' : editing ? 'form.editIntro' : 'form.createIntro')}</p>
 				</div>
 				{loaded && (
 					<span className={`admin-gym-status is-${baseline.gymStatus.toLowerCase()}`}>
@@ -299,18 +429,41 @@ const GymEditor = ({ gymId, invalidId }: { gymId: string; invalidId: boolean }) 
 						</Button>
 					)}
 				</div>
+			) : terminal && record ? (
+				<GymHistory gym={record} />
 			) : (
-				<form noValidate onSubmit={submit} aria-busy={submitting || uploading}>
+				<form noValidate onSubmit={submit} aria-busy={submitting || uploading || reloading}>
 					{!editing && <p className="gym-editor-notice">{t('lifecycle.createdPaused')}</p>}
 					{terminal && (
 						<p className="gym-editor-notice" role="status">
 							{t('lifecycle.terminal')}
 						</p>
 					)}
-					{failure && failure !== 'referenced-venue' && (
-						<p className="gym-editor-error" role="alert" data-recovery={failure}>
-							{t(failureKey)}
-						</p>
+					{editing && reloadRequired ? (
+						<section className="gym-editor-conflict" role="alert" data-recovery={failure} aria-busy={reloading}>
+							<div>
+								<h2>{t(failure === 'stale' ? 'conflict.staleTitle' : 'conflict.reviewTitle')}</h2>
+								<p>{t(failureKey)}</p>
+								<p id="gym-reload-warning">{t('conflict.discardWarning')}</p>
+								{reloadFailed && <p className="gym-reload-error">{t('conflict.reloadFailed')}</p>}
+							</div>
+							<Button
+								type="button"
+								variant="outlined"
+								disabled={locked}
+								aria-describedby="gym-reload-warning"
+								onClick={() => void reloadLatest()}
+							>
+								{t(reloading ? 'conflict.reloading' : 'conflict.reload')}
+							</Button>
+						</section>
+					) : (
+						failure &&
+						failure !== 'referenced-venue' && (
+							<p className="gym-editor-error" role="alert" data-recovery={failure}>
+								{t(failureKey)}
+							</p>
+						)
 					)}
 					{createdId && (
 						<p className="gym-editor-notice" role="status">
@@ -365,14 +518,17 @@ const GymEditor = ({ gymId, invalidId }: { gymId: string; invalidId: boolean }) 
 							</div>
 							<div className="gym-editor-wide">{field('gymAddress')}</div>
 							{failure === 'referenced-venue' && (
-								<p
+								<div
 									id="gym-venue-error"
 									className="gym-editor-error gym-editor-wide"
 									role="alert"
 									data-recovery={failure}
 								>
-									{t('venue.referenced')}
-								</p>
+									<p>{t('venue.referenced')}</p>
+									<Button type="button" disabled={locked} onClick={revertVenue}>
+										{t('venue.resetFields')}
+									</Button>
+								</div>
 							)}
 							<div className="gym-editor-description">{field('gymDesc')}</div>
 							<div>{field('gymPhone')}</div>
@@ -383,13 +539,14 @@ const GymEditor = ({ gymId, invalidId }: { gymId: string; invalidId: boolean }) 
 						title={editing ? t('photos.editTitle') : undefined}
 						scopeKey={`gym:${gymId || 'create'}`}
 						showValidation={showValidation}
-						disabled={submitting || terminal || Boolean(createdId)}
+						disabled={submitting || terminal || reloading || deleteOpen || Boolean(createdId)}
 						onUploadingChange={(value) => {
 							uploadLock.current = value;
 							setUploading(value);
 						}}
 						onChange={(gymImages) => {
-							if (active() && !writeLock.current) setDraft((current) => ({ ...current, gymImages }));
+							if (active() && !writeLock.current && !readLock.current && !deleteOpen && !terminal)
+								setDraft((current) => ({ ...current, gymImages }));
 						}}
 					/>
 					<fieldset className="admin-gym-control gym-editor-amenities" disabled={locked}>
@@ -451,15 +608,35 @@ const GymEditor = ({ gymId, invalidId }: { gymId: string; invalidId: boolean }) 
 					</fieldset>
 					{editing && !terminal && (
 						<section className="gym-editor-danger">
-							<h2>{t('lifecycle.dangerTitle')}</h2>
-							<p>{t('lifecycle.deletionNote')}</p>
+							<div>
+								<h2>{t('lifecycle.dangerTitle')}</h2>
+								<p>{t('lifecycle.deletionNote')}</p>
+							</div>
+							<Button
+								type="button"
+								color="error"
+								variant="outlined"
+								disabled={deleteDisabled}
+								onClick={() => {
+									if (active() && !writeLock.current && !readLock.current && !uploadLock.current && !deleteDisabled)
+										setDeleteOpen(true);
+								}}
+							>
+								{t('lifecycle.markDeleted')}
+							</Button>
 						</section>
 					)}
 					{!terminal && (
 						<footer className="gym-editor-actions">
 							<p role="status">
 								{t(
-									submitting
+									reloading
+										? 'conflict.reloading'
+										: reloadRequired
+										? 'conflict.saveBlocked'
+										: venueConflict && venueChanged
+										? 'venue.saveBlocked'
+										: submitting
 										? 'form.saving'
 										: uploading
 										? 'photos.uploading'
@@ -481,6 +658,45 @@ const GymEditor = ({ gymId, invalidId }: { gymId: string; invalidId: boolean }) 
 						</footer>
 					)}
 				</form>
+			)}
+			{!terminal && (
+				<Dialog
+					open={deleteOpen}
+					onClose={() => {
+						if (!writeLock.current) setDeleteOpen(false);
+					}}
+					fullWidth
+					maxWidth="sm"
+					aria-labelledby="gym-delete-title"
+					aria-describedby="gym-delete-description"
+					PaperProps={{ className: 'admin-gym-delete-dialog', 'aria-busy': deleting }}
+				>
+					<DialogTitle id="gym-delete-title">{t('lifecycle.confirmTitle')}</DialogTitle>
+					<DialogContent>
+						<DialogContentText id="gym-delete-description">{t('lifecycle.confirmBody')}</DialogContentText>
+					</DialogContent>
+					<DialogActions>
+						<Button
+							type="button"
+							autoFocus
+							disabled={submitting}
+							onClick={() => {
+								if (!writeLock.current) setDeleteOpen(false);
+							}}
+						>
+							{t('form.cancel')}
+						</Button>
+						<Button
+							type="button"
+							color="error"
+							variant="contained"
+							disabled={submitting}
+							onClick={() => void confirmDelete()}
+						>
+							{t(deleting ? 'lifecycle.deleting' : 'lifecycle.confirmAction')}
+						</Button>
+					</DialogActions>
+				</Dialog>
 			)}
 		</div>
 	);

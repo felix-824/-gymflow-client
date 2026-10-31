@@ -23,7 +23,7 @@ function load(file, mocks = {}, cache = new Map()) {
 }
 
 module.exports = async function editorTests() {
-	let checks = 0;
+	let checks = 0, lifecycleChecks = 0;
 	const pass = (name) => { checks++; console.log('PASS G3E ' + name); };
 	const helper = load('libs/admin-gyms.ts');
 	const imagePath = 'uploads/gym/123e4567-e89b-42d3-a456-426614174000.jpg';
@@ -140,7 +140,7 @@ module.exports = async function editorTests() {
 		click(Array.from(document.querySelectorAll('.gym-editor-publishing input[type="radio"]')).find((node) => node.value === 'PAUSED')); submit(); await wait(() => requests.filter((item) => item.name === 'UpdateGymByAdmin').at(-1).variables.input.gymStatus === 'PAUSED'); await wait(() => button(text.form.save)?.disabled); pass('ACTIVE→PAUSED normal status editing');
 		await reload(); for (const checkbox of Array.from(document.querySelectorAll('.gym-editor-amenities input')).filter((node) => node.checked)) click(checkbox); submit(); await wait(() => requests.filter((item) => item.name === 'UpdateGymByAdmin').at(-1).variables.input.amenities.length === 0); await wait(() => button(text.form.save)?.disabled); pass('all six enum amenity controls support clearing amenities to an empty array');
 		await reload(); edit('gymName', 'Locally Edited Gym'); gyms.set(id, { ...original(), gymName: 'Remote Name', gymRevision: 25 }); await client.reFetchObservableQueries(); await tick(); assert.equal(input('gymName').value, 'Locally Edited Gym'); writeFault = 'stale'; const staleReads = count('GetGymByAdmin'), staleWrites = count('UpdateGymByAdmin'); submit(); await wait(() => document.querySelector('[data-recovery="stale"]')); assert.equal(requests.at(-1).variables.input.expectedRevision, 7); assert.equal(input('gymName').value, 'Locally Edited Gym'); submit(); await tick(); assert.equal(count('UpdateGymByAdmin'), staleWrites + 1); assert.equal(count('GetGymByAdmin'), staleReads); assert(button(text.form.save).disabled); pass('query rerender cannot overwrite draft/revision; stale conflict preserves draft and never reloads/replays');
-		await reload(); edit('gymAddress', '99 Unsaved Street'); await selectLocation(resources.en.common.BUSAN); writeFault = 'venue'; const venueWrites = count('UpdateGymByAdmin'), venueReads = count('GetGymByAdmin'); submit(); await wait(() => document.querySelector('#gym-venue-error')); assert.equal(input('gymAddress').value, '99 Unsaved Street'); assert.equal(document.querySelector('#gym-venue-error').textContent, text.venue.referenced); assert(input('gymAddress').getAttribute('aria-describedby').includes('gym-venue-error')); assert(!input('gymAddress').disabled); await tick(); assert.equal(count('UpdateGymByAdmin'), venueWrites + 1); assert.equal(count('GetGymByAdmin'), venueReads); pass('referenced physical venue conflict stays beside location/address, preserves both drafts, does not guess-disable or retry');
+		await reload(); edit('gymAddress', '99 Unsaved Street'); await selectLocation(resources.en.common.BUSAN); writeFault = 'venue'; const venueWrites = count('UpdateGymByAdmin'), venueReads = count('GetGymByAdmin'); submit(); await wait(() => document.querySelector('#gym-venue-error')); assert.equal(input('gymAddress').value, '99 Unsaved Street'); assert.equal(document.querySelector('#gym-venue-error p').textContent, text.venue.referenced); assert(input('gymAddress').getAttribute('aria-describedby').includes('gym-venue-error')); assert(!input('gymAddress').disabled); await tick(); assert.equal(count('UpdateGymByAdmin'), venueWrites + 1); assert.equal(count('GetGymByAdmin'), venueReads); pass('referenced physical venue conflict stays beside location/address, preserves both drafts, does not guess-disable or retry');
 		await reload(); edit('gymName', 'Unsure Gym'); writeFault = 'network'; const uncertainBefore = count('UpdateGymByAdmin'); submit(); await wait(() => document.querySelector('[data-recovery="unknown"]')); assert.equal(input('gymName').value, 'Unsure Gym'); submit(); await tick(); assert.equal(count('UpdateGymByAdmin'), uncertainBefore + 1); assert(!document.body.textContent.includes('private transport')); pass('uncertain update blocks replay and preserves draft without leaking transport details');
 		await reload(); edit('gymName', 'Contended Gym'); writeFault = 'contention'; const contendedWrites = count('UpdateGymByAdmin'); submit(); await wait(() => document.querySelector('[data-recovery="contention"]')); submit(); await tick(); assert.equal(count('UpdateGymByAdmin'), contendedWrites + 1); assert.equal(input('gymName').value, 'Contended Gym'); pass('contention recovery remains non-destructive and never replays the update');
 		await reload(); edit('gymName', 'Rejected Gym'); writeFault = 'rejected'; submit(); await wait(() => document.querySelector('[data-recovery="rejected"]')); assert.equal(document.querySelector('[data-recovery="rejected"]').textContent, text.form.saveError); assert.equal(input('gymName').value, 'Rejected Gym'); assert(!document.body.textContent.includes('Private backend')); pass('definitive server rejection uses safe localized error and retains input');
@@ -150,16 +150,92 @@ module.exports = async function editorTests() {
 		readFault = 'network'; session += '-read'; await route(id); await wait(() => button(text.list.retry)); assert(document.body.textContent.includes(text.form.loadError)); readFault = ''; click(button(text.list.retry)); await wait(() => input('gymName')); pass('initial query error is localized and read-only Retry hydrates safely');
 		session += '-missing'; await route('d'.repeat(24)); await wait(() => document.body.textContent.includes(text.form.notFound)); pass('valid but absent Gym produces unavailable state');
 		session += '-held'; holdRead = true; await route(id); assert(document.body.textContent.includes(text.form.loading)); const heldRead = pending.at(-1); holdRead = false; heldRead.respond(); await wait(() => input('gymName')); pass('edit loading state waits for actual response');
-		gyms.set(id, { ...original(), gymStatus: 'DELETE' }); session += '-delete'; await route(id); await wait(() => input('gymName')); assert(input('gymName').disabled); assert(!button(text.form.save)); assert(!document.querySelector('input[type="radio"]')); assert(document.body.textContent.includes(text.lifecycle.terminal)); const terminalWrites = writes().length; submit(); assert.equal(writes().length, terminalWrites); pass('DELETE Gym is guarded read-only with no normal save/restore/terminal mutation');
+		gyms.set(id, { ...original(), gymStatus: 'DELETE' }); session += '-delete'; await route(id); await wait(() => document.querySelector('.gym-history')); assert(!input('gymName')); assert(!button(text.form.save)); assert(!document.querySelector('input[type="radio"]')); assert(document.body.textContent.includes(text.lifecycle.terminal)); const terminalWrites = writes().length; assert(!document.querySelector('form')); assert.equal(writes().length, terminalWrites); pass('DELETE Gym is guarded read-only with no normal save/restore/terminal mutation');
 		await reload(); edit('gymName', 'Old Session Draft'); holdWrite = true; submit(); await wait(() => pending.at(-1)?.name === 'UpdateGymByAdmin'); const oldWrite = pending.at(-1); const previousToast = toasts.length; session += '-new'; render(); await wait(() => input('gymName')?.value === 'Existing Gym'); oldWrite.respond(); await tick(); assert.equal(toasts.length, previousToast); assert.equal(input('gymName').value, 'Existing Gym'); holdWrite = false; pass('obsolete logical-session mutation response cannot hydrate or toast in a new editor session');
 		await reload(); edit('gymName', 'Old Route Draft'); holdWrite = true; submit(); await wait(() => pending.at(-1)?.name === 'UpdateGymByAdmin'); const routeWrite = pending.at(-1); flushSync(() => events.emit('routeChangeStart', '/_admin/gyms/detail?id=' + otherId)); await route(otherId); await wait(() => input('gymName')?.value === 'Other Gym'); routeWrite.respond(); await tick(); assert.equal(input('gymName').value, 'Other Gym'); holdWrite = false; pass('obsolete route mutation response cannot overwrite another Gym');
 		await reload(undefined); // reload's default targets edit; explicitly create a fresh no-id session next.
 		session += '-create-hours'; await route(undefined); edit('gymName', 'Hours Gym'); edit('gymAddress', '30 Hours Street'); await selectLocation(resources.en.common.SEOUL); await upload(); click(document.querySelector('.gym-hours-heading input')); assert(button(text.list.create).disabled);
 		for (const node of Array.from(document.querySelectorAll('.gym-hours-state input'))) click(node); assert(!button(text.list.create).disabled); holdWrite = true; submit(); await wait(() => pending.at(-1)?.name === 'CreateGym'); const hoursCreate = pending.at(-1); assert.equal(hoursCreate.variables.input.openingHours.length, 7); assert(hoursCreate.variables.input.openingHours.every((day) => day.isClosed && day.openTime === null && day.closeTime === null)); hoursCreate.respond(); await tick(); holdWrite = false; pass('real G3D Hours integration blocks incomplete seven-day drafts and sends null times for closed days');
 		session += '-uncertain-create'; writeFault = 'network'; await route(undefined); edit('gymName', 'Uncertain Create'); edit('gymAddress', '40 Test Street'); await selectLocation(resources.en.common.SEOUL); await upload(); const createBefore = count('CreateGym'); submit(); await wait(() => document.querySelector('[data-recovery="unknown"]')); assert(document.body.textContent.includes(text.conflict.unknownCreate)); submit(); await tick(); assert.equal(count('CreateGym'), createBefore + 1); pass('uncertain create cannot be accidentally replayed');
-		writeFault = ''; for (const locale of ['en', 'kr', 'ru']) { router.locale = locale; session += '-locale'; await route(undefined); assert.equal(document.querySelector('h1').textContent, resources[locale]['admin-gyms'].form.createTitle); assert(document.body.textContent.includes(resources[locale]['admin-gyms'].lifecycle.createdPaused)); assert.equal(document.querySelectorAll('.gym-editor-amenities input').length, 6); } pass('EN/KR/RU editor strings resolve with all six enum amenities');
+		const lifecyclePass = (name) => { checks++; lifecycleChecks++; console.log('PASS G3F ' + name); };
+		for (const [error, expected] of [
+			[{ graphQLErrors: [{ extensions: { code: 'UNAUTHENTICATED' } }] }, 'session'],
+			[{ graphQLErrors: [{ code: 'FORBIDDEN' }] }, 'forbidden'],
+			[{ networkError: { statusCode: 401 } }, 'session'],
+			[{ networkError: { statusCode: 403 } }, 'forbidden'],
+			[{ graphQLErrors: [{ extensions: { code: 'BAD_USER_INPUT' } }] }, 'validation'],
+			[{ graphQLErrors: [{ extensions: { code: 'INTERNAL_SERVER_ERROR' }, message: 'Private backend' }] }, 'rejected'],
+			[{ graphQLErrors: [{ extensions: { code: 'CONFLICT' }, message: 'Unrelated conflict' }] }, 'rejected'],
+			[{ graphQLErrors: {} }, 'unknown'],
+			[{ graphQLErrors: [null] }, 'rejected'],
+		]) assert.equal(helper.gymUpdateError(error), expected);
+		lifecyclePass('stable session/authorization/validation codes, narrow business conflicts and safe unexpected failures');
+		await reload(); gyms.set(id, { ...original(), gymImages: [imagePath, imagePath.replace('.jpg', '.png')] }); session += '-stale-full'; await route(id); await wait(() => document.querySelectorAll('.gym-photos li').length === 2);
+		click(button(text.photos.makeCoverAction)); click(document.querySelector('.gym-hours-heading input'));
+		edit('gymName', 'Full Local Draft'); edit('gymDesc', 'Keep my description'); edit('gymPhone', '+82 10-5555-1234'); edit('gymAddress', '99 Local Street');
+		await selectLocation(resources.en.common.BUSAN); click(document.querySelector('.gym-editor-amenities input[value=""]') || document.querySelector('.gym-editor-amenities input'));
+		click(Array.from(document.querySelectorAll('.gym-editor-publishing input')).find((node) => node.value === 'ACTIVE'));
+		writeFault = 'stale'; submit(); await wait(() => document.querySelector('[data-recovery="stale"]'));
+		assert.equal(input('gymName').value, 'Full Local Draft'); assert.equal(input('gymAddress').value, '99 Local Street'); assert.equal(input('gymDesc').value, 'Keep my description');
+		assert(document.querySelector('.gym-photos img').src.endsWith('.png')); assert(!document.querySelector('.gym-hours-heading input').checked); assert(document.querySelector('.gym-editor-publishing input[value="ACTIVE"]').checked);
+		assert(button(text.form.save).disabled); assert(button(text.lifecycle.markDeleted).disabled); assert(document.querySelector('[data-recovery="stale"]').textContent.includes(text.conflict.discardWarning));
+		const reloadWrites = count('UpdateGymByAdmin'), reloadReads = count('GetGymByAdmin');
+		gyms.set(id, { ...original(), gymName: 'Latest Server Gym', gymRevision: 12 }); holdRead = true; click(button(text.conflict.reload));
+		await wait(() => count('GetGymByAdmin') === reloadReads + 1); assert.equal(requests.at(-1).variables.gymId, id); assert.equal(input('gymName').value, 'Full Local Draft'); assert(input('gymName').disabled);
+		readFault = 'network'; pending.at(-1).respond(); await wait(() => document.body.textContent.includes(text.conflict.reloadFailed));
+		assert.equal(input('gymName').value, 'Full Local Draft'); assert.equal(input('gymDesc').value, 'Keep my description'); assert(document.querySelector('[data-recovery="stale"]')); assert(button(text.form.save).disabled);
+		readFault = ''; click(button(text.conflict.reload)); await wait(() => count('GetGymByAdmin') === reloadReads + 2); pending.at(-1).respond();
+		await wait(() => input('gymName')?.value === 'Latest Server Gym' && !input('gymName').disabled); holdRead = false;
+		assert.equal(input('gymAddress').value, original().gymAddress); assert(!document.querySelector('[data-recovery="stale"]')); assert(button(text.form.save).disabled); assert.equal(count('UpdateGymByAdmin'), reloadWrites);
+		writeFault = ''; edit('gymName', 'Saved After Reload'); submit(); await wait(() => count('UpdateGymByAdmin') === reloadWrites + 1); assert.equal(requests.at(-1).variables.input.expectedRevision, 12);
+		await wait(() => !document.querySelector('form[aria-busy="true"]')); assert(button(text.form.save).disabled); assert.equal(toasts.at(-1), text.form.saved);
+		edit('gymName', 'Next Revision'); submit(); await wait(() => count('UpdateGymByAdmin') === reloadWrites + 2); assert.equal(requests.at(-1).variables.input.expectedRevision, 13); await wait(() => !document.querySelector('form[aria-busy="true"]'));
+		lifecyclePass('stale preserves full draft, blocks saves/deletion, explicit failed reload preserves state, successful reload becomes clean at authoritative revision without replay, success toast and next revision');
+		await reload(); gyms.set(id, { ...original(), gymImages: [imagePath, imagePath.replace('.jpg', '.png')] }); session += '-venue-full'; await route(id); await wait(() => document.querySelectorAll('.gym-photos li').length === 2);
+		click(button(text.photos.makeCoverAction)); click(document.querySelector('.gym-hours-heading input'));
+		edit('gymName', 'Other Unsaved Name'); edit('gymDesc', 'Other unsaved description'); edit('gymPhone', '+82 10-2222-3333'); edit('gymAddress', '90 Venue Draft'); await selectLocation(resources.en.common.BUSAN);
+		click(document.querySelector('.gym-editor-amenities input')); click(Array.from(document.querySelectorAll('.gym-editor-publishing input')).find((node) => node.value === 'ACTIVE'));
+		assert(!input('gymAddress').disabled); assert(!button(text.form.save).disabled); writeFault = 'venue'; submit(); await wait(() => document.querySelector('#gym-venue-error'));
+		const rejectedDraft = clone(requests.at(-1).variables.input), revertReads = count('GetGymByAdmin'), revertWrites = count('UpdateGymByAdmin');
+		assert.deepEqual(rejectedDraft.gymImages, [imagePath.replace('.jpg', '.png'), imagePath]); assert.equal(rejectedDraft.openingHours, null);
+		assert(button(text.form.save).disabled); assert.equal(document.querySelector('#gym-location').getAttribute('aria-describedby'), 'gym-venue-error'); submit(); await tick(); assert.equal(count('UpdateGymByAdmin'), revertWrites);
+		click(button(text.venue.resetFields)); assert.equal(input('gymAddress').value, original().gymAddress); assert(document.querySelector('#gym-location').textContent.includes(resources.en.common.SEOUL));
+		assert.equal(input('gymName').value, rejectedDraft.gymName); assert.equal(input('gymDesc').value, rejectedDraft.gymDesc); assert.equal(input('gymPhone').value, rejectedDraft.gymPhone); assert(!document.querySelector('#gym-venue-error')); assert(!button(text.form.save).disabled); assert.equal(count('GetGymByAdmin'), revertReads);
+		writeFault = ''; submit(); await wait(() => count('UpdateGymByAdmin') === revertWrites + 1); const revertedPayload = requests.at(-1).variables.input;
+		assert.deepEqual(revertedPayload, { ...rejectedDraft, gymLocation: original().gymLocation, gymAddress: original().gymAddress }); await wait(() => !document.querySelector('form[aria-busy="true"]'));
+		await reload(); edit('gymAddress', '91 Venue Only Draft'); writeFault = 'venue'; submit(); await wait(() => document.querySelector('#gym-venue-error')); click(button(text.venue.resetFields)); assert(button(text.form.save).disabled);
+		lifecyclePass('venue rejection blocks save; explicit revert restores only location/address while preserving all other payload fields; venue-only revert becomes clean; no refetch or speculative disabling');
+		await reload(); assert(document.querySelector('.gym-editor-danger')); edit('gymName', 'Must Never Be Saved'); edit('gymAddress', 'Invalid is fine for delete');
+		const deleteStart = count('UpdateGymByAdmin'); const danger = button(text.lifecycle.markDeleted); danger.focus(); click(danger); await wait(() => document.querySelector('[role="dialog"]'));
+		const dialog = document.querySelector('[role="dialog"]'); assert.equal(dialog.getAttribute('aria-labelledby'), 'gym-delete-title'); assert.equal(dialog.getAttribute('aria-describedby'), 'gym-delete-description'); assert(dialog.textContent.includes(text.lifecycle.confirmBody)); assert.equal(count('UpdateGymByAdmin'), deleteStart);
+		await tick(); assert(dialog.contains(document.activeElement)); click(Array.from(dialog.querySelectorAll('button')).find((node) => node.textContent === text.form.cancel)); await wait(() => !document.querySelector('[role="dialog"]')); assert.equal(count('UpdateGymByAdmin'), deleteStart); assert.equal(input('gymName').value, 'Must Never Be Saved'); assert.equal(document.activeElement, danger);
+		click(danger); await wait(() => document.querySelector('[role="dialog"]')); flushSync(() => document.querySelector('[role="dialog"]').dispatchEvent(new window.KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))); await wait(() => !document.querySelector('[role="dialog"]')); assert.equal(count('UpdateGymByAdmin'), deleteStart);
+		click(danger); await wait(() => document.querySelector('[role="dialog"]')); holdWrite = true;
+		const confirm = Array.from(document.querySelectorAll('[role="dialog"] button')).find((node) => node.textContent === text.lifecycle.confirmAction); click(confirm); click(confirm); await wait(() => count('UpdateGymByAdmin') === deleteStart + 1);
+		assert.deepEqual(requests.at(-1).variables.input, { _id: id, expectedRevision: 7, gymStatus: 'DELETE' }); assert(confirm.disabled); assert(document.querySelector('[role="dialog"][aria-busy="true"]'));
+		flushSync(() => document.querySelector('[role="dialog"]').dispatchEvent(new window.KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))); assert(document.querySelector('[role="dialog"]')); assert(!document.querySelector('.gym-history'));
+		writeFault = 'stale'; pending.at(-1).respond(); await wait(() => document.querySelector('[data-recovery="stale"]')); holdWrite = false;
+		await wait(() => !document.querySelector('[role="dialog"]')); assert.equal(input('gymName').value, 'Must Never Be Saved'); assert.equal(gyms.get(id).gymStatus, 'PAUSED'); assert(button(text.lifecycle.markDeleted).disabled); assert(button(text.form.save).disabled); assert.equal(count('UpdateGymByAdmin'), deleteStart + 1);
+		lifecyclePass('dialog requires explicit confirmation, safe Cancel/Escape/focus, duplicate/progress guards, DELETE-only revisioned payload, stale delete preserves draft and requires reload without replay');
+		gyms.set(id, { ...original(), gymRevision: 15 }); writeFault = ''; click(button(text.conflict.reload)); await wait(() => input('gymName')?.value === 'Existing Gym' && !document.querySelector('[data-recovery="stale"]'));
+		edit('gymName', 'Unrelated Unsaved Changes'); edit('gymDesc', 'Another unsaved description'); click(button(text.lifecycle.markDeleted)); await wait(() => document.querySelector('[role="dialog"]'));
+		click(Array.from(document.querySelectorAll('[role="dialog"] button')).find((node) => node.textContent === text.lifecycle.confirmAction)); await wait(() => document.querySelector('.gym-history'));
+		assert.deepEqual(requests.at(-1).variables.input, { _id: id, expectedRevision: 15, gymStatus: 'DELETE' }); assert.equal(gyms.get(id).gymName, original().gymName); assert.equal(gyms.get(id).gymDesc, original().gymDesc); assert.equal(gyms.get(id).gymRevision, 16);
+		assert(document.querySelector('.gym-history').textContent.includes(original().gymName)); assert(document.querySelector('.gym-editor-heading').textContent.includes(text.lifecycle.deleted)); assert(!document.querySelector('.gym-editor-danger')); assert(!document.querySelector('form, input, textarea, [role="combobox"]')); assert(!button(text.form.save)); assert(!button(text.lifecycle.markDeleted)); assert(!document.querySelector('.gym-photos')); assert(document.querySelector('a[href="/_admin/gyms"]')); assert.equal(toasts.at(-1), text.lifecycle.deleteSuccess);
+		lifecyclePass('successful DELETE uses authoritative receipt, excludes unrelated edits, shows historical terminal data with no save/upload/amenity/hour/status/danger/restore/hard-delete controls and has list link');
+		// A direct URL or reload must produce the same terminal state, including optional empty values.
+		gyms.set(id, { ...gyms.get(id), gymDesc: null, gymPhone: null, amenities: [], openingHours: null }); session += '-direct-terminal'; await route(id); await wait(() => document.querySelector('.gym-history'));
+		assert(document.body.textContent.includes(text.lifecycle.notSupplied)); assert(document.body.textContent.includes(text.lifecycle.noAmenities)); assert(document.body.textContent.includes(text.hours.unknown)); assert.equal(count('UpdateGymByAdmin'), deleteStart + 2);
+		lifecyclePass('direct deleted detail route and absent optional historical information remain readable without writes');
+		for (const locale of ['en', 'kr', 'ru']) {
+			router.locale = locale; await reload(); const localized = resources[locale]['admin-gyms']; edit('gymName', 'Locale Conflict'); writeFault = 'stale'; submit(); await wait(() => document.querySelector('[data-recovery="stale"]')); assert(button(localized.conflict.reload)); assert(document.body.textContent.includes(localized.conflict.staleTitle));
+			writeFault = ''; click(button(localized.conflict.reload)); await wait(() => !document.querySelector('[data-recovery="stale"]')); click(button(localized.lifecycle.markDeleted)); await wait(() => document.querySelector('[role="dialog"]')); assert(document.querySelector('[role="dialog"]').textContent.includes(localized.lifecycle.confirmBody)); click(Array.from(document.querySelectorAll('[role="dialog"] button')).find((node) => node.textContent === localized.form.cancel)); await wait(() => !document.querySelector('[role="dialog"]'));
+		}
+		const keys = (value, prefix = '') => Object.entries(value).flatMap(([key, child]) => child && typeof child === 'object' ? keys(child, prefix + key + '.') : [prefix + key]).sort();
+		assert.deepEqual(keys(resources.en['admin-gyms']), keys(resources.kr['admin-gyms'])); assert.deepEqual(keys(resources.en['admin-gyms']), keys(resources.ru['admin-gyms'])); lifecyclePass('EN/KR/RU exact translation parity and real localized conflict/dialog actions');
+		writeFault = ''; for (const locale of ['en', 'kr', 'ru']) { router.locale = locale; session += '-locale'; await route(undefined); assert.equal(document.querySelector('h1').textContent, resources[locale]['admin-gyms'].form.createTitle); assert(document.body.textContent.includes(resources[locale]['admin-gyms'].lifecycle.createdPaused)); assert.equal(document.querySelectorAll('.gym-editor-amenities input').length, 6); assert(!document.querySelector('.gym-editor-danger')); } pass('EN/KR/RU editor strings resolve with all six enum amenities');
 		assert(document.querySelector('.gym-editor-fields')); assert(document.querySelector('.gym-editor-actions')); assert(document.querySelector('a[href="/_admin/gyms"]')); const stylesheet = require('sass').compile(path.join(project, 'scss/pc/admin/gyms.scss'), { logger: require('sass').Logger.silent }).css; assert.match(stylesheet, /max-width: 699px/); assert.match(stylesheet, /grid-template-columns: minmax\(0, 1fr\)/); assert.match(stylesheet, /min-height: 44px/); assert.match(stylesheet, /focus-visible/); pass('responsive editor structure, compiled stacked-field SCSS and native accessible controls');
-		console.log(`${checks} G3E editor helper/DOM/query groups passed. Mutations used deterministic fixture transport only.`);
+		console.log(`${checks - lifecycleChecks} G3E and ${lifecycleChecks} G3F editor helper/DOM/query groups passed. Mutations used deterministic fixture transport only.`);
 		return checks;
 	} finally {
 		if (root) root.unmount(); if (client) client.stop(); await new Promise((resolve) => setTimeout(resolve, 80)); dom.window.close();
@@ -222,7 +298,21 @@ async function backendTests() {
 		}
 		assert.equal(await fixture.db.model('Gym').countDocuments(), 1);
 		previousLog('PASS G3E disposable backend: guest/non-admin/inactive ADMIN reads and writes denied; no extra Gyms created');
-		return 3;
+		await fixture.members.updateOne({ _id: fixture.admin._id }, { $set: { memberStatus: 'ACTIVE' } });
+		const reservationSnapshot = JSON.stringify(await fixture.reservations.find().sort({ _id: 1 }).lean());
+		const staleDelete = await dispatch('UPDATE_GYM_BY_ADMIN', { input: { _id: gym._id, expectedRevision: 1, gymStatus: 'DELETE' } });
+		assert.equal(helper.gymUpdateError({ graphQLErrors: staleDelete.errors }), 'stale');
+		assert.equal((await dispatch('GET_GYM_BY_ADMIN', { gymId: gym._id })).data.getGymByAdmin.gymStatus, 'PAUSED');
+		const deleted = await dispatch('UPDATE_GYM_BY_ADMIN', { input: { _id: gym._id, expectedRevision: 2, gymStatus: 'DELETE' } });
+		assert.equal(deleted.errors, undefined); const terminal = deleted.data.updateGymByAdmin;
+		assert.equal(terminal.gymStatus, 'DELETE'); assert.equal(terminal.gymRevision, 3); assert(terminal.deletedAt); assert.equal(terminal.gymName, payload.gymName); assert.equal(terminal.gymAddress, payload.gymAddress);
+		assert.deepEqual((await dispatch('GET_GYM_BY_ADMIN', { gymId: gym._id })).data.getGymByAdmin, terminal);
+		const list = await dispatch('GET_ALL_GYMS_BY_ADMIN', { input: { page: 1, limit: 10, sort: 'createdAt', direction: 'DESC', search: { gymStatus: 'DELETE' } } });
+		assert.equal(list.errors, undefined); assert.equal(list.data.getAllGymsByAdmin.list[0]._id, gym._id); assert.equal(list.data.getAllGymsByAdmin.list[0].gymStatus, 'DELETE');
+		for (const gymStatus of ['ACTIVE', 'PAUSED', 'DELETE']) assert((await dispatch('UPDATE_GYM_BY_ADMIN', { input: { _id: gym._id, expectedRevision: 3, gymStatus } })).errors?.length);
+		assert.equal(await fixture.db.model('Gym').countDocuments(), 1); assert.equal(JSON.stringify(await fixture.reservations.find().sort({ _id: 1 }).lean()), reservationSnapshot);
+		previousLog('PASS G3F disposable backend: stale delete rejected; revisioned DELETE-only write; authoritative deleted detail/list; terminal restore/repeat denied; Gym and reservation history preserved');
+		return 4;
 	} finally {
 		if (fixture) await fixture.stop();
 		process.chdir(previousCwd); console.log = previousLog;
@@ -234,7 +324,7 @@ async function backendTests() {
 module.exports = async () => {
 	const dom = await domTests();
 	const backend = process.argv.includes('--dom-only') ? 0 : await backendTests();
-	console.log(`${dom} G3E deterministic editor groups; ${backend} disposable Gym backend groups passed.`);
+	console.log(`${dom} G3E/G3F deterministic editor groups; ${backend} disposable Gym backend groups passed.`);
 	return dom + backend;
 };
 if (require.main === module) module.exports().catch((error) => { console.error(error); process.exitCode = 1; });
