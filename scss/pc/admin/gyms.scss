@@ -1,3 +1,256 @@
+// Scoped to the Admin host; the controls remain reusable within the future detail form.
+#pc-wrap.admin .admin-gym-control {
+	min-width: 0;
+	width: 100%;
+	margin: 0 0 32px;
+	padding: 24px;
+	border: 1px solid #e0e0e0;
+	border-radius: 8px;
+	background: #fff;
+	color: #212121;
+	legend {
+		padding: 0 8px;
+		font-size: 20px;
+		font-weight: 600;
+		line-height: 1.4;
+	}
+	p {
+		margin: 0;
+		font-size: 14px;
+		line-height: 1.6;
+	}
+	button {
+		min-height: 44px;
+	}
+	button:focus-visible,
+	input:focus-visible {
+		outline: 2px solid #a53425;
+		outline-offset: 3px;
+	}
+	.gym-control-note {
+		margin-top: 20px;
+		color: #616161;
+		max-width: 75ch;
+	}
+	.gym-control-error {
+		margin-top: 12px;
+		color: #b72136;
+	}
+	@media (max-width: 599px) {
+		padding: 16px;
+		legend {
+			font-size: 18px;
+		}
+	}
+}
+
+#pc-wrap.admin .gym-photos {
+	.gym-photo-heading {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: baseline;
+		justify-content: space-between;
+		gap: 8px;
+		margin-bottom: 20px;
+		color: #616161;
+		span {
+			white-space: nowrap;
+			font-size: 13px;
+			font-variant-numeric: tabular-nums;
+		}
+	}
+	.gym-photo-gallery {
+		display: grid;
+		grid-template-columns: 2fr 1fr 1fr;
+		gap: 16px;
+		padding: 0;
+		margin: 0;
+		list-style: none;
+	}
+	.gym-photo {
+		min-width: 0;
+		display: flex;
+		flex-direction: column;
+	}
+	.gym-photo.is-cover {
+		grid-row: span 2;
+	}
+	.gym-photo.is-cover:only-child {
+		grid-column: 1 / -1;
+		grid-row: auto;
+		.gym-photo-preview {
+			flex: none;
+			aspect-ratio: 16 / 9;
+			max-height: 360px;
+		}
+	}
+	.gym-photo-preview {
+		position: relative;
+		aspect-ratio: 4 / 3;
+		background: #f4f6f8;
+		border-radius: 4px;
+		overflow: hidden;
+		img {
+			display: block;
+			width: 100%;
+			height: 100%;
+			object-fit: cover;
+		}
+	}
+	.is-cover .gym-photo-preview {
+		flex: 1;
+		min-height: 240px;
+	}
+	.gym-photo-fallback {
+		display: flex;
+		width: 100%;
+		height: 100%;
+		align-items: center;
+		justify-content: center;
+		color: #616161;
+	}
+	.gym-photo-cover {
+		position: absolute;
+		left: 12px;
+		bottom: 12px;
+		padding: 6px 10px;
+		border-radius: 4px;
+		background: #fff;
+		color: #212121;
+		font-size: 12px;
+		font-weight: 600;
+	}
+	.gym-photo-actions {
+		display: flex;
+		flex-wrap: wrap;
+		justify-content: flex-end;
+		gap: 4px;
+		button {
+			padding: 8px;
+			color: #616161;
+			font-size: 13px;
+		}
+	}
+	.gym-photo-empty {
+		display: flex;
+		align-items: center;
+		gap: 16px;
+		padding: 28px 20px;
+		background: #f7f8fa;
+		border-radius: 4px;
+		color: #616161;
+		svg {
+			flex-shrink: 0;
+		}
+	}
+	.gym-photo-upload {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 12px 20px;
+		margin-top: 20px;
+		p {
+			color: #616161;
+			font-size: 12px;
+		}
+		button {
+			flex-shrink: 0;
+			border-color: #bdbdbd;
+			color: #212121;
+		}
+	}
+	.gym-photo-actions button:disabled,
+	.gym-photo-upload button:disabled {
+		color: #757575;
+		border-color: #e0e0e0;
+		opacity: 0.6;
+	}
+	@media (max-width: 899px) {
+		.gym-photo-gallery {
+			grid-template-columns: repeat(2, minmax(0, 1fr));
+		}
+		.gym-photo.is-cover {
+			grid-column: 1 / -1;
+			grid-row: auto;
+		}
+		.is-cover .gym-photo-preview {
+			min-height: 0;
+			flex: none;
+			aspect-ratio: 16 / 9;
+		}
+	}
+}
+
+#pc-wrap.admin .gym-hours {
+	.gym-hours-heading {
+		margin-bottom: 20px;
+		.MuiFormControlLabel-root {
+			margin-left: -8px;
+		}
+		p {
+			color: #616161;
+		}
+	}
+	.gym-hours-week {
+		border-top: 1px solid #e0e0e0;
+	}
+	.gym-hours-day {
+		display: grid;
+		grid-template-columns: minmax(100px, 1fr) minmax(110px, 1fr) minmax(260px, 2fr);
+		align-items: center;
+		column-gap: 16px;
+		padding: 16px 0;
+		border-bottom: 1px solid #eee;
+		h3 {
+			margin: 0;
+			font-size: 14px;
+			line-height: 1.5;
+			font-weight: 600;
+			overflow-wrap: anywhere;
+		}
+	}
+	.gym-hours-state {
+		margin: 0;
+		min-height: 44px;
+		.MuiTypography-root {
+			font-size: 14px;
+		}
+	}
+	.gym-hours-times {
+		min-width: 0;
+		display: grid;
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+		gap: 12px;
+		.MuiFormControl-root {
+			min-width: 0;
+		}
+		.MuiInputBase-root {
+			min-height: 44px;
+			font-variant-numeric: tabular-nums;
+		}
+		input {
+			min-width: 0;
+			padding: 12px;
+		}
+	}
+	.gym-hours-day-error {
+		grid-column: 3;
+	}
+	@media (max-width: 899px) {
+		.gym-hours-day {
+			grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+			gap: 8px 16px;
+		}
+		.gym-hours-state {
+			justify-self: end;
+		}
+		.gym-hours-times,
+		.gym-hours-day-error {
+			grid-column: 1 / -1;
+		}
+	}
+}
+
 #pc-wrap.admin #bunker .admin-gyms {
 	width: 100%;
 	min-width: 0;

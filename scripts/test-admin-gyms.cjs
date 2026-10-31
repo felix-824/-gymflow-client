@@ -246,5 +246,6 @@ async function main() {
 	});
 	console.log(`${checks} Admin Gym contract/helper checks passed; ${Object.keys(locales.en).length} translation keys per locale; 4 live-schema documents validated. No mutations executed.`);
 	await require('./test-admin-gym-list.cjs')();
+	await require('./test-admin-gym-controls.cjs')();
 }
 main().catch((error) => { console.error(error); process.exitCode = 1; });

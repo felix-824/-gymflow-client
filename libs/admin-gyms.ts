@@ -32,6 +32,20 @@ export function normalizeGymAmenities(values: readonly GymAmenity[] = []): GymAm
 	return Array.from(new Set(values));
 }
 
+export function gymOpeningHoursDayError(day: GymOpeningHoursDayInput): string | null {
+	if (day.isClosed) return null;
+	if (!day.openTime || !day.closeTime) return 'hours.requiredTimes';
+	const time = /^(?:[01]\d|2[0-3]):[0-5]\d$/;
+	if (
+		typeof day.openTime !== 'string' ||
+		typeof day.closeTime !== 'string' ||
+		!time.test(day.openTime) ||
+		!time.test(day.closeTime)
+	)
+		return 'hours.timeFormat';
+	return day.openTime >= day.closeTime ? 'hours.timeOrder' : null;
+}
+
 export function gymOpeningHoursError(hours: GymInput['openingHours']): string | null {
 	if (hours == null) return null;
 	const weekdays = Object.values(TrainerScheduleDayOfWeek);
@@ -50,17 +64,8 @@ export function gymOpeningHoursError(hours: GymInput['openingHours']): string | 
 			return 'hours.sevenDays';
 		seen.add(day.dayOfWeek);
 		// A closed row may retain local draft times; serialization below clears them.
-		if (day.isClosed) continue;
-		if (!day.openTime || !day.closeTime) return 'hours.requiredTimes';
-		const time = /^(?:[01]\d|2[0-3]):[0-5]\d$/;
-		if (
-			typeof day.openTime !== 'string' ||
-			typeof day.closeTime !== 'string' ||
-			!time.test(day.openTime) ||
-			!time.test(day.closeTime)
-		)
-			return 'hours.timeFormat';
-		if (day.openTime >= day.closeTime) return 'hours.timeOrder';
+		const error = gymOpeningHoursDayError(day);
+		if (error) return error;
 	}
 	return null;
 }
@@ -82,7 +87,7 @@ export function normalizeGymOpeningHours(hours: GymInput['openingHours']): GymOp
 
 // Called only when the future UI enables hours. Blank times require an explicit choice;
 // the separate null value continues to mean that hours have not been supplied.
-export function createGymOpeningHoursForm(hours: GymOpeningHoursDay[] | null): GymOpeningHoursDayInput[] {
+export function createGymOpeningHoursForm(hours: readonly GymOpeningHoursDayInput[] | null): GymOpeningHoursDayInput[] {
 	return Object.values(TrainerScheduleDayOfWeek).map((dayOfWeek) => {
 		const day = hours?.find((entry) => entry.dayOfWeek === dayOfWeek);
 		return {

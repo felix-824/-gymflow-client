@@ -61,6 +61,10 @@
 		"phoneHelper": "Optional. Include 7–15 digits; spaces, parentheses, hyphens and a leading + are allowed."
 	},
 	"photos": {
+		"makeCoverAction": "Make cover",
+		"empty": "Choose photos that show the gym and its training spaces.",
+		"removeAction": "Remove",
+		"malformed": "The upload returned invalid photo data. Your existing photos are unchanged.",
 		"title": "Photos",
 		"intro": "Add 1–5 photos. The first photo is the cover.",
 		"upload": "Add photos",
@@ -88,6 +92,7 @@
 		"TOWEL": "Towels"
 	},
 	"hours": {
+		"draftHelp": "Enter both times for each open day, or mark it closed.",
 		"title": "Opening Hours",
 		"supplied": "Provide opening hours",
 		"unknown": "Opening hours have not been supplied.",
