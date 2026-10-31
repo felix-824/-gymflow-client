@@ -16,6 +16,7 @@ export interface LoginInput {
 
 interface AISearch {
 	text?: string;
+	gymId?: string;
 }
 
 export interface TrainersInquiry {

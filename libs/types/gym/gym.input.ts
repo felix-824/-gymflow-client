@@ -30,10 +30,14 @@ export interface AdminGymSearch extends GymSearch {
 	gymStatus?: GymStatus;
 }
 
-export interface AllGymsInquiry {
+export interface GymsInquiry {
 	page: number;
 	limit: number;
 	sort?: 'createdAt' | 'updatedAt';
 	direction?: Direction;
+	search: GymSearch;
+}
+
+export interface AllGymsInquiry extends Omit<GymsInquiry, 'search'> {
 	search: AdminGymSearch;
 }

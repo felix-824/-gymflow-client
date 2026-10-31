@@ -1,0 +1,52 @@
+{
+	"catalog": {
+		"title": "Gyms",
+		"intro": "Find a gym that fits your training",
+		"searchPlaceholder": "Search gyms by name",
+		"viewGym": "View Gym",
+		"empty": "No gyms available yet",
+		"filteredEmpty": "No gyms match your filters",
+		"loading": "Loading gyms…",
+		"error": "Could not load gyms. Please try again."
+	},
+	"filters": {
+		"location": "Location",
+		"amenities": "Amenities",
+		"amenitiesHint": "Includes all selected amenities",
+		"clear": "Clear",
+		"clearAll": "Clear all",
+		"apply": "Apply filters"
+	},
+	"sort": { "newest": "Newest", "updated": "Recently updated" },
+	"retry": "Retry",
+	"detail": {
+		"back": "Back to Gyms",
+		"browsePrograms": "Browse programs at this gym",
+		"about": "About",
+		"openingHours": "Opening Hours",
+		"hoursNotProvided": "Opening hours not provided",
+		"contact": "Direct Contact",
+		"call": "Call",
+		"programs": "Programs at this gym",
+		"trainers": "Trainers offering programs at this gym",
+		"trainersIntro": "Explore trainers currently offering active programs at this gym.",
+		"viewProgram": "View Program",
+		"viewProfile": "View Profile",
+		"closed": "Closed",
+		"unavailable": "This gym is currently unavailable",
+		"loading": "Loading gym…",
+		"error": "Could not load this gym. Please try again."
+	},
+	"locations": {
+		"SEOUL": "Seoul", "GYEONGGI": "Gyeonggi", "INCHEON": "Incheon", "BUSAN": "Busan",
+		"DAEGU": "Daegu", "DAEJEON": "Daejeon", "GWANGJU": "Gwangju", "ETC": "Other"
+	},
+	"amenities": {
+		"PARKING": "Parking", "SHOWER": "Showers", "LOCKER": "Lockers",
+		"SAUNA": "Sauna", "WIFI": "Wi-Fi", "TOWEL": "Towels"
+	},
+	"weekdays": {
+		"MON": "Monday", "TUE": "Tuesday", "WED": "Wednesday", "THU": "Thursday",
+		"FRI": "Friday", "SAT": "Saturday", "SUN": "Sunday"
+	}
+}

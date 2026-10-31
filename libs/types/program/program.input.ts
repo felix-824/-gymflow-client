@@ -20,6 +20,7 @@ export interface ProgramCreateInput extends ProgramInput {
 
 export interface ProgramSearch {
 	memberId?: string;
+	gymId?: string;
 	locationList?: ProgramLocation[];
 	typeList?: ProgramType[];
 	categoryList?: ProgramCategory[];

@@ -1,5 +1,42 @@
 import { gql } from '@apollo/client';
 
+export const GET_GYMS = gql`
+	query GetGyms($input: GymsInquiry!) {
+		getGyms(input: $input) {
+			list {
+				_id
+				gymName
+				gymLocation
+				gymAddress
+				gymDesc
+				gymImages
+				amenities
+				createdAt
+				updatedAt
+			}
+			metaCounter { total }
+		}
+	}
+`;
+
+export const GET_GYM = gql`
+	query GetGym($gymId: String!) {
+		getGym(gymId: $gymId) {
+			_id
+			gymName
+			gymLocation
+			gymAddress
+			gymDesc
+			gymImages
+			gymPhone
+			openingHours { dayOfWeek isClosed openTime closeTime }
+			amenities
+			createdAt
+			updatedAt
+		}
+	}
+`;
+
 export const GET_TRAINER_RESERVATIONS = gql`
 	query GetTrainerReservations($input: TrainerReservationsInquiry!) {
 		getTrainerReservations(input: $input) {

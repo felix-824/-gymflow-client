@@ -156,6 +156,9 @@ export function readTrainersInquiry(value: unknown, fallback: TrainersInquiry): 
 		const input = typeof value === 'string' ? JSON.parse(value) : value;
 		if (!input || typeof input !== 'object') return { ...fallback, search: { ...fallback.search } };
 		const text = typeof input.search?.text === 'string' ? input.search.text.trim().slice(0, 100) : '';
+		const search: TrainersInquiry['search'] = text ? { text } : {};
+		if (typeof input.search?.gymId === 'string' && /^[a-f\d]{24}$/i.test(input.search.gymId))
+			search.gymId = input.search.gymId;
 		return {
 			page: Number.isInteger(input.page) && input.page > 0 && input.page <= 2147483647 ? input.page : 1,
 			limit: Number.isInteger(input.limit) && input.limit > 0 && input.limit <= 100 ? input.limit : fallback.limit,
@@ -163,7 +166,7 @@ export function readTrainersInquiry(value: unknown, fallback: TrainersInquiry): 
 				? input.sort
 				: fallback.sort,
 			direction: input.direction === Direction.ASC ? Direction.ASC : Direction.DESC,
-			search: text ? { text } : {},
+			search,
 		};
 	} catch {
 		return { ...fallback, search: { ...fallback.search } };
@@ -211,6 +214,7 @@ export function readProgramsInquiry(
 		}
 		if (typeof source.memberId === 'string' && /^[a-f\d]{24}$/i.test(source.memberId))
 			search.memberId = source.memberId;
+		if (typeof source.gymId === 'string' && /^[a-f\d]{24}$/i.test(source.gymId)) search.gymId = source.gymId;
 		if (typeof source.text === 'string' && source.text.trim()) search.text = source.text.trim().slice(0, 100);
 		const range = source.pricesRange;
 		if (

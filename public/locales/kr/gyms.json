@@ -1,0 +1,52 @@
+{
+	"catalog": {
+		"title": "헬스장",
+		"intro": "나의 운동에 맞는 헬스장을 찾아보세요",
+		"searchPlaceholder": "헬스장 이름으로 검색",
+		"viewGym": "헬스장 보기",
+		"empty": "아직 등록된 헬스장이 없습니다",
+		"filteredEmpty": "선택한 조건에 맞는 헬스장이 없습니다",
+		"loading": "헬스장 목록을 불러오는 중…",
+		"error": "헬스장 목록을 불러오지 못했습니다. 다시 시도해 주세요."
+	},
+	"filters": {
+		"location": "지역",
+		"amenities": "편의시설",
+		"amenitiesHint": "선택한 편의시설을 모두 포함",
+		"clear": "지우기",
+		"clearAll": "모두 지우기",
+		"apply": "필터 적용"
+	},
+	"sort": { "newest": "최신순", "updated": "최근 수정순" },
+	"retry": "다시 시도",
+	"detail": {
+		"back": "헬스장 목록으로",
+		"browsePrograms": "이 헬스장의 프로그램 둘러보기",
+		"about": "소개",
+		"openingHours": "운영 시간",
+		"hoursNotProvided": "운영 시간 정보가 없습니다",
+		"contact": "직접 문의",
+		"call": "전화하기",
+		"programs": "이 헬스장의 프로그램",
+		"trainers": "이 헬스장에서 프로그램을 제공하는 트레이너",
+		"trainersIntro": "현재 이 헬스장에서 운영 중인 프로그램을 제공하는 트레이너를 만나보세요.",
+		"viewProgram": "프로그램 보기",
+		"viewProfile": "프로필 보기",
+		"closed": "휴무",
+		"unavailable": "현재 이 헬스장을 이용할 수 없습니다",
+		"loading": "헬스장 정보를 불러오는 중…",
+		"error": "헬스장 정보를 불러오지 못했습니다. 다시 시도해 주세요."
+	},
+	"locations": {
+		"SEOUL": "서울", "GYEONGGI": "경기", "INCHEON": "인천", "BUSAN": "부산",
+		"DAEGU": "대구", "DAEJEON": "대전", "GWANGJU": "광주", "ETC": "기타"
+	},
+	"amenities": {
+		"PARKING": "주차장", "SHOWER": "샤워실", "LOCKER": "사물함",
+		"SAUNA": "사우나", "WIFI": "와이파이", "TOWEL": "수건"
+	},
+	"weekdays": {
+		"MON": "월요일", "TUE": "화요일", "WED": "수요일", "THU": "목요일",
+		"FRI": "금요일", "SAT": "토요일", "SUN": "일요일"
+	}
+}
