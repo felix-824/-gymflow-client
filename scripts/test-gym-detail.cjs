@@ -63,7 +63,7 @@ async function main() {
 		const store = { userVar: apollo.makeVar({}) };
 		const mocks = {
 			'next/router': { useRouter: () => router }, 'next/head': { __esModule: true, default: () => null },
-			'next/link': { __esModule: true, default: React.forwardRef(({ href, children, passHref, legacyBehavior, ...props }, ref) => React.createElement('a', { ...props, ref, href: typeof href === 'string' ? href : href.pathname + '?' + new URLSearchParams(href.query) }, children)) },
+			'next/link': { __esModule: true, default: React.forwardRef(function MockLink({ href, children, passHref, legacyBehavior, ...props }, ref) { return React.createElement('a', { ...props, ref, href: typeof href === 'string' ? href : href.pathname + '?' + new URLSearchParams(href.query) }, children); }) },
 			'next-i18next': { useTranslation: (ns) => ({ t: i18n.getFixedT(router.locale, ns), i18n }) },
 			'next-i18next/serverSideTranslations': { serverSideTranslations: async (locale, names) => { namespaceLoads.push({ locale, names }); return {}; } },
 			'../../libs/components/layout/LayoutBasic': { __esModule: true, default: (Component) => Component },
@@ -175,6 +175,39 @@ async function main() {
 			for (const selector of rule.selector.split(',').map((value) => value.trim())) if (!selector.includes('gym-detail')) { const key = media.join('|') + '|' + selector; result[key] ??= {}; rule.nodes.filter((node) => node.type === 'decl').forEach((node) => { result[key][node.prop] = node.value; }); }
 		}); return result; };
 		assert.deepEqual(cascade(trainerCss), cascade(previousCss)); assert(trainerCss.includes('#pc-wrap.gym-detail-layout .trainer-discovery-card')); pass('shared Trainer card stylesheet preserves all original Trainer selector/media declarations without a style fork');
+		const originalDetailCss = sass.compileString(execFileSync('git', ['show', 'c6dc028ceb179a47dbb15b87674b0074bd11dcd2:scss/pc/gym/detail.scss'], { cwd: rootPath, encoding: 'utf8' }), { logger: sass.Logger.silent }).css;
+		const detailRules = (css) => {
+			const rules = new Map();
+			postcss.parse(css).walkRules(rule => {
+				const media = []; for (let parent = rule.parent; parent; parent = parent.parent) if (parent.type === 'atrule') media.unshift(parent.params);
+				rules.set(media.join('|') + '|' + rule.selector, { selector: rule.selector, media, declarations: Object.fromEntries(rule.nodes.filter(node => node.type === 'decl').map(node => [node.prop, node.value])) });
+			});
+			return rules;
+		};
+		const originalRules = detailRules(originalDetailCss), currentRules = detailRules(detailCss);
+		for (const [key, rule] of originalRules) assert.deepEqual(currentRules.get(key), rule, 'Existing Gym gallery/Program/layout rule changed: ' + key);
+		const compactRules = [...currentRules].filter(([key]) => !originalRules.has(key)).map(([, rule]) => rule);
+		assert(compactRules.length > 0);
+		for (const rule of compactRules) assert(rule.selector.startsWith('#pc-wrap.gym-detail-layout #gym-detail-page .gym-detail-trainers '), 'Compact styles escaped Gym Detail trainers: ' + rule.selector);
+		pass('G6I additions are confined to Gym Detail trainers; all original Gym/Program/gallery declarations remain identical');
+		for (const width of [1440, 768, 390]) {
+			const compact = (selector) => Object.assign({}, ...compactRules.filter(rule => rule.selector.endsWith(selector) && rule.media.every(query => [...query.matchAll(/\((min|max)-width:\s*([\d.]+)px\)/g)].every(([, bound, value]) => bound === 'min' ? width >= Number(value) : width <= Number(value)))).map(rule => rule.declarations));
+			const columns = width >= 1024 ? 3 : width >= 768 ? 2 : 1;
+			const grid = compact(' .gym-child-grid');
+			assert.equal(grid['grid-template-columns'], width < 768 ? 'minmax(0, 1fr)' : `repeat(${columns}, minmax(0, 260px))`);
+			assert.equal(grid.gap, '20px');
+			assert.equal(compact(' .trainer-card-photo')['aspect-ratio'], '3/2');
+			assert.equal(compact(' .trainer-card-photo').position, 'relative');
+			assert.equal(compact(' .trainer-card-photo img').position, 'absolute');
+			assert.equal(compact(' .trainer-card-photo img').inset, '0');
+			assert.equal(compact(' .trainer-card-photo img')['object-position'], 'center 30%');
+			assert.equal(compact(' .trainer-card-body').padding, '16px');
+			assert.equal(compact(' .trainer-card-body').gap, '12px');
+			const container = Math.min(1232, width - (width < 768 ? 32 : 48));
+			const cardWidth = width < 768 ? container : 260;
+			assert(cardWidth * columns + 20 * (columns - 1) <= container, 'Trainer tracks overflow the content width');
+			pass(`G6I ${width}px compiled cascade: ${cardWidth}px cards, 3:2 cropped portraits, comfortable spacing and no track overflow`);
+		}
 		const programCss = sass.compileString('$font: sans-serif; ' + fs.readFileSync(path.join(rootPath, 'scss/pc/program/program.scss'), 'utf8'), { logger: sass.Logger.silent }).css;
 		assert(programCss.includes('#pc-wrap.gym-detail-layout .gym-detail-programs .discovery-program-card')); pass('existing Program card styles include detail context through the same shared selector group');
 		const Venue = load('libs/components/program/ProgramGymVenue.tsx', mocks).default;

@@ -270,6 +270,25 @@
 			gap: 24px;
 			min-width: 0;
 		}
+		.gym-detail-trainers {
+			.gym-child-grid {
+				grid-template-columns: repeat(3, minmax(0, 260px));
+				gap: 20px;
+			}
+			.trainer-card-photo {
+				position: relative;
+				aspect-ratio: 3 / 2;
+				img {
+					position: absolute;
+					inset: 0;
+					object-position: center 30%;
+				}
+			}
+			.trainer-card-body {
+				padding: 16px;
+				gap: 12px;
+			}
+		}
 		.gym-section-pagination {
 			display: flex;
 			justify-content: center;
@@ -368,6 +387,9 @@
 			.gym-child-grid {
 				grid-template-columns: repeat(2, minmax(0, 1fr));
 			}
+			.gym-detail-trainers .gym-child-grid {
+				grid-template-columns: repeat(2, minmax(0, 260px));
+			}
 		}
 		@media (max-width: 767px) {
 			padding: 12px 16px 48px;
@@ -439,6 +461,9 @@
 			.gym-info-skeleton {
 				grid-template-columns: minmax(0, 1fr);
 				gap: 20px;
+			}
+			.gym-detail-trainers .gym-child-grid {
+				grid-template-columns: minmax(0, 1fr);
 			}
 			.gym-section-pagination {
 				justify-content: space-between;
