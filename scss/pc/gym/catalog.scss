@@ -77,6 +77,10 @@
 			border-radius: 8px;
 			flex: 1;
 			min-width: 0;
+			&:focus-within {
+				outline: 2px solid #a53425;
+				outline-offset: 3px;
+			}
 		}
 		.gym-name-search .MuiIconButton-root {
 			width: 48px;
@@ -94,7 +98,11 @@
 			border-radius: 8px;
 			color: #17191f;
 			font-size: 14px;
-			outline-offset: -3px;
+		}
+		.gym-name-search input:focus,
+		.gym-name-search input:focus-visible,
+		.gym-name-search .MuiIconButton-root:focus-visible {
+			outline: none;
 		}
 		.gym-name-search input::placeholder {
 			color: #646b76;
