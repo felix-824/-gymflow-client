@@ -1,6 +1,7 @@
 // Favorites uses real GraphQL/MongoDB fixtures; fault injection targets responses only.
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
+const http = require('node:http');
 const path = require('node:path');
 const os = require('node:os');
 const vm = require('node:vm');
@@ -163,8 +164,27 @@ async function integration({ i18n, resources }) {
 			{ createRoot } = require('react-dom/client'),
 			{ flushSync } = require('react-dom');
 		const { ApolloClient, ApolloProvider, InMemoryCache, HttpLink } = require('@apollo/client');
-		// Use fresh HTTP connections, avoiding Node fetch's idle pooled sockets during JSDOM startup.
-		const fixtureFetch = global.fetch;
+		// Native fetch can reuse setup sockets closed while JSDOM starts. Each UI request owns a fresh socket.
+		const fixtureFetch = (url, options) => new Promise((resolve, reject) => {
+			if (String(url) !== uri) return reject(new Error('Unexpected Favorites fixture endpoint'));
+			const request = http.request(url, {
+				method: options.method,
+				headers: Object.fromEntries(new Headers(options.headers)),
+				signal: options.signal,
+				agent: false,
+			}, (response) => {
+				const chunks = [];
+				response.on('data', (chunk) => chunks.push(chunk));
+				response.on('error', reject);
+				response.on('end', () => resolve(new Response(Buffer.concat(chunks), {
+					status: response.statusCode,
+					statusText: response.statusMessage,
+					headers: response.headers,
+				})));
+			});
+			request.on('error', reject);
+			request.end(options.body);
+		});
 		const store = loadTs(path.join(__dirname, '../apollo/store.ts'));
 		const requests = [];
 		let failRead = false,
