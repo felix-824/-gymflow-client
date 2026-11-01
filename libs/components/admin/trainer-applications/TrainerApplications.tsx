@@ -15,6 +15,7 @@ import {
 	TableRow,
 	Tab,
 	Tabs,
+	useMediaQuery,
 } from '@mui/material';
 import { GET_TRAINER_APPLICATIONS_BY_ADMIN } from '../../../../apollo/admin/query';
 import { TrainerApplicationStatus } from '../../../enums/trainer-application.enum';
@@ -28,6 +29,7 @@ import AdminApplicationAccess from './AdminApplicationAccess';
 const ApplicationList = () => {
 	const { t } = useTranslation(['admin-trainer-applications', 'common']);
 	const { locale } = useRouter();
+	const mobile = useMediaQuery('(max-width:599px)');
 	const [input, setInput] = useState<TrainerApplicationsInquiry>({
 		page: 1,
 		limit: 10,
@@ -50,8 +52,18 @@ const ApplicationList = () => {
 			setInput((current) => ({ ...current, page: lastPage }));
 	}, [applications, loading, error, input.page, lastPage]);
 	const dateLocale = locale === 'kr' ? 'ko-KR' : locale === 'ru' ? 'ru-RU' : 'en-US';
+	const feedback = loading ? (
+		<p role="status">{t('Loading')}</p>
+	) : error ? (
+		<div role="alert">
+			<p>{t('Load error')}</p>
+			<Button onClick={() => void refetch().catch(() => undefined)}>{t('Retry')}</Button>
+		</div>
+	) : (
+		<p>{t(`Empty ${input.search.status}`)}</p>
+	);
 	return (
-		<div className="content admin-trainer-applications">
+		<div className="content admin-trainer-applications admin-application-list">
 			<header className="admin-application-heading">
 				<h1>{t('Title')}</h1>
 				<p>{t('Intro')}</p>
@@ -61,60 +73,37 @@ const ApplicationList = () => {
 					value={input.search.status}
 					onChange={(_, status: TrainerApplicationStatus) => setInput({ ...input, page: 1, search: { status } })}
 					aria-label={t('Status')}
-					variant="scrollable"
+					variant={mobile ? 'fullWidth' : 'scrollable'}
 					scrollButtons="auto"
 				>
 					{Object.values(TrainerApplicationStatus).map((status) => (
 						<Tab key={status} value={status} label={t(status)} />
 					))}
 				</Tabs>
-				<TableContainer>
-					<Table aria-label={t('Title')}>
-						<TableHead>
-							<TableRow>
-								{['Applicant', 'Specialties', 'Status', 'Submitted Date', 'Action'].map((column) => (
-									<TableCell key={column}>{t(column)}</TableCell>
-								))}
-							</TableRow>
-						</TableHead>
-						<TableBody>
-							{loading || error || !applications?.list.length ? (
-								<TableRow>
-									<TableCell colSpan={5} className="admin-application-empty">
-										{loading ? (
-											<p role="status">{t('Loading')}</p>
-										) : error ? (
-											<div role="alert">
-												<p>{t('Load error')}</p>
-												<Button onClick={() => void refetch().catch(() => undefined)}>{t('Retry')}</Button>
-											</div>
-										) : (
-											<p>{t(`Empty ${input.search.status}`)}</p>
-										)}
-									</TableCell>
-								</TableRow>
-							) : (
-								applications.list.map((application) => (
-									<TableRow key={application._id} hover>
-										<TableCell>
-											<div className="admin-application-applicant">
-												<Avatar aria-hidden="true">{trainerApplicantInitials(application.fullName)}</Avatar>
-												<span>{application.fullName}</span>
-											</div>
-										</TableCell>
-										<TableCell>
-											<div className="admin-application-specialties">
-												{application.categories.map((category) => (
-													<span key={category}>{t(category, { ns: 'common' })}</span>
-												))}
-											</div>
-										</TableCell>
-										<TableCell>
+				{mobile ? (
+					loading || error || !applications?.list.length ? (
+						<div className="admin-application-mobile-feedback">{feedback}</div>
+					) : (
+						<ul className="admin-application-mobile-list" aria-label={t('Title')}>
+							{applications.list.map((application) => (
+								<li key={application._id} className="admin-application-mobile-row">
+									<div className="admin-application-mobile-identity">
+										<Avatar aria-hidden="true">{trainerApplicantInitials(application.fullName)}</Avatar>
+										<div>
+											<strong>{application.fullName}</strong>
 											<span className={`admin-application-status is-${application.status.toLowerCase()}`}>
 												{t(`Status ${application.status}`)}
 											</span>
-										</TableCell>
-										<TableCell>
+										</div>
+									</div>
+									<div className="admin-application-specialties" aria-label={t('Specialties')}>
+										{application.categories.map((category) => (
+											<span key={category}>{t(category, { ns: 'common' })}</span>
+										))}
+									</div>
+									<div className="admin-application-mobile-footer">
+										<div>
+											<span>{t('Submitted Date')}</span>
 											<time dateTime={application.createdAt}>
 												{new Date(application.createdAt).toLocaleDateString(dateLocale, {
 													year: 'numeric',
@@ -122,23 +111,88 @@ const ApplicationList = () => {
 													day: 'numeric',
 												})}
 											</time>
-										</TableCell>
-										<TableCell>
-											<Link
-												href={{
-													pathname: `${adminTrainerApplicationsRoute}/detail`,
-													query: { applicationId: application._id },
-												}}
-											>
-												{t(application.status === TrainerApplicationStatus.PENDING ? 'Review' : 'View')}
-											</Link>
+										</div>
+										<Link
+											className="admin-application-mobile-action"
+											aria-label={`${t(application.status === TrainerApplicationStatus.PENDING ? 'Review' : 'View')}: ${
+												application.fullName
+											}`}
+											href={{
+												pathname: `${adminTrainerApplicationsRoute}/detail`,
+												query: { applicationId: application._id },
+											}}
+										>
+											{t(application.status === TrainerApplicationStatus.PENDING ? 'Review' : 'View')}
+										</Link>
+									</div>
+								</li>
+							))}
+						</ul>
+					)
+				) : (
+					<TableContainer>
+						<Table aria-label={t('Title')}>
+							<TableHead>
+								<TableRow>
+									{['Applicant', 'Specialties', 'Status', 'Submitted Date', 'Action'].map((column) => (
+										<TableCell key={column}>{t(column)}</TableCell>
+									))}
+								</TableRow>
+							</TableHead>
+							<TableBody>
+								{loading || error || !applications?.list.length ? (
+									<TableRow>
+										<TableCell colSpan={5} className="admin-application-empty">
+											{feedback}
 										</TableCell>
 									</TableRow>
-								))
-							)}
-						</TableBody>
-					</Table>
-				</TableContainer>
+								) : (
+									applications.list.map((application) => (
+										<TableRow key={application._id} hover>
+											<TableCell>
+												<div className="admin-application-applicant">
+													<Avatar aria-hidden="true">{trainerApplicantInitials(application.fullName)}</Avatar>
+													<span>{application.fullName}</span>
+												</div>
+											</TableCell>
+											<TableCell>
+												<div className="admin-application-specialties">
+													{application.categories.map((category) => (
+														<span key={category}>{t(category, { ns: 'common' })}</span>
+													))}
+												</div>
+											</TableCell>
+											<TableCell>
+												<span className={`admin-application-status is-${application.status.toLowerCase()}`}>
+													{t(`Status ${application.status}`)}
+												</span>
+											</TableCell>
+											<TableCell>
+												<time dateTime={application.createdAt}>
+													{new Date(application.createdAt).toLocaleDateString(dateLocale, {
+														year: 'numeric',
+														month: 'short',
+														day: 'numeric',
+													})}
+												</time>
+											</TableCell>
+											<TableCell>
+												<Link
+													href={{
+														pathname: `${adminTrainerApplicationsRoute}/detail`,
+														query: { applicationId: application._id },
+													}}
+												>
+													{t(application.status === TrainerApplicationStatus.PENDING ? 'Review' : 'View')}
+												</Link>
+											</TableCell>
+										</TableRow>
+									))
+								)}
+							</TableBody>
+						</Table>
+					</TableContainer>
+				)}
 				<TablePagination
 					component="div"
 					count={total}

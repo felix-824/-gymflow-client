@@ -192,6 +192,158 @@
 	}
 }
 
+@media (max-width: 599px) {
+	#pc-wrap.admin #bunker .admin-application-list {
+		color: #17191f;
+		.table-wrap {
+			border-color: #e7e9ee;
+		}
+		.MuiTabs-root {
+			padding: 0 8px;
+			border-color: #e7e9ee;
+		}
+		.MuiTab-root {
+			min-width: 0;
+			padding: 12px 4px;
+			font-size: 13px;
+			line-height: 1.5;
+		}
+		.MuiTabs-indicator {
+			background: #eb6753;
+		}
+		.MuiTab-root.Mui-selected {
+			color: #a53425;
+		}
+		.admin-application-mobile-list {
+			list-style: none;
+			margin: 0;
+			padding: 0;
+		}
+		.admin-application-mobile-row {
+			padding: 20px 16px;
+			border-bottom: 1px solid #e7e9ee;
+			&:last-child {
+				border-bottom: 0;
+			}
+		}
+		.admin-application-mobile-identity {
+			display: flex;
+			align-items: flex-start;
+			gap: 12px;
+			> div:last-child {
+				min-width: 0;
+			}
+			strong {
+				display: block;
+				font-size: 16px;
+				font-weight: 600;
+				line-height: 1.5;
+				overflow-wrap: anywhere;
+			}
+			.admin-application-status {
+				display: block;
+				margin-top: 4px;
+				line-height: 1.5;
+			}
+		}
+		.admin-application-specialties {
+			margin-top: 16px;
+			font-size: 14px;
+			line-height: 1.6;
+			gap: 4px 12px;
+			overflow-wrap: anywhere;
+		}
+		.admin-application-mobile-footer {
+			display: grid;
+			grid-template-columns: minmax(0, 1fr) auto;
+			align-items: end;
+			gap: 12px;
+			margin-top: 16px;
+			> div {
+				min-width: 0;
+			}
+			span {
+				display: block;
+				color: #616875;
+				font-size: 12px;
+				line-height: 1.5;
+			}
+			time {
+				display: block;
+				margin-top: 4px;
+				font-size: 13px;
+				line-height: 1.5;
+				font-variant-numeric: tabular-nums;
+			}
+		}
+		a.admin-application-mobile-action {
+			display: inline-flex;
+			align-items: center;
+			justify-content: center;
+			min-width: 80px;
+			min-height: 44px;
+			padding: 10px 14px;
+			border-radius: 6px;
+			background: #12151d;
+			color: #fff;
+			font-size: 14px;
+			font-weight: 600;
+			line-height: 1.5;
+			text-decoration: none;
+			&:hover {
+				background: #303642;
+			}
+			&:focus-visible {
+				outline-offset: 3px;
+			}
+		}
+		.admin-application-mobile-feedback {
+			padding: 32px 20px;
+			text-align: center;
+			font-size: 14px;
+			line-height: 1.7;
+			overflow-wrap: anywhere;
+			p {
+				margin: 0;
+			}
+			.MuiButton-root {
+				min-height: 44px;
+				margin-top: 12px;
+			}
+		}
+		.MuiTablePagination-root {
+			border-color: #e7e9ee;
+			overflow-x: visible;
+			.MuiToolbar-root {
+				display: grid;
+				grid-template-columns: minmax(0, 1fr) auto;
+				gap: 8px;
+				padding: 12px 16px;
+			}
+			.MuiInputBase-root {
+				margin: 0;
+				justify-self: end;
+				min-height: 44px;
+			}
+			.MuiTablePagination-selectLabel,
+			.MuiTablePagination-displayedRows {
+				margin: 0;
+				white-space: normal;
+				line-height: 1.5;
+			}
+			.MuiTablePagination-actions {
+				margin: 0;
+				justify-self: end;
+				white-space: nowrap;
+			}
+			.MuiIconButton-root {
+				width: 44px;
+				height: 44px;
+			}
+		}
+	}
+}
+
 .admin-application-dialog {
 	.MuiDialogTitle-root {
 		font-size: 22px;
