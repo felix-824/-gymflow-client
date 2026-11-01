@@ -1284,6 +1284,23 @@
 }
 
 #pc-wrap.program-discovery-layout #program-list-page {
+	.discovery-program-card {
+		height: auto;
+		.discovery-card-media {
+			flex-shrink: 0;
+			overflow: hidden;
+		}
+		.discovery-card-image {
+			position: absolute;
+			inset: 0;
+		}
+		.discovery-card-body {
+			flex: 0 1 auto;
+		}
+		.discovery-card-footer {
+			margin-top: 0;
+		}
+	}
 	.discovery-results-toolbar {
 		display: flex;
 		flex-direction: column;

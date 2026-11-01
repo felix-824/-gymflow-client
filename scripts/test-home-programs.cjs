@@ -65,12 +65,95 @@ function mediaRegression(section) {
 			assert.equal(window.getComputedStyle(link).height, '100%');
 			assert.equal(window.getComputedStyle(link.querySelector('img')).objectFit, 'cover');
 			const listMedia = list.querySelector('.discovery-card-media');
-			assert.equal(window.getComputedStyle(listMedia).overflow, '');
-			assert.notEqual(window.getComputedStyle(listMedia.querySelector('a')).position, 'absolute');
-			pass(width + 'px compiled containment removes intrinsic media sizing only on Home; list/search card rules remain intact');
+			assert.equal(window.getComputedStyle(listMedia).overflow, 'hidden');
+			assert.equal(window.getComputedStyle(listMedia).flexShrink, '0');
+			assert.equal(window.getComputedStyle(listMedia.querySelector('a')).position, 'absolute');
+			assert.equal(window.getComputedStyle(list.querySelector('.discovery-program-card')).height, 'auto');
+			assert.equal(window.getComputedStyle(list.querySelector('.discovery-card-body')).flexGrow, '0');
+			assert.equal(window.getComputedStyle(list.querySelector('.discovery-card-footer')).marginTop, '0px');
+			pass(width + 'px compiled Home and list media containment; list card/body use natural height and footer spacing');
 		}
 	} finally { styles.remove(); home.remove(); list.remove(); }
-	if (process.argv.includes('--browser')) browserMedia(css, section);
+	if (process.argv.includes('--browser')) {
+		browserMedia(css, section);
+		browserList(css, section);
+	}
+}
+function browserList(css, section) {
+	const browser = process.env.GYMFLOW_QA_BROWSER;
+	assert(browser && fs.existsSync(browser), '--browser requires GYMFLOW_QA_BROWSER pointing to Chromium/Edge');
+	const temporary = fs.mkdtempSync(path.join(os.tmpdir(), 'gymflow-list-cards-'));
+	try {
+		const names = ['First row short title', 'First row online program', 'First row with a longer title that wraps', 'Small Group Pilates Practice', 'Personal Strength Coaching', 'Evening Mobility Online', 'Mobility and Movement Practice', 'Small Group Strength Circuit', 'Controlled Movement Pilates'];
+		const images = ['strength-dumbbells.webp', 'pilates-studio.webp'].map((name) => 'data:image/webp;base64,' + fs.readFileSync(path.join(base, 'public/img/fiber', name)).toString('base64'));
+		const cards = names.map((name, index) => {
+			const card = section.querySelector('article').cloneNode(true);
+			card.querySelector('h3 a').textContent = name;
+			card.querySelector('.discovery-location span').textContent = index === 3 ? 'A deliberately long studio address with extra location details '.repeat(5) : 'Seoul · Studio';
+			const image = card.querySelector('.discovery-card-image img');
+			image.src = images[[3, 6, 8].includes(index) ? 1 : 0]; image.removeAttribute('loading');
+			return card.outerHTML;
+		}).join('');
+		const mui = [...document.styleSheets].flatMap((sheet) => [...sheet.cssRules].map((rule) => rule.cssText)).join('\n');
+		const wrap = (content) => '<!doctype html><html><head><meta charset="utf-8"><style>html{box-sizing:border-box}*,::before,::after{box-sizing:inherit}body{margin:0}' + css + mui + '</style></head><body>' + content + '</body></html>';
+		const list = wrap('<main id="pc-wrap" class="program-discovery-layout"><div id="program-list-page"><div class="container"><div class="program-page"><aside class="filter-config"></aside><div class="main-config"><div class="discovery-results"><div class="list-config">' + cards + '</div></div></div></div></div></div></main>');
+		// Compare actual compiled styles with this route's overrides removed on every shared-card consumer.
+		const withoutList = postcss.parse(css);
+		withoutList.walkRules((rule) => { if (rule.selector.split(',').every((selector) => selector.trim().startsWith('#pc-wrap.program-discovery-layout #program-list-page .discovery-program-card'))) rule.remove(); });
+		const consumers = [
+			['<main id="pc-wrap"><div class="home-page"><section class="home-discover-programs"><div class="home-discover-grid">', '</div></section></div></main>'],
+			['<main id="pc-wrap" class="gym-detail-layout"><div id="gym-detail-page"><section class="gym-detail-programs"><div class="gym-child-grid">', '</div></section></div></main>'],
+			['<main id="pc-wrap" class="trainer-detail-layout"><div class="trainer-detail-page"><div class="container"><section class="trainer-detail-programs"><div class="trainer-detail-program-grid">', '</div></section></div></div></main>'],
+			['<main id="pc-wrap" class="program-detail-layout"><section id="program-detail-page"><div class="detail-related-programs">', '</div></section></main>'],
+		];
+		const variants = [list, ...consumers.flatMap(([prefix, suffix]) => {
+			const html = wrap(prefix + cards + suffix);
+			return [html, html.replace(css, withoutList.toString())];
+		})];
+		const measure = () => [...document.querySelectorAll('iframe')].map((frame) => {
+			const doc = frame.contentDocument, win = frame.contentWindow, rect = (element) => element.getBoundingClientRect();
+			const properties = ['display', 'position', 'width', 'height', 'flex', 'aspectRatio', 'marginTop', 'padding', 'gap', 'overflow', 'objectFit'];
+			return { variant: Number(frame.dataset.variant), width: win.innerWidth, clientWidth: doc.documentElement.clientWidth, scrollWidth: doc.documentElement.scrollWidth,
+				cards: [...doc.querySelectorAll('article')].map((card) => {
+					const media = card.querySelector('.discovery-card-media'), image = media.querySelector('img'), link = media.querySelector('a'), body = card.querySelector('.discovery-card-body'), footer = card.querySelector('.discovery-card-footer'), metadata = card.querySelector('.discovery-session-details');
+					link.focus({ preventScroll: true });
+					return { x: rect(card).x, y: rect(card).y, height: rect(card).height, mediaWidth: rect(media).width, mediaHeight: rect(media).height, imageHeight: rect(image).height, natural: [image.naturalWidth, image.naturalHeight], fit: win.getComputedStyle(image).objectFit,
+						gap: rect(footer).top - rect(metadata).bottom, bodyGrow: win.getComputedStyle(body).flexGrow, footerMargin: win.getComputedStyle(footer).marginTop,
+						fits: card.scrollWidth <= card.clientWidth + 1 && rect(footer).bottom <= rect(card).bottom && rect(body).top >= rect(media).bottom - 1,
+						focusable: doc.activeElement === link && win.getComputedStyle(link).outlineStyle !== 'none',
+						styles: [card, media, link, image, body, footer].map((element) => Object.fromEntries(properties.map((key) => [key, win.getComputedStyle(element)[key]]))) };
+				}) };
+		});
+		const file = path.join(temporary, 'cards.html');
+		fs.writeFileSync(file, '<!doctype html><html><body>' + variants.flatMap((_, index) => [1440, 768, 390].map((width) => '<iframe data-variant="' + index + '" style="border:0;width:' + width + 'px;height:6000px"></iframe>')).join('') + '<pre id="result"></pre><script>const variants=' + JSON.stringify(variants).replace(/</g, '\\u003c') + ';document.querySelectorAll("iframe").forEach(frame=>frame.srcdoc=variants[Number(frame.dataset.variant)]);window.onload=()=>{document.getElementById("result").textContent=JSON.stringify((' + measure.toString() + ')());document.querySelectorAll("iframe,script").forEach(element=>element.remove());};</script></body></html>');
+		const result = spawnSync(browser, ['--headless', '--disable-gpu', '--disable-background-networking', '--no-first-run', '--no-default-browser-check', '--user-data-dir=' + path.join(temporary, 'profile'), '--virtual-time-budget=2000', '--dump-dom', require('node:url').pathToFileURL(file).href], { encoding: 'utf8', timeout: 45000, maxBuffer: 32 * 1024 * 1024, windowsHide: true });
+		assert.equal(result.status, 0, result.error?.message);
+		const match = result.stdout.match(/<pre id="result">([^<]+)<\/pre>/); assert(match, 'List browser geometry results missing');
+		const rows = JSON.parse(match[1]); assert.equal(rows.length, 27);
+		for (const row of rows.filter((row) => row.variant === 0)) {
+			assert(row.scrollWidth <= row.clientWidth + 1); assert.equal(row.cards.length, 9);
+			const columns = row.width === 1440 ? 3 : row.width === 768 ? 2 : 1;
+			assert.equal(new Set(row.cards.map((card) => Math.round(card.x))).size, columns);
+			for (const card of row.cards) {
+				assert(Math.abs(card.mediaWidth / card.mediaHeight - (row.width < 768 ? 16 / 9 : 16 / 10)) < 0.01);
+				assert(Math.abs(card.imageHeight - card.mediaHeight) < 1); assert.equal(card.fit, 'cover');
+				assert(card.natural[0] > 0 && card.natural[1] > 0); assert(card.fits && card.focusable);
+				assert.equal(card.bodyGrow, '0'); assert.equal(card.footerMargin, '0px'); assert(Math.abs(card.gap - 12) < 1, 'Footer follows metadata naturally');
+			}
+			assert(row.cards[3].height > row.cards[4].height + 50, 'Long content grows its own card');
+			if (columns > 1) assert(Math.abs(row.cards[3].y - row.cards[columns === 3 ? 4 : 2].y) < 1 && row.cards[3].height > row.cards[columns === 3 ? 4 : 2].height + 50, 'A taller grid peer must not stretch its neighbor');
+			assert(Math.max(...row.cards.map((card) => card.mediaHeight)) - Math.min(...row.cards.map((card) => card.mediaHeight)) < 1);
+			pass(row.width + 'px list: nine real cards, 3/2/1 columns, mixed portrait/landscape crops, natural peer heights, 12px footer gap and focus');
+		}
+		for (let variant = 1; variant < variants.length; variant += 2) for (const width of [1440, 768, 390]) {
+			const current = rows.find((row) => row.variant === variant && row.width === width), previous = rows.find((row) => row.variant === variant + 1 && row.width === width);
+			assert.deepEqual(current.cards, previous.cards, 'List overrides cannot change another card consumer');
+		}
+		pass('Home, Gym Detail/G6J, Trainer Detail and Program Detail compiled geometry/styles unchanged at all three widths');
+	} finally {
+		assert.equal(path.dirname(temporary), os.tmpdir()); assert(path.basename(temporary).startsWith('gymflow-list-cards-'));
+		fs.rmSync(temporary, { recursive: true, force: true });
+	}
 }
 function browserMedia(css, section) {
 	const browser = process.env.GYMFLOW_QA_BROWSER;
