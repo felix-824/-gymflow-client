@@ -4,9 +4,17 @@ import Image from 'next/image';
 import moment from 'moment';
 import { useTranslation } from 'next-i18next';
 import useDeviceDetect from '../hooks/useDeviceDetect';
+import { useReactiveVar } from '@apollo/client';
+import { userVar } from '../../apollo/store';
+import { isActiveAdmin } from '../admin-workspace';
+import { adminWorkspaceLabels } from '../admin-workspace-labels';
 
 const Footer = ({ variant = 'default' }: { variant?: 'default' | 'programs' | 'home' }) => {
-	const { t } = useTranslation('common');
+	const { t, i18n } = useTranslation('common');
+	const user = useReactiveVar(userVar);
+	const admin = isActiveAdmin(user);
+	const accountHref = admin ? '/_admin' : '/mypage';
+	const accountLabel = admin ? adminWorkspaceLabels(i18n?.language).workspace : t('My Page');
 	const { t: gymT } = useTranslation('gyms');
 	const device = useDeviceDetect();
 	const mobile = useMediaQuery('(max-width:767px)') || device === 'mobile';
@@ -27,7 +35,9 @@ const Footer = ({ variant = 'default' }: { variant?: 'default' | 'programs' | 'h
 							<Link href="/program" passHref>
 								{t('Programs')}
 							</Link>
-							<Link href="/gym" passHref>{gymT('navigation')}</Link>
+							<Link href="/gym" passHref>
+								{gymT('navigation')}
+							</Link>
 							<Link href="/trainer" passHref>
 								{t('Trainers')}
 							</Link>
@@ -37,8 +47,8 @@ const Footer = ({ variant = 'default' }: { variant?: 'default' | 'programs' | 'h
 						</nav>
 						<nav className="home-footer-links" aria-labelledby="home-footer-support-title">
 							<h2 id="home-footer-support-title">{t('Home footer.Support')}</h2>
-							<Link href="/mypage" passHref>
-								{t('My Page')}
+							<Link href={accountHref} passHref>
+								{accountLabel}
 							</Link>
 							<Link href="/help" passHref>
 								{t('CS')}
@@ -90,11 +100,13 @@ const Footer = ({ variant = 'default' }: { variant?: 'default' | 'programs' | 'h
 					].map(({ label, links }) => (
 						<Box component={'nav'} key={label} className={'programs-footer-links'} aria-label={t(label)}>
 							<strong>{t(label)}</strong>
-							{links.filter(([href]) => !mobile || href !== '/about').map(([href, text]) => (
-								<Link key={href} href={href}>
-									{href === '/gym' ? gymT('navigation') : t(text)}
-								</Link>
-							))}
+							{links
+								.filter(([href]) => !mobile || href !== '/about')
+								.map(([href, text]) => (
+									<Link key={href} href={href === '/mypage' ? accountHref : href}>
+										{href === '/gym' ? gymT('navigation') : href === '/mypage' ? accountLabel : t(text)}
+									</Link>
+								))}
 						</Box>
 					))}
 					<Box component={'div'} className={'programs-footer-bottom'}>
@@ -129,7 +141,7 @@ const Footer = ({ variant = 'default' }: { variant?: 'default' | 'programs' | 'h
 						<div>
 							<strong>{t('Community')}</strong>
 							<Link href="/community">{t('Community')}</Link>
-							<Link href="/mypage">{t('My Page')}</Link>
+							<Link href={accountHref}>{accountLabel}</Link>
 						</div>
 						<div>
 							<strong>{t('CS')}</strong>

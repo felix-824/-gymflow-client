@@ -15,7 +15,8 @@ import { useTranslation } from 'next-i18next';
 import { serverSideTranslations } from 'next-i18next/serverSideTranslations';
 import withLayoutBasic from '../../libs/components/layout/LayoutBasic';
 import { logIn, signUp } from '../../libs/auth';
-import { authErrorMessage, safeAuthDestination } from '../../libs/auth-form';
+import { authErrorMessage, roleAuthDestination } from '../../libs/auth-form';
+import { userVar } from '../../apollo/store';
 
 export const getStaticProps = async ({ locale }: any) => ({
 	props: { ...(await serverSideTranslations(locale, ['common'])) },
@@ -62,7 +63,7 @@ const Join: NextPage = () => {
 		try {
 			if (loginView) await logIn(input.nick, input.password, { handleErrorLocally: true });
 			else await signUp(input.nick, input.password, input.phone, { handleErrorLocally: true });
-			await router.push(safeAuthDestination(router.query.referrer));
+			await router.push(roleAuthDestination(router.query.referrer, userVar()));
 		} catch (err: unknown) {
 			setError(authErrorMessage(err, t('Auth.Connection error'), t('Auth.Auth error')));
 		} finally {

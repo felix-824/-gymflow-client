@@ -226,7 +226,7 @@ export const signUp = async (
 	};
 	await authenticate(SIGN_UP, input, 'signup', context);
 };
-export const logOut = async (): Promise<boolean> => {
+export const logOut = async (options: { redirectToPublic?: boolean } = {}): Promise<boolean> => {
 	const isUser = Boolean(userVar()._id) && userVar().memberType === 'USER';
 	localStorage.setItem(logoutPendingKey, '1');
 	signal('logout');
@@ -242,7 +242,7 @@ export const logOut = async (): Promise<boolean> => {
 		if (generation !== current) return true;
 		localStorage.removeItem(logoutPendingKey);
 		if (!cacheCleared) { authErrorVar('Signed out. Please reload to finish clearing your session.'); return false; }
-		if (isUser) window.location.replace('/');
+		if (isUser || options.redirectToPublic) window.location.replace('/');
 		else window.location.reload();
 		return true;
 	} catch {

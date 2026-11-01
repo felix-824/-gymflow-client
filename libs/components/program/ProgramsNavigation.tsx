@@ -17,6 +17,8 @@ import { userVar } from '../../../apollo/store';
 import { logOut } from '../../auth';
 import { REACT_APP_API_URL } from '../../config';
 import GlobalProgramSearch from '../GlobalProgramSearch';
+import { isActiveAdmin } from '../../admin-workspace';
+import { adminWorkspaceLabels } from '../../admin-workspace-labels';
 
 const programDestinations = [
 	{ label: 'Home', href: '/', icon: HomeOutlinedIcon },
@@ -46,10 +48,15 @@ export const ProgramsHeader = () => {
 	const [searchHeight, setSearchHeight] = useState(0);
 	const locale = router.locale ?? 'en';
 	const memberName = user.memberFullName?.trim() || user.memberNick?.trim();
+	const admin = isActiveAdmin(user);
+	const labels = adminWorkspaceLabels(router.locale);
+	const accountHref = admin ? '/_admin' : '/mypage';
+	const accountLabel = admin ? labels.workspace : t('My Page');
 	const destinations = [
 		...programDestinations.slice(0, 2),
 		{ label: 'Gyms', href: '/gym' },
-		...programDestinations.slice(2).filter((destination) => destination.href !== '/mypage' || user._id),
+		...programDestinations.slice(2).filter((destination) => destination.href !== '/mypage' || user._id)
+			.map((destination) => destination.href === '/mypage' ? { ...destination, href: accountHref } : destination),
 		{ label: 'CS', href: '/help' },
 	];
 
@@ -79,7 +86,7 @@ export const ProgramsHeader = () => {
 				>
 					{destinations.map(({ href, label }) => (
 						<Link key={href} href={href} aria-current={isDestinationActive(router.pathname, href, router.query.category) ? 'page' : undefined}>
-							{href === '/gym' ? gymT('navigation') : t(label)}
+							{href === '/gym' ? gymT('navigation') : href === '/_admin' ? accountLabel : t(label)}
 						</Link>
 					))}
 				</Box>
@@ -167,9 +174,9 @@ export const ProgramsHeader = () => {
 					</MenuItem>
 				)}
 				{memberName && <Divider />}
-				<MenuItem component={Link} href={'/mypage'} onClick={() => setAccountAnchor(null)}>
+				<MenuItem component={Link} href={accountHref} onClick={() => setAccountAnchor(null)}>
 					<AccountCircleOutlinedIcon />
-					{t('My Page')}
+					{accountLabel}
 				</MenuItem>
 				<MenuItem
 					onClick={() => {
@@ -199,7 +206,7 @@ export const ProgramsHeader = () => {
 						aria-current={isDestinationActive(router.pathname, href, router.query.category) ? 'page' : undefined}
 						selected={isDestinationActive(router.pathname, href, router.query.category)}
 					>
-						{href === '/gym' ? gymT('navigation') : t(label)}
+						{href === '/gym' ? gymT('navigation') : href === '/_admin' ? accountLabel : t(label)}
 					</MenuItem>
 				))}
 			</Menu>
@@ -212,13 +219,19 @@ export const ProgramsHeader = () => {
 export const ProgramsBottomNavigation = () => {
 	const router = useRouter();
 	const { t } = useTranslation('common');
+	const user = useReactiveVar(userVar);
+	const admin = isActiveAdmin(user);
+	const labels = adminWorkspaceLabels(router.locale);
+	const destinations = programDestinations.map((destination) =>
+		admin && destination.href === '/mypage' ? { ...destination, href: '/_admin' } : destination,
+	);
 	return (
 		<Box
 			component={'nav'}
 			className={'programs-bottom-navigation'}
 			aria-label={t('Program navigation.Mobile navigation')}
 		>
-			{programDestinations.map(({ href, label, icon: Icon }) => (
+			{destinations.map(({ href, label, icon: Icon }) => (
 				<Link
 					key={href}
 					href={href}
@@ -226,7 +239,7 @@ export const ProgramsBottomNavigation = () => {
 					aria-current={isDestinationActive(router.pathname, href, router.query.category) ? 'page' : undefined}
 				>
 					<Icon aria-hidden={true} />
-					<span>{t(label)}</span>
+					<span>{href === '/_admin' ? labels.workspace : t(label)}</span>
 				</Link>
 			))}
 		</Box>

@@ -71,7 +71,7 @@ async function unit() {
 	const diagnostics = program.getSemanticDiagnostics(program.getSourceFile(typeFile));
 	assert.deepEqual(diagnostics.map((item) => ts.flattenDiagnosticMessageText(item.messageText, '\n')), []);
 	pass('public signup types accept USER and reject TRAINER/ADMIN inputs and role arguments');
-	const { safeAuthDestination, authErrorMessage } = loadTs(path.join(__dirname, '../libs/auth-form.ts'));
+	const { safeAuthDestination, roleAuthDestination, authErrorMessage } = loadTs(path.join(__dirname, '../libs/auth-form.ts'));
 	for (const value of [
 		undefined,
 		null,
@@ -94,6 +94,17 @@ async function unit() {
 	])
 		assert.equal(safeAuthDestination(value), value);
 	pass('safe local return destinations retain route/query context and reject external/ambiguous URLs');
+	const activeAdmin = { _id: 'admin', memberType: 'ADMIN', memberStatus: 'ACTIVE' };
+	for (const value of [undefined, '/', '/mypage', '//evil.test', '/_administer', '/_admin/../program', '/_admin/%2e%2e/program'])
+		assert.equal(roleAuthDestination(value, activeAdmin), '/_admin');
+	for (const value of ['/_admin', '/_admin/users', '/_admin/gyms?id=fixture&mode=edit', '/_admin/profile?from=account#contact'])
+		assert.equal(roleAuthDestination(value, activeAdmin), value);
+	for (const memberType of ['USER', 'TRAINER']) {
+		assert.equal(roleAuthDestination('/program/booking?id=real', { ...activeAdmin, memberType }), '/program/booking?id=real');
+		assert.equal(roleAuthDestination(undefined, { ...activeAdmin, memberType }), '/');
+	}
+	assert.equal(roleAuthDestination('/mypage', { ...activeAdmin, memberStatus: 'BLOCK' }), '/mypage');
+	pass('ACTIVE ADMIN defaults to workspace and retains only safe Admin deep links; USER/TRAINER routing stays intact');
 	assert.equal(
 		authErrorMessage(
 			{
@@ -201,6 +212,11 @@ async function logoutContract() {
 		assert.equal(store.userVar()._id, '');
 	}
 	pass('TRAINER, ADMIN and guest logout retain their existing reload behavior');
+	authenticate('ADMIN');
+	assert.equal(await auth.logOut({ redirectToPublic: true }), true);
+	assert.deepEqual(navigation, ['/']);
+	assert.equal(store.userVar()._id, '');
+	pass('Admin workspace logout explicitly returns to the public site after session and cache cleanup');
 	authenticate('USER');
 	clearCache = async () => {
 		throw new Error('owned cleanup failure');
@@ -299,6 +315,7 @@ async function integration() {
 			'next-i18next/serverSideTranslations': { serverSideTranslations: async () => ({}) },
 			'../../libs/auth': auth,
 			'../../../apollo/store': store,
+			'../../apollo/store': store,
 			'../Top': { __esModule: true, default: () => React.createElement('div', { 'data-test': 'legacy-top' }) },
 			'../Footer': { __esModule: true, default: () => React.createElement('div', { 'data-test': 'legacy-footer' }) },
 			'../Chat': noop,
@@ -507,6 +524,18 @@ async function integration() {
 		await until(() => store.userVar()._id && !select('.auth-submit').disabled);
 		assert.equal(destinations.at(-1), '/');
 		pass('unsafe post-auth destination falls back to Home; session invalidation remains intact');
+		for (const [account, referrer, expected] of [
+			[fixture.admin, undefined, '/_admin'],
+			[fixture.admin, '/_admin/gyms?id=owned-fixture', '/_admin/gyms?id=owned-fixture'],
+			[fixture.admin, '/mypage', '/_admin'],
+			[fixture.trainer, '/mypage?category=myPrograms', '/mypage?category=myPrograms'],
+		]) {
+			await auth.invalidateSession();
+			input('nick', account.memberNick); input('password', fixture.password); router.query.referrer = referrer;
+			submit(); await until(() => store.userVar()._id === String(account._id) && !select('.auth-submit').disabled);
+			assert.equal(destinations.at(-1), expected);
+		}
+		pass('real ACTIVE ADMIN login routes to workspace or its safe deep link; TRAINER retains its return route');
 		auth.invalidateSession();
 		offline = true;
 		input('password', fixture.password);

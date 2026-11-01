@@ -1,3 +1,6 @@
+import { isActiveAdmin } from './admin-workspace';
+import type { UserProfile } from './types/customJwtPayload';
+
 export function safeAuthDestination(referrer: unknown): string {
 	if (typeof referrer !== 'string' || !referrer.startsWith('/') || referrer.startsWith('//')) return '/';
 	// Backslashes/control characters can turn an apparent local URL into an external destination.
@@ -8,6 +11,14 @@ export function safeAuthDestination(referrer: unknown): string {
 	)
 		return '/';
 	return referrer;
+}
+
+export function roleAuthDestination(referrer: unknown, user: Partial<UserProfile>): string {
+	const destination = safeAuthDestination(referrer);
+	if (!isActiveAdmin(user)) return destination;
+	// URL parsing normalizes dot segments before checking the Admin path boundary.
+	const pathname = new URL(destination, 'https://gymflow.invalid').pathname;
+	return pathname === '/_admin' || pathname.startsWith('/_admin/') ? destination : '/_admin';
 }
 
 export function authErrorMessage(error: unknown, connectionMessage: string, fallback: string): string {

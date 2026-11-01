@@ -31,21 +31,26 @@ import LogoutRoundedIcon from '@mui/icons-material/LogoutRounded';
 import DevicesOutlinedIcon from '@mui/icons-material/DevicesOutlined';
 import UserAccountNavigation from './UserAccountNavigation';
 import { trainerApplicationRoute } from '../../trainer-application';
+import { useRouter } from 'next/router';
+import { adminWorkspaceLabels } from '../../admin-workspace-labels';
 
-const MyProfile: NextPage<{ initialValues?: MemberSelfUpdate; trainerWorkspace?: boolean; userProfile?: boolean }> = ({
-	initialValues,
-	trainerWorkspace = false,
-	userProfile = false,
-}) => {
+const MyProfile: NextPage<{
+	initialValues?: MemberSelfUpdate;
+	trainerWorkspace?: boolean;
+	userProfile?: boolean;
+	adminProfile?: boolean;
+}> = ({ initialValues, trainerWorkspace = false, userProfile = false, adminProfile = false }) => {
+	const router = useRouter();
+	const adminLabels = adminWorkspaceLabels(router.locale);
 	const device = useDeviceDetect();
 	const { t } = useTranslation('common');
 	const sessionIdentity = getAuthSessionId();
 	const user = useReactiveVar(userVar);
 	const ready = useReactiveVar(authReadyVar);
 	const authError = useReactiveVar(authErrorVar);
-	const managedProfile = trainerWorkspace || userProfile;
-	const expectedRole = userProfile ? 'USER' : 'TRAINER';
-	const profileNamespace = userProfile ? 'User profile' : 'Trainer profile';
+	const managedProfile = trainerWorkspace || userProfile || adminProfile;
+	const expectedRole = adminProfile ? 'ADMIN' : userProfile ? 'USER' : 'TRAINER';
+	const profileNamespace = userProfile || adminProfile ? 'User profile' : 'Trainer profile';
 	const [updateData, setUpdateData] = useState<MemberSelfUpdate>(() =>
 		managedProfile
 			? {
@@ -189,7 +194,7 @@ const MyProfile: NextPage<{ initialValues?: MemberSelfUpdate; trainerWorkspace?:
 					input: managedProfile
 						? {
 								memberNick: updateData.memberNick,
-								memberFullName: updateData.memberFullName || null,
+								...(!adminProfile ? { memberFullName: updateData.memberFullName || null } : {}),
 								memberPhone: updateData.memberPhone,
 								memberAddress: updateData.memberAddress,
 								memberImage: updateData.memberImage,
@@ -222,14 +227,27 @@ const MyProfile: NextPage<{ initialValues?: MemberSelfUpdate; trainerWorkspace?:
 		} finally {
 			writeLock.current = false;
 		}
-	}, [updateData, saving, uploading, user._id, updateMember, managedProfile, expectedRole, activeAccount, sessionIdentity]);
+	}, [
+		updateData,
+		saving,
+		uploading,
+		user._id,
+		updateMember,
+		managedProfile,
+		expectedRole,
+		activeAccount,
+		sessionIdentity,
+		adminProfile,
+	]);
 
 	const logoutHandler = async () => {
 		if (saving || uploading || writeLock.current || logoutLock.current || !activeAccount()) return;
 		logoutLock.current = true;
 		try {
 			if (await sweetConfirmAlert(t(`${profileNamespace}.Logout confirmation`))) {
-				if (activeAccount()) await logOut();
+				if (activeAccount()) {
+					await logOut(adminProfile ? { redirectToPublic: true } : undefined);
+				}
 			}
 		} catch (err) {
 			if (activeAccount()) await sweetErrorHandling(err);
@@ -244,8 +262,9 @@ const MyProfile: NextPage<{ initialValues?: MemberSelfUpdate; trainerWorkspace?:
 		}
 	};
 
-	if (userProfile) {
-		if (!ready || authError || user.memberType !== 'USER' || user.memberStatus !== 'ACTIVE' || !user._id) return null;
+	if (userProfile || adminProfile) {
+		if (!ready || authError || user.memberType !== expectedRole || user.memberStatus !== 'ACTIVE' || !user._id)
+			return null;
 		const source =
 			updateData.memberImage && brokenImage !== updateData.memberImage
 				? /^https?:\/\//i.test(updateData.memberImage)
@@ -255,18 +274,22 @@ const MyProfile: NextPage<{ initialValues?: MemberSelfUpdate; trainerWorkspace?:
 		return (
 			<div id="user-profile-page">
 				<header className="user-profile-heading">
-					<p className="user-profile-eyebrow">{t('User profile.Account Settings')}</p>
-					<h1>{t('User profile.Title')}</h1>
-					<p>{t('User profile.Intro')}</p>
-					<Link className="trainer-application-entry" href={trainerApplicationRoute}>
-						{t('trainer-application:Entry')}
-					</Link>
+					{!adminProfile && <p className="user-profile-eyebrow">{t('User profile.Account Settings')}</p>}
+					<h1>{adminProfile ? adminLabels.profileTitle : t('User profile.Title')}</h1>
+					<p>{adminProfile ? adminLabels.profileIntro : t('User profile.Intro')}</p>
+					{!adminProfile && (
+						<Link className="trainer-application-entry" href={trainerApplicationRoute}>
+							{t('trainer-application:Entry')}
+						</Link>
+					)}
 				</header>
-				<UserAccountNavigation active="Profile" />
+				{!adminProfile && <UserAccountNavigation active="Profile" />}
 				<section className="user-profile-surface" aria-labelledby="user-profile-personal-title">
 					<div className="user-profile-section-heading">
-						<h2 id="user-profile-personal-title">{t('User profile.Personal Information')}</h2>
-						<p>{t('User profile.Personal description')}</p>
+						<h2 id="user-profile-personal-title">
+							{adminProfile ? adminLabels.profileDetails : t('User profile.Personal Information')}
+						</h2>
+						<p>{adminProfile ? adminLabels.profileDetailsIntro : t('User profile.Personal description')}</p>
 					</div>
 					<form
 						name="user-profile"
@@ -340,22 +363,24 @@ const MyProfile: NextPage<{ initialValues?: MemberSelfUpdate; trainerWorkspace?:
 									/>
 								</div>
 							</div>
-							<div className="user-profile-field">
-								<label htmlFor="user-profile-name">{t('User profile.Full Name')}</label>
-								<div>
-									<input
-										id="user-profile-name"
-										name="memberFullName"
-										type="text"
-										autoComplete="name"
-										minLength={3}
-										maxLength={100}
-										value={updateData.memberFullName ?? ''}
-										disabled={saving || uploading}
-										onChange={(event) => setUpdateData({ ...updateData, memberFullName: event.target.value })}
-									/>
+							{!adminProfile && (
+								<div className="user-profile-field">
+									<label htmlFor="user-profile-name">{t('User profile.Full Name')}</label>
+									<div>
+										<input
+											id="user-profile-name"
+											name="memberFullName"
+											type="text"
+											autoComplete="name"
+											minLength={3}
+											maxLength={100}
+											value={updateData.memberFullName ?? ''}
+											disabled={saving || uploading}
+											onChange={(event) => setUpdateData({ ...updateData, memberFullName: event.target.value })}
+										/>
+									</div>
 								</div>
-							</div>
+							)}
 							<div className="user-profile-field">
 								<label htmlFor="user-profile-phone">{t('User profile.Phone')}</label>
 								<div>

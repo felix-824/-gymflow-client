@@ -1,0 +1,350 @@
+.admin-access {
+	max-width: 640px;
+	margin: 80px auto;
+	padding: 24px;
+	font-family: 'Plus Jakarta Sans', sans-serif;
+	line-height: 1.7;
+	a {
+		color: #a53425;
+		text-decoration: underline;
+	}
+}
+
+#pc-wrap.admin-workspace {
+	min-height: 100vh;
+	background: #f7f8fa;
+	color: #17191f;
+	font-family: 'Plus Jakarta Sans', sans-serif;
+	* {
+		box-sizing: border-box;
+	}
+	.workspace-frame {
+		display: flex;
+		min-width: 0;
+	}
+	a,
+	button {
+		-webkit-tap-highlight-color: transparent;
+	}
+	a:focus-visible,
+	button:focus-visible {
+		outline: 2px solid #a53425;
+		outline-offset: 3px;
+	}
+	.workspace-header.MuiAppBar-root {
+		height: 76px;
+		padding: 0;
+		background: #fff;
+		color: #17191f;
+		border-bottom: 1px solid #e7e9ee;
+		box-shadow: none;
+		.MuiToolbar-root {
+			width: 100%;
+			min-height: 76px;
+			padding: 0 32px;
+			gap: 12px;
+		}
+		.MuiIconButton-root {
+			width: 44px;
+			height: 44px;
+			color: inherit;
+		}
+	}
+	.workspace-heading {
+		display: flex;
+		flex-direction: column;
+		gap: 4px;
+		min-width: 0;
+		span {
+			color: #737985;
+			font-size: 11px;
+			line-height: 1.4;
+		}
+		strong {
+			font-size: 16px;
+			line-height: 1.4;
+			font-weight: 600;
+			overflow-wrap: anywhere;
+		}
+	}
+	.workspace-header-actions {
+		margin-left: auto;
+		display: flex;
+		align-items: center;
+		gap: 24px;
+		flex-shrink: 0;
+	}
+	.workspace-public,
+	.workspace-identity {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		gap: 8px;
+		min-height: 44px;
+		color: #414651;
+		font-size: 13px;
+		font-weight: 600;
+		border-radius: 6px;
+		&:hover {
+			color: #a53425;
+		}
+		svg {
+			width: 18px;
+			height: 18px;
+		}
+	}
+	.workspace-identity {
+		.MuiAvatar-root {
+			width: 34px;
+			height: 34px;
+		}
+		span {
+			max-width: 132px;
+			white-space: nowrap;
+			overflow: hidden;
+			text-overflow: ellipsis;
+		}
+	}
+	.workspace-drawer .MuiDrawer-paper {
+		background: #fff;
+		color: #17191f;
+		border-right: 1px solid #e7e9ee;
+		padding: 0 16px 20px;
+	}
+	.workspace-brand {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		min-height: 96px;
+		padding: 0 12px;
+		a {
+			display: flex;
+			align-items: center;
+			gap: 8px;
+			min-height: 44px;
+		}
+		img {
+			width: 32px;
+			height: 32px;
+		}
+		strong {
+			font-size: 23px;
+			letter-spacing: -0.04em;
+			color: #12151d;
+		}
+		.MuiIconButton-root {
+			min-width: 44px;
+			min-height: 44px;
+		}
+	}
+	.workspace-nav-label {
+		margin: 16px 14px 10px;
+		color: #737985;
+		font-size: 11px;
+		font-weight: 600;
+		letter-spacing: 0.04em;
+		line-height: 1.5;
+	}
+	.workspace-management {
+		display: flex;
+		flex-direction: column;
+		gap: 6px;
+	}
+	.workspace-link {
+		white-space: normal;
+		display: flex;
+		align-items: center;
+		gap: 12px;
+		width: 100%;
+		min-height: 48px;
+		padding: 12px 14px;
+		border: 0;
+		border-radius: 8px;
+		background: transparent;
+		color: #505662;
+		font: inherit;
+		font-size: 14px;
+		text-align: left;
+		cursor: pointer;
+		line-height: 1.5;
+		svg {
+			width: 20px;
+			height: 20px;
+			flex-shrink: 0;
+			color: inherit;
+		}
+		.MuiListItemIcon-root {
+			min-width: 0;
+			margin-right: 0;
+			color: inherit;
+		}
+		.MuiListItemText-root {
+			margin: 0;
+		}
+		.MuiListItemText-primary {
+			font-family: inherit;
+			font-size: 14px;
+			line-height: 1.5;
+		}
+		&:hover {
+			background: #f7f8fa;
+			color: #17191f;
+		}
+		&.on {
+			background: #fff0ed;
+			color: #a53425;
+			font-weight: 600;
+			.MuiListItemText-primary {
+				font-weight: 600;
+			}
+		}
+		&:disabled {
+			opacity: 0.6;
+			cursor: wait;
+		}
+	}
+	.workspace-account {
+		margin-top: auto;
+		padding-top: 32px;
+	}
+	#bunker {
+		flex-grow: 1;
+		min-width: 0;
+		width: calc(100% - 280px);
+		margin-left: 0;
+		padding: 112px 32px 40px;
+	}
+	#user-profile-page {
+		width: 100%;
+		max-width: 880px;
+		margin: 0;
+		padding: 0;
+	}
+	.user-profile-heading {
+		margin-bottom: 36px;
+		h1 {
+			font-size: 32px;
+		}
+		p {
+			max-width: 640px;
+			margin-top: 10px;
+		}
+	}
+	.user-profile-surface {
+		padding: 0;
+		border-radius: 0;
+		background: transparent;
+		box-shadow: none;
+	}
+	.user-profile-section-heading {
+		padding-top: 28px;
+		border-top: 1px solid #e7e9ee;
+		margin-bottom: 24px;
+	}
+	.user-profile-fields .user-profile-field:first-child {
+		grid-column: auto;
+	}
+	.user-profile-field > div {
+		background: #fff;
+		border: 1px solid #dfe2e8;
+	}
+	.user-profile-save {
+		margin-top: 28px;
+	}
+	.user-profile-save-button.MuiButton-root {
+		border-radius: 8px;
+		box-shadow: none;
+	}
+	.user-profile-upload.MuiButton-root,
+	.user-profile-logout.MuiButton-root {
+		border-radius: 8px;
+	}
+	.user-profile-session {
+		margin-top: 32px;
+		padding: 28px 0 0;
+		border-top: 1px solid #e7e9ee;
+		border-radius: 0;
+		background: transparent;
+		box-shadow: none;
+	}
+	@media (max-width: 1199px) {
+		#bunker {
+			width: 100%;
+			margin-left: 0;
+			padding: 104px 24px 32px;
+		}
+		.workspace-header.MuiAppBar-root .MuiToolbar-root {
+			padding: 0 20px;
+		}
+	}
+	@media (max-width: 599px) {
+		.workspace-header.MuiAppBar-root {
+			height: 72px;
+		}
+		.workspace-header.MuiAppBar-root .MuiToolbar-root {
+			min-height: 72px;
+			padding: 0 12px;
+			gap: 8px;
+		}
+		.workspace-heading {
+			span {
+				font-size: 10px;
+			}
+			strong {
+				font-size: 13px;
+			}
+		}
+		.workspace-header-actions {
+			gap: 8px;
+		}
+		.workspace-public {
+			width: 44px;
+			span {
+				display: none;
+			}
+		}
+		.workspace-identity {
+			min-width: 44px;
+			span {
+				display: none;
+			}
+		}
+		#bunker {
+			padding: 96px 20px 32px;
+		}
+		.user-profile-heading h1 {
+			font-size: 28px;
+		}
+		.user-profile-heading {
+			margin-bottom: 28px;
+		}
+		.user-profile-fields {
+			grid-template-columns: minmax(0, 1fr);
+		}
+		.user-profile-section-heading {
+			position: static;
+			width: auto;
+			height: auto;
+			padding-top: 24px;
+			margin: 0 0 20px;
+			overflow: visible;
+			clip: auto;
+			white-space: normal;
+		}
+		.user-profile-session {
+			align-items: stretch;
+			flex-direction: column;
+			gap: 16px;
+		}
+		.user-profile-session-copy {
+			flex: 0 1 auto;
+			width: 100%;
+			h2 { display: block; }
+			p { padding: 0; text-align: left; font-size: 12px; white-space: normal; overflow-wrap: anywhere; }
+		}
+		.user-profile-logout.MuiButton-root {
+			margin-left: 0;
+			width: 100%;
+		}
+	}
+}

@@ -30,6 +30,7 @@ function loadTs(file, mocks = {}, cache = new Map()) {
 		if (name.endsWith('.css') || name.startsWith('swiper/css')) return {};
 		if (name.startsWith('.')) {
 			const resolved = path.resolve(path.dirname(file), name);
+			if (name.endsWith('.json')) return JSON.parse(fs.readFileSync(resolved, 'utf8'));
 			return loadTs(fs.existsSync(resolved + '.ts') ? resolved + '.ts' : resolved + '.tsx', mocks, cache);
 		}
 		return require(name);
@@ -219,6 +220,7 @@ async function integration() {
 		await i18n.init({ resources, lng: 'en', ns: ['common'], defaultNS: 'common', initImmediate: false });
 		const t = (key, values) => i18n.getFixedT(router.locale)(key, values);
 		let mobile = false;
+		const adminDestinations = [];
 		const router = {
 			isReady: true,
 			pathname: '/mypage',
@@ -293,6 +295,7 @@ async function integration() {
 		const render = () => root.render(wrap(React.createElement(Page)));
 		router.push = router.replace = async (href) => {
 			const url = new URL(typeof href === 'string' ? href : href.pathname + '?' + new URLSearchParams(href.query), 'http://localhost');
+			if (url.pathname === '/_admin') { adminDestinations.push(url.pathname); return true; }
 			router.pathname = url.pathname;
 			router.query = Object.fromEntries(url.searchParams);
 			router.asPath = url.pathname + url.search;
@@ -537,45 +540,17 @@ async function integration() {
 		click('.trainer-profile-logout');
 		await until(() => !document.querySelector('#trainer-profile-page'));
 		assert.equal(logoutCalls, beforeLogout + 1);
+		await until(() => !window.localStorage.getItem('gymflow.logoutPending'));
 		assert.equal(logoutDestinations.at(-1), undefined);
 		assert.equal(window.localStorage.getItem('accessToken'), null);
 		assert.equal(store.userVar()._id, '');
 		pass('real centralized logout confirmation, token clearing and removal of trainer content');
-		for (const member of [admin]) {
-			await signIn(member);
-			mobile = false;
+		await signIn(admin);
+		for (mobile of [false, true]) {
 			router.query = { category: 'myProfile' };
 			render();
-			await until(() => document.querySelector('#my-profile-page'));
-			assert.ok(document.querySelector('#my-page .left-config'));
-			assert.ok(!document.querySelector('.trainer-profile-layout'));
-			assert.ok(!document.querySelector('[name="memberFullName"]'));
-			assert.ok(document.querySelector('[data-test="legacy-top"]'));
-			assert.ok(document.body.textContent.includes('Logout'));
-			await until(() => document.querySelectorAll('#my-profile-page input[type="text"]')[0]?.value === member.memberNick);
-			const legacyPhone = 'legacy-' + member.memberType.toLowerCase();
-			flushSync(() => {
-				const phone = document.querySelectorAll('#my-profile-page input[type="text"]')[1];
-				Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set.call(phone, legacyPhone);
-				phone.dispatchEvent(new window.Event('input', { bubbles: true }));
-			});
-			click('#my-profile-page .update-button');
-			await until(() => store.userVar().memberPhone === legacyPhone);
-			assert.equal((await members.findById(member._id)).memberPhone, legacyPhone);
-			const beforeLegacyLogout = logoutCalls;
-			const logoutItem = [...document.querySelectorAll('#my-page .left-config li')].find(
-				(item) => item.textContent.trim() === 'Logout',
-			);
-			assert.ok(logoutItem);
-			flushSync(() => logoutItem.click());
-			await until(() => store.userVar()._id === '');
-			assert.equal(logoutCalls, beforeLegacyLogout + 1);
-			assert.equal(logoutDestinations.at(-1), undefined);
-			await signIn(member);
-			mobile = true;
-			render();
-			await until(() => !document.querySelector('#my-profile-page'));
-			assert.ok(!document.querySelector('.trainer-profile-layout'));
+			await until(() => adminDestinations.at(-1) === '/_admin');
+			assert.ok(!document.querySelector('#my-profile-page, .trainer-profile-layout, [data-test="legacy-top"]'));
 		}
 		await signIn(user);
 		router.query = {};
@@ -586,7 +561,7 @@ async function integration() {
 		render();
 		await until(() => document.querySelector('#my-bookings-page'));
 		await until(() => document.querySelector('[data-reservation-id="' + fixture.pending[0]._id + '"]'));
-		pass('ADMIN legacy Profile/sidebar/logout remain unchanged; USER mobile Profile default and explicit My Bookings route are isolated');
+		pass('ADMIN default Profile bypasses legacy workspace; USER mobile Profile and My Bookings stay isolated');
 		await signIn(otherTrainer);
 		mobile = false;
 		router.query = { category: 'myProfile' };
@@ -645,7 +620,7 @@ async function integration() {
 		process.chdir(previousCwd);
 		// This exact directory was created by this test under the OS temp directory.
 		assert.equal(path.dirname(temporary), os.tmpdir());
-		fs.rmSync(temporary, { recursive: true, force: true });
+		fs.rmSync(temporary, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
 	}
 }
 (async () => {

@@ -32,6 +32,8 @@ import MemberFollowings from '../../libs/components/member/MemberFollowings';
 import { serverSideTranslations } from 'next-i18next/serverSideTranslations';
 import { Messages } from '../../libs/config';
 import { LIKE_TARGET_MEMBER, SUBSCRIBE, UNSUBSCRIBE } from '../../apollo/user/mutation';
+import { adminMyPageRedirect } from '../../libs/admin-workspace';
+import { adminWorkspaceLabels } from '../../libs/admin-workspace-labels';
 import { sweetErrorHandling, sweetMixinErrorAlert, sweetTopSmallSuccessAlert } from '../../libs/sweetAlert';
 
 export const getStaticProps = async ({ locale }: any) => {
@@ -51,6 +53,10 @@ const authReady = useReactiveVar(authReadyVar);
 const authError = useReactiveVar(authErrorVar);
 	const router = useRouter();
 	const category: any = router.query?.category ?? 'myProfile';
+	const adminEntry = adminMyPageRedirect(category, user);
+	useEffect(() => {
+		if (router.isReady && authReady && !authError && adminEntry) void router.replace('/_admin');
+	}, [router, authReady, authError, adminEntry]);
 
 	/** APOLLO REQUESTS **/
 	const [subscribe] = useMutation(SUBSCRIBE);
@@ -129,6 +135,13 @@ const likeMemberHandler = async (id: string, refetch: any, query: any) => {
 		}
 	};
 
+	if (adminEntry) {
+		const labels = adminWorkspaceLabels(router.locale);
+		return authReady && authError ? <>
+			<p role="alert">{labels.session}</p>
+			<Link href="/account/join?referrer=%2F_admin">{labels.signIn}</Link>
+		</> : <p role="status">{labels.loading}</p>;
+	}
 	if (category === 'writeArticle') return <WriteArticle />;
 	if (category === 'editArticle') return <EditArticle />;
 	if (category === 'myArticles') return <MyArticles />;

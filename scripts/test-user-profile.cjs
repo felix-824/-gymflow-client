@@ -111,6 +111,7 @@ function legacyNavigation() {
 		'next/image': { __esModule: true, default: (props) => React.createElement('img', props) },
 		'next-i18next': { useTranslation: () => ({ t: (key) => key, i18n: { language: 'en' } }) },
 		'../../../apollo/store': store,
+		'../../apollo/store': store,
 		'../../auth': { logOut() {} },
 		'../../sweetAlert': {},
 		'../../hooks/useDeviceDetect': { __esModule: true, default: () => (mobileDevice ? 'mobile' : 'desktop') },
@@ -211,7 +212,7 @@ function legacyNavigation() {
 		assert.equal(communityMemberHref(undefined, 'TRAINER', false, 'owner'), undefined);
 		inspect(AdminMenu, { router: { pathname: '/_admin/users' } }, (document) => {
 			const titles = [...document.querySelectorAll('.MuiListItemText-primary')].map((node) => node.textContent);
-			assert.deepEqual(titles, ['Trainer Applications', 'Users', 'Programs', 'Gyms', 'Community']);
+			assert.deepEqual(titles, ['Users', 'Trainer Applications', 'Programs', 'Gyms', 'Community']);
 			assert(document.querySelector('a[href="/_admin/trainer-applications"]'));
 		});
 		const top = fs.readFileSync(path.join(__dirname, '../libs/components/Top.tsx'), 'utf8');

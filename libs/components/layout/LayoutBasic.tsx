@@ -9,6 +9,7 @@ import { Stack, useMediaQuery } from '@mui/material';
 import { createTheme, ThemeProvider, useTheme } from '@mui/material/styles';
 import { useReactiveVar } from '@apollo/client';
 import { userVar } from '../../../apollo/store';
+import { adminMyPageRedirect } from '../../admin-workspace';
 
 import { useTranslation } from 'next-i18next';
 import 'swiper/css';
@@ -21,6 +22,7 @@ const withLayoutBasic = (Component: any) => {
 		const { t, i18n } = useTranslation('common');
 		const device = useDeviceDetect();
 		const user = useReactiveVar(userVar);
+		const adminEntry = router.pathname === '/mypage' && adminMyPageRedirect(router.query.category, user);
 		const compactViewport = useMediaQuery('(max-width:767px)');
 		const gymCatalog = router.pathname === '/gym';
 		const gymDetail = router.pathname === '/gym/detail';
@@ -130,6 +132,7 @@ const withLayoutBasic = (Component: any) => {
 		/** LIFECYCLES **/
 
 		/** HANDLERS **/
+		if (adminEntry) return <main className="admin-access"><Component {...props} /></main>;
 		if (authHeader) {
 			return <ThemeProvider theme={theme}>
 				<Head>

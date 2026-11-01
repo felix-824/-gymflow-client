@@ -19,6 +19,8 @@ import { REACT_APP_API_URL } from '../config';
 import { motion, useReducedMotion } from 'framer-motion';
 import { ProgramsHeader } from './program/ProgramsNavigation';
 import GlobalProgramSearch from './GlobalProgramSearch';
+import { isActiveAdmin } from '../admin-workspace';
+import { adminWorkspaceLabels } from '../admin-workspace-labels';
 
 const MotionStack = motion.create(Stack);
 
@@ -29,6 +31,8 @@ const DefaultTop = () => {
 	const { t, i18n } = useTranslation('common');
 	const { t: gymT } = useTranslation('gyms');
 	const router = useRouter();
+	const admin = isActiveAdmin(user);
+	const accountLabel = admin ? adminWorkspaceLabels(router.locale).workspace : t('My Page');
 	const isHome = router.pathname === '/';
 	const shouldReduceMotion = useReducedMotion();
 	const NavbarContent = isHome ? MotionStack : Stack;
@@ -60,8 +64,12 @@ const DefaultTop = () => {
 
 	useEffect(() => {
 		switch (router.pathname) {
-			case '/program/detail': setBgColor(true); break;
-			default: setBgColor(false); break;
+			case '/program/detail':
+				setBgColor(true);
+				break;
+			default:
+				setBgColor(false);
+				break;
 		}
 	}, [router]);
 	useEffect(() => {
@@ -140,6 +148,12 @@ const DefaultTop = () => {
 		},
 	}));
 
+	if (device === 'mobile' && admin)
+		return (
+			<div className="programs-header-scope">
+				<ProgramsHeader />
+			</div>
+		);
 	if (device == 'mobile') {
 		return (
 			<Stack className={'top'}>
@@ -165,16 +179,21 @@ const DefaultTop = () => {
 		return (
 			<Stack className={'navbar'}>
 				<Stack
-					className={`navbar-main ${isHome ? 'home-navbar' : ''} ${colorChange ? 'transparent' : ''} ${bgColor ? 'transparent' : ''}`}
+					className={`navbar-main ${isHome ? 'home-navbar' : ''} ${colorChange ? 'transparent' : ''} ${
+						bgColor ? 'transparent' : ''
+					}`}
 				>
 					<NavbarContent
 						className={'container'}
 						{...(isHome
 							? {
 									initial: false as const,
-									animate: motionReady && shouldReduceMotion === false ? { opacity: [0, 1], y: [-6, 0] } : { opacity: 1, y: 0 },
+									animate:
+										motionReady && shouldReduceMotion === false
+											? { opacity: [0, 1], y: [-6, 0] }
+											: { opacity: 1, y: 0 },
 									transition: { duration: shouldReduceMotion ? 0 : 0.32, ease: 'easeOut' as const },
-								}
+							  }
 							: {})}
 					>
 						<Box component={'div'} className={'logo-box'}>
@@ -199,8 +218,8 @@ const DefaultTop = () => {
 								<div> {t('Community')} </div>
 							</Link>
 							{user?._id && (
-								<Link href={'/mypage'}>
-									<div> {t('My Page')} </div>
+								<Link href={admin ? '/_admin' : '/mypage'}>
+									<div> {accountLabel} </div>
 								</Link>
 							)}
 							{!mobileViewport && (
@@ -213,14 +232,22 @@ const DefaultTop = () => {
 							<GlobalProgramSearch onDesktopHeightChange={setSearchHeight} />
 							{user?._id ? (
 								<>
-									<div className={'login-user'} onClick={(event: any) => setLogoutAnchor(event.currentTarget)}>
+									<button
+										type="button"
+										className={'login-user'}
+										aria-label={accountLabel}
+										aria-controls="basic-menu"
+										aria-expanded={logoutOpen}
+										onClick={(event) => setLogoutAnchor(event.currentTarget)}
+										style={{ border: 0, padding: 0, background: 'transparent', cursor: 'pointer' }}
+									>
 										<img
 											src={
 												user?.memberImage ? `${REACT_APP_API_URL}/${user?.memberImage}` : '/img/profile/defaultUser.svg'
 											}
 											alt=""
 										/>
-									</div>
+									</button>
 
 									<Menu
 										id="basic-menu"
@@ -231,9 +258,14 @@ const DefaultTop = () => {
 										}}
 										sx={{ mt: '5px' }}
 									>
+										{admin && (
+											<MenuItem component={Link} href="/_admin" onClick={() => setLogoutAnchor(null)}>
+												{accountLabel}
+											</MenuItem>
+										)}
 										<MenuItem onClick={() => logOut()}>
 											<Logout fontSize="small" style={{ color: 'blue', marginRight: '10px' }} />
-											Logout
+											{admin ? adminWorkspaceLabels(router.locale).logout : 'Logout'}
 										</MenuItem>
 									</Menu>
 								</>
@@ -311,7 +343,12 @@ const Top = ({ variant = 'default' }: { router: NextRouter; variant?: 'default' 
 	const tabletViewport = useMediaQuery('(min-width:768px) and (max-width:1199px)');
 	const tabletHeader = tabletViewport && (router.pathname === '/program/detail' || router.pathname === '/trainer');
 	if (variant === 'programs') return <ProgramsHeader />;
-	if (tabletHeader) return <div className="programs-header-scope"><ProgramsHeader /></div>;
+	if (tabletHeader)
+		return (
+			<div className="programs-header-scope">
+				<ProgramsHeader />
+			</div>
+		);
 	return <DefaultTop />;
 };
 
