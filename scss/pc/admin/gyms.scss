@@ -412,11 +412,20 @@
 	border-radius: 8px;
 	background: #fff;
 	color: #212121;
-	legend {
+	> legend {
 		padding: 0 8px;
 		font-size: 20px;
 		font-weight: 600;
 		line-height: 1.4;
+	}
+	.MuiOutlinedInput-notchedOutline {
+		top: -5px;
+		padding: 0 8px;
+		font-family: inherit;
+		legend,
+		legend > span {
+			font-family: inherit;
+		}
 	}
 	p {
 		margin: 0;
@@ -427,7 +436,7 @@
 		min-height: 44px;
 	}
 	button:focus-visible,
-	input:focus-visible {
+	input:not(.MuiOutlinedInput-input):focus-visible {
 		outline: 2px solid #a53425;
 		outline-offset: 3px;
 	}
@@ -442,7 +451,7 @@
 	}
 	@media (max-width: 599px) {
 		padding: 16px;
-		legend {
+		> legend {
 			font-size: 18px;
 		}
 	}
