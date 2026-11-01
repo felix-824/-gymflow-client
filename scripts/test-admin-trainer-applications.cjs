@@ -666,6 +666,7 @@ async function integration() {
 			'EN/KR/RU namespaces and localized list/detail/reject dialog content resolve; navigation works on existing Admin pages without common.json additions',
 		);
 
+		router.locale = 'en';
 		const { MemberPanelList } = loadTs(path.join(__dirname, '../libs/components/admin/users/MemberList.tsx'), mocks);
 		const actions = [];
 		const MemberHarness = ({ memberType }) => {

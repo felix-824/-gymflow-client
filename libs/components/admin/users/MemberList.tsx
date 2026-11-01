@@ -1,5 +1,6 @@
 import React from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/router';
 import {
 	TableCell,
 	TableHead,
@@ -11,248 +12,205 @@ import {
 	Menu,
 	Fade,
 	MenuItem,
+	Avatar,
+	useMediaQuery,
 } from '@mui/material';
-import Avatar from '@mui/material/Avatar';
-import Typography from '@mui/material/Typography';
-import { Stack } from '@mui/material';
+import ExpandMoreRoundedIcon from '@mui/icons-material/ExpandMoreRounded';
 import { Member } from '../../../types/member/member';
+import { MemberUpdate } from '../../../types/member/member.update';
 import { REACT_APP_API_URL } from '../../../config';
 import { MemberStatus, MemberType } from '../../../enums/member.enum';
-
-interface Data {
-	id: string;
-	nickname: string;
-	fullname: string;
-	phone: string;
-	type: string;
-	state: string;
-	warning: string;
-	block: string;
-}
-
-function descendingComparator<T>(a: T, b: T, orderBy: keyof T) {
-	if (b[orderBy] < a[orderBy]) {
-		return -1;
-	}
-	if (b[orderBy] > a[orderBy]) {
-		return 1;
-	}
-	return 0;
-}
-
-type Order = 'asc' | 'desc';
-
-interface HeadCell {
-	disablePadding: boolean;
-	id: keyof Data;
-	label: string;
-	numeric: boolean;
-}
-
-const headCells: readonly HeadCell[] = [
-	{
-		id: 'id',
-		numeric: true,
-		disablePadding: false,
-		label: 'MB ID',
-	},
-	{
-		id: 'nickname',
-		numeric: true,
-		disablePadding: false,
-		label: 'NICK NAME',
-	},
-	{
-		id: 'fullname',
-		numeric: false,
-		disablePadding: false,
-		label: 'FULL NAME',
-	},
-	{
-		id: 'phone',
-		numeric: true,
-		disablePadding: false,
-		label: 'PHONE NUM',
-	},
-	{
-		id: 'type',
-		numeric: false,
-		disablePadding: false,
-		label: 'MEMBER TYPE',
-	},
-	{
-		id: 'warning',
-		numeric: false,
-		disablePadding: false,
-		label: 'WARNING',
-	},
-	{
-		id: 'block',
-		numeric: false,
-		disablePadding: false,
-		label: 'BLOCK CRIMES',
-	},
-	{
-		id: 'state',
-		numeric: false,
-		disablePadding: false,
-		label: 'STATE',
-	},
-];
-
-interface EnhancedTableProps {
-	numSelected: number;
-	onRequestSort: (event: React.MouseEvent<unknown>, property: keyof Data) => void;
-	onSelectAllClick: (event: React.ChangeEvent<HTMLInputElement>) => void;
-	order: Order;
-	orderBy: string;
-	rowCount: number;
-}
-
-function EnhancedTableHead(props: EnhancedTableProps) {
-	const { onSelectAllClick } = props;
-
-	return (
-		<TableHead>
-			<TableRow>
-				{headCells.map((headCell) => (
-					<TableCell
-						key={headCell.id}
-						align={headCell.numeric ? 'left' : 'center'}
-						padding={headCell.disablePadding ? 'none' : 'normal'}
-					>
-						{headCell.label}
-					</TableCell>
-				))}
-			</TableRow>
-		</TableHead>
-	);
-}
+import { adminUsersLabels } from '../../../admin-users-labels';
 
 interface MemberPanelListType {
 	members: Member[];
 	anchorEl: any;
-	menuIconClickHandler: any;
-	menuIconCloseHandler: any;
-	updateMemberHandler: any;
+	menuIconClickHandler: (event: React.MouseEvent<HTMLElement>, key: number | string) => void;
+	menuIconCloseHandler: () => void;
+	updateMemberHandler: (input: MemberUpdate) => void;
+	pending?: boolean;
 }
+type Labels = ReturnType<typeof adminUsersLabels>;
+
+const MemberIdentity = ({ member }: { member: Member }) => (
+	<Link href={'/member?memberId=' + member._id} passHref className="member-identity">
+		<Avatar
+			alt=""
+			src={member.memberImage ? REACT_APP_API_URL + '/' + member.memberImage : '/img/profile/defaultUser.svg'}
+		>
+			{member.memberNick?.charAt(0)}
+		</Avatar>
+		<span>
+			<strong>{member.memberNick}</strong>
+			{member.memberFullName && <small>{member.memberFullName}</small>}
+		</span>
+	</Link>
+);
+
+const MemberDetails = ({ member, labels }: { member: Member; labels: Labels }) => (
+	<details className="member-details">
+		<summary aria-label={labels.details + ': ' + member.memberNick}>
+			{labels.details}
+			<ExpandMoreRoundedIcon aria-hidden="true" />
+		</summary>
+		<dl>
+			<div>
+				<dt>{labels.memberId}</dt>
+				<dd className="member-technical-id">{member._id}</dd>
+			</div>
+			<div className="member-secondary-count">
+				<dt>{labels.warnings}</dt>
+				<dd>{member.memberWarnings ?? 0}</dd>
+			</div>
+			<div className="member-secondary-count">
+				<dt>{labels.blocks}</dt>
+				<dd>{member.memberBlocks ?? 0}</dd>
+			</div>
+		</dl>
+	</details>
+);
+
+const MemberControl = ({
+	member,
+	index,
+	field,
+	labels,
+	controls,
+}: {
+	member: Member;
+	index: number;
+	field: 'memberType' | 'memberStatus';
+	labels: Labels;
+	controls: MemberPanelListType;
+}) => {
+	const role = field === 'memberType';
+	const key = role ? index : member._id;
+	const anchor = controls.anchorEl[key];
+	const open = Boolean(anchor?.isConnected);
+	const id = 'member-' + member._id + '-' + field;
+	const label = role ? labels.roles[member.memberType] : labels.statuses[member.memberStatus];
+	const choices = role
+		? Object.values(MemberType).filter(
+				(type) => type !== member.memberType && !(member.memberType === MemberType.USER && type === MemberType.TRAINER),
+		  )
+		: Object.values(MemberStatus).filter((status) => status !== member.memberStatus);
+	return (
+		<>
+			<Button
+				id={id}
+				className={'member-control ' + (role ? 'member-role' : 'member-state state-' + member.memberStatus)}
+				disabled={controls.pending}
+				aria-label={(role ? labels.changeType : labels.changeState) + ': ' + member.memberNick + ', ' + label}
+				aria-haspopup="menu"
+				aria-expanded={open}
+				aria-controls={open ? id + '-menu' : undefined}
+				onClick={(event) => controls.menuIconClickHandler(event, key)}
+				endIcon={<ExpandMoreRoundedIcon />}
+			>
+				{label}
+			</Button>
+			<Menu
+				id={id + '-menu'}
+				anchorEl={anchor}
+				open={open}
+				onClose={controls.menuIconCloseHandler}
+				TransitionComponent={Fade}
+				PaperProps={{ className: 'admin-users-menu' }}
+				MenuListProps={{ 'aria-labelledby': id }}
+			>
+				{choices.map((value) => (
+					<MenuItem
+						key={value}
+						disabled={controls.pending}
+						onClick={() =>
+							controls.updateMemberHandler(
+								role
+									? { _id: member._id, memberType: value as MemberType }
+									: { _id: member._id, memberStatus: value as MemberStatus },
+							)
+						}
+					>
+						{role ? labels.roles[value as MemberType] : labels.statuses[value as MemberStatus]}
+					</MenuItem>
+				))}
+			</Menu>
+		</>
+	);
+};
 
 export const MemberPanelList = (props: MemberPanelListType) => {
-	const { members, anchorEl, menuIconClickHandler, menuIconCloseHandler, updateMemberHandler } = props;
+	const { members } = props;
+	const labels = adminUsersLabels(useRouter().locale);
+	const mobile = useMediaQuery('(max-width:599px)');
 
+	if (mobile)
+		return (
+			<ul className="member-mobile-list" aria-labelledby="admin-users-title">
+				{!members.length && <li className="member-empty">{labels.empty}</li>}
+				{members.map((member, index) => (
+					<li className="member-mobile-row" key={member._id}>
+						<MemberIdentity member={member} />
+						<div className="member-mobile-phone">
+							<span>{labels.phone}</span>
+							<strong>{member.memberPhone || '—'}</strong>
+						</div>
+						<div className="member-mobile-actions">
+							<div>
+								<span>{labels.type}</span>
+								<MemberControl member={member} index={index} field="memberType" labels={labels} controls={props} />
+							</div>
+							<div>
+								<span>{labels.state}</span>
+								<MemberControl member={member} index={index} field="memberStatus" labels={labels} controls={props} />
+							</div>
+						</div>
+						<MemberDetails member={member} labels={labels} />
+					</li>
+				))}
+			</ul>
+		);
 	return (
-		<Stack>
-			<TableContainer>
-				<Table sx={{ minWidth: 750 }} aria-labelledby="tableTitle" size={'medium'}>
-					{/*@ts-ignore*/}
-					<EnhancedTableHead />
-					<TableBody>
-						{members.length === 0 && (
-							<TableRow>
-								<TableCell align="center" colSpan={8}>
-									<span className={'no-data'}>data not found!</span>
-								</TableCell>
-							</TableRow>
-						)}
-
-						{members.length !== 0 &&
-							members.map((member: Member, index: number) => {
-								const member_image = member.memberImage
-									? `${REACT_APP_API_URL}/${member.memberImage}`
-									: '/img/profile/defaultUser.svg';
-								return (
-									<TableRow hover key={member?._id} sx={{ '&:last-child td, &:last-child th': { border: 0 } }}>
-										<TableCell align="left">{member._id}</TableCell>
-
-										<TableCell align="left" className={'name'}>
-											<Stack direction={'row'}>
-												<Link href={`/member?memberId=${member._id}`}>
-													<div>
-														<Avatar alt="Remy Sharp" src={member_image} sx={{ ml: '2px', mr: '10px' }} />
-													</div>
-												</Link>
-												<Link href={`/member?memberId=${member._id}`}>
-													<div>{member.memberNick}</div>
-												</Link>
-											</Stack>
-										</TableCell>
-
-										<TableCell align="center">{member.memberFullName ?? '-'}</TableCell>
-										<TableCell align="left">{member.memberPhone}</TableCell>
-
-										<TableCell align="center">
-											<Button onClick={(e: any) => menuIconClickHandler(e, index)} className={'badge success'}>
-												{member.memberType}
-											</Button>
-
-											<Menu
-												className={'menu-modal'}
-												MenuListProps={{
-													'aria-labelledby': 'fade-button',
-												}}
-												anchorEl={anchorEl[index]}
-												open={Boolean(anchorEl[index])}
-												onClose={menuIconCloseHandler}
-												TransitionComponent={Fade}
-												sx={{ p: 1 }}
-											>
-												{Object.values(MemberType)
-													.filter(
-														(ele) =>
-															ele !== member?.memberType &&
-															!(member.memberType === MemberType.USER && ele === MemberType.TRAINER),
-													)
-													.map((type: string) => (
-														<MenuItem
-															onClick={() => updateMemberHandler({ _id: member._id, memberType: type })}
-															key={type}
-														>
-															<Typography variant={'subtitle1'} component={'span'}>
-																{type}
-															</Typography>
-														</MenuItem>
-													))}
-											</Menu>
-										</TableCell>
-
-										<TableCell align="center">{member.memberWarnings}</TableCell>
-										<TableCell align="center">{member.memberBlocks}</TableCell>
-										<TableCell align="center">
-											<Button onClick={(e: any) => menuIconClickHandler(e, member._id)} className={'badge success'}>
-												{member.memberStatus}
-											</Button>
-
-											<Menu
-												className={'menu-modal'}
-												MenuListProps={{
-													'aria-labelledby': 'fade-button',
-												}}
-												anchorEl={anchorEl[member._id]}
-												open={Boolean(anchorEl[member._id])}
-												onClose={menuIconCloseHandler}
-												TransitionComponent={Fade}
-												sx={{ p: 1 }}
-											>
-												{Object.values(MemberStatus)
-													.filter((ele: string) => ele !== member?.memberStatus)
-													.map((status: string) => (
-														<MenuItem
-															onClick={() => updateMemberHandler({ _id: member._id, memberStatus: status })}
-															key={status}
-														>
-															<Typography variant={'subtitle1'} component={'span'}>
-																{status}
-															</Typography>
-														</MenuItem>
-													))}
-											</Menu>
-										</TableCell>
-									</TableRow>
-								);
-							})}
-					</TableBody>
-				</Table>
-			</TableContainer>
-		</Stack>
+		<TableContainer className="member-table-container">
+			<Table className="member-table" aria-labelledby="admin-users-title">
+				<TableHead>
+					<TableRow>
+						<TableCell className="member-column">{labels.member}</TableCell>
+						<TableCell className="phone-column">{labels.phone}</TableCell>
+						<TableCell className="type-column">{labels.type}</TableCell>
+						<TableCell className="state-column">{labels.state}</TableCell>
+						<TableCell className="member-desktop-count">{labels.warnings}</TableCell>
+						<TableCell className="member-desktop-count">{labels.blocks}</TableCell>
+					</TableRow>
+				</TableHead>
+				<TableBody>
+					{!members.length && (
+						<TableRow>
+							<TableCell colSpan={6} className="member-empty">
+								{labels.empty}
+							</TableCell>
+						</TableRow>
+					)}
+					{members.map((member, index) => (
+						<TableRow key={member._id}>
+							<TableCell component="th" scope="row">
+								<div className="member-cell-content">
+									<MemberIdentity member={member} />
+									<MemberDetails member={member} labels={labels} />
+								</div>
+							</TableCell>
+							<TableCell className="member-phone">{member.memberPhone || '—'}</TableCell>
+							<TableCell>
+								<MemberControl member={member} index={index} field="memberType" labels={labels} controls={props} />
+							</TableCell>
+							<TableCell>
+								<MemberControl member={member} index={index} field="memberStatus" labels={labels} controls={props} />
+							</TableCell>
+							<TableCell className="member-desktop-count">{member.memberWarnings ?? 0}</TableCell>
+							<TableCell className="member-desktop-count">{member.memberBlocks ?? 0}</TableCell>
+						</TableRow>
+					))}
+				</TableBody>
+			</Table>
+		</TableContainer>
 	);
 };

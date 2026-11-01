@@ -1,0 +1,41 @@
+{
+	"title": "Member List",
+	"member": "Member",
+	"phone": "Phone",
+	"type": "Type",
+	"state": "State",
+	"warnings": "Warnings",
+	"blocks": "Blocks",
+	"memberId": "Member ID",
+	"details": "Details",
+	"search": "Search members",
+	"searchPlaceholder": "Search nickname",
+	"searchAction": "Search",
+	"clearSearch": "Clear search",
+	"typeFilter": "Member type",
+	"allTypes": "All types",
+	"tabsLabel": "Member status",
+	"all": "All",
+	"active": "Active",
+	"blocked": "Blocked",
+	"deleted": "Deleted",
+	"changeType": "Change member type",
+	"changeState": "Change member state",
+	"rowsPerPage": "Rows per page",
+	"previousPage": "Previous page",
+	"nextPage": "Next page",
+	"empty": "No members found.",
+	"loading": "Loading members…",
+	"error": "Members could not be loaded. Please try again.",
+	"retry": "Try again",
+	"roles": {
+		"USER": "USER",
+		"TRAINER": "TRAINER",
+		"ADMIN": "ADMIN"
+	},
+	"statuses": {
+		"ACTIVE": "ACTIVE",
+		"BLOCK": "BLOCK",
+		"DELETE": "DELETE"
+	}
+}

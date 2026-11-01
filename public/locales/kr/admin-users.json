@@ -1,0 +1,41 @@
+{
+	"title": "회원 목록",
+	"member": "회원",
+	"phone": "전화번호",
+	"type": "유형",
+	"state": "상태",
+	"warnings": "경고",
+	"blocks": "차단",
+	"memberId": "회원 ID",
+	"details": "상세 정보",
+	"search": "회원 검색",
+	"searchPlaceholder": "닉네임으로 검색",
+	"searchAction": "검색",
+	"clearSearch": "검색 지우기",
+	"typeFilter": "회원 유형",
+	"allTypes": "모든 유형",
+	"tabsLabel": "회원 상태",
+	"all": "전체",
+	"active": "활성",
+	"blocked": "차단",
+	"deleted": "삭제",
+	"changeType": "회원 유형 변경",
+	"changeState": "회원 상태 변경",
+	"rowsPerPage": "페이지당 행 수",
+	"previousPage": "이전 페이지",
+	"nextPage": "다음 페이지",
+	"empty": "회원이 없습니다.",
+	"loading": "회원을 불러오는 중…",
+	"error": "회원 목록을 불러올 수 없습니다. 다시 시도해 주세요.",
+	"retry": "다시 시도",
+	"roles": {
+		"USER": "회원",
+		"TRAINER": "트레이너",
+		"ADMIN": "관리자"
+	},
+	"statuses": {
+		"ACTIVE": "활성",
+		"BLOCK": "차단",
+		"DELETE": "삭제"
+	}
+}
