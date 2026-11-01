@@ -306,7 +306,13 @@ const DefaultTop = () => {
 	}
 };
 
-const Top = ({ variant = 'default' }: { router: NextRouter; variant?: 'default' | 'programs' }) =>
-	variant === 'programs' ? <ProgramsHeader /> : <DefaultTop />;
+const Top = ({ variant = 'default' }: { router: NextRouter; variant?: 'default' | 'programs' }) => {
+	const router = useRouter();
+	const tabletViewport = useMediaQuery('(min-width:768px) and (max-width:1199px)');
+	const tabletHeader = tabletViewport && (router.pathname === '/program/detail' || router.pathname === '/trainer');
+	if (variant === 'programs') return <ProgramsHeader />;
+	if (tabletHeader) return <div className="programs-header-scope"><ProgramsHeader /></div>;
+	return <DefaultTop />;
+};
 
 export default withRouter(Top);

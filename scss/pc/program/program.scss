@@ -405,6 +405,7 @@
 }
 
 #pc-wrap.program-discovery-layout,
+.programs-header-scope,
 .program-discovery-filter-modal,
 .program-discovery-sort-menu,
 .programs-navigation-menu {
@@ -422,6 +423,7 @@
 
 #pc-wrap.program-discovery-layout #program-list-page,
 #pc-wrap.program-discovery-layout .programs-header,
+.programs-header-scope .programs-header,
 #pc-wrap.program-discovery-layout .programs-footer,
 #pc-wrap.program-discovery-layout .programs-bottom-navigation,
 .program-discovery-filter-modal,
@@ -1519,7 +1521,8 @@
 	}
 }
 
-#pc-wrap.program-discovery-layout {
+#pc-wrap.program-discovery-layout,
+.programs-header-scope {
 	#main,
 	&.is-mobile #main {
 		padding-top: calc(64px + env(safe-area-inset-top, 0px));

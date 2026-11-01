@@ -8,6 +8,46 @@ const { JSDOM } = require('jsdom');
 const base = path.resolve(__dirname, '..');
 let checks = 0;
 const pass = (name) => { checks++; console.log('PASS ' + name); };
+function checkTabletGeometry(headers) {
+	const os = require('node:os'), { spawnSync } = require('node:child_process'), sass = require('sass');
+	const temporary = fs.mkdtempSync(path.join(os.tmpdir(), 'gymflow-tablet-header-'));
+	try {
+		const css = ['app.scss', 'pc/main.scss', 'mobile/main.scss'].map((file) => sass.renderSync({
+			file: path.join(base, 'scss', file), logger: sass.Logger.silent,
+			importer: (url) => url.startsWith('/scss/') ? { file: path.join(base, url.slice(1)) } : null,
+		}).css.toString()).join('\n');
+		const variants = headers.map(({ html, mui }) => '<!doctype html><html><head><style>' + css + mui + '</style></head><body><main id="pc-wrap">' + html + '</main></body></html>');
+		const frames = headers.flatMap((_, index) => [768, 1024, 1199].map((width) => '<iframe data-variant="' + index + '" style="border:0;width:' + width + 'px;height:140px"></iframe>')).join('');
+		const measure = () => [...document.querySelectorAll('iframe')].map((frame) => {
+			const doc = frame.contentDocument, win = frame.contentWindow, header = doc.querySelector('.programs-header'), rect = header.getBoundingClientRect();
+			const controls = ['.programs-brand', '.global-program-search-trigger', '#programs-language-button', '.programs-auth-link', '#programs-navigation-button'].map((selector) => {
+				const element = doc.querySelector(selector), r = element.getBoundingClientRect();
+				return { selector, left: r.left, right: r.right, top: r.top, bottom: r.bottom, width: r.width, height: r.height };
+			});
+			return { viewport: win.innerWidth, clientWidth: doc.documentElement.clientWidth, scrollWidth: doc.documentElement.scrollWidth, headerWidth: rect.width, headerBottom: rect.bottom,
+				position: win.getComputedStyle(header).position, desktopLinks: win.getComputedStyle(doc.querySelector('.programs-desktop-links')).display, controls };
+		});
+		const file = path.join(temporary, 'headers.html');
+		fs.writeFileSync(file, '<!doctype html><html><body>' + frames + '<pre id="result"></pre><script>const variants=' + JSON.stringify(variants).replace(/</g, '\\u003c') + ';document.querySelectorAll("iframe").forEach(frame=>frame.srcdoc=variants[Number(frame.dataset.variant)]);window.onload=()=>document.getElementById("result").textContent=JSON.stringify((' + measure.toString() + ')());</script></body></html>');
+		const result = spawnSync('C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe', ['--headless', '--disable-gpu', '--disable-background-networking', '--no-first-run', '--no-default-browser-check', '--user-data-dir=' + path.join(temporary, 'profile'), '--virtual-time-budget=1000', '--dump-dom', require('node:url').pathToFileURL(file).href], { encoding: 'utf8', timeout: 45000, maxBuffer: 64 * 1024 * 1024, windowsHide: true });
+		assert.equal(result.status, 0, result.error?.message);
+		const match = result.stdout.match(/<pre id="result">([^<]+)<\/pre>/);
+		assert(match, 'Headless header geometry is available');
+		const rows = JSON.parse(match[1]);
+		assert.equal(rows.length, headers.length * 3);
+		for (const row of rows) {
+			assert.equal(row.position, 'fixed'); assert.equal(row.desktopLinks, 'none');
+			assert(row.scrollWidth <= row.clientWidth && Math.abs(row.headerWidth - row.clientWidth) < 1, JSON.stringify(row));
+			for (const control of row.controls) assert(control.width >= 44 && control.height >= 44 && control.left >= 0 && control.right <= row.viewport && control.top >= 0 && control.bottom <= row.headerBottom, control.selector + ' remains inside the tablet header');
+			for (let index = 1; index < row.controls.length; index++) assert(row.controls[index - 1].right <= row.controls[index].left, 'tablet controls do not overlap');
+		}
+		pass('real Edge EN/KR/RU tablet headers at 768/1024/1199 keep all five controls visible, at least 44px, with no clipping or horizontal overflow');
+	} finally {
+		assert.equal(path.dirname(path.resolve(temporary)), path.resolve(os.tmpdir()));
+		assert(path.basename(temporary).startsWith('gymflow-tablet-header-'));
+		fs.rmSync(temporary, { recursive: true, force: true });
+	}
+}
 function loadTs(file, mocks = {}, cache = new Map()) {
 	file = path.resolve(base, file);
 	if (cache.has(file)) return cache.get(file);
@@ -55,11 +95,14 @@ async function main() {
 	const i18n = require('i18next').createInstance();
 	const resources = Object.fromEntries(['en', 'kr', 'ru'].map((locale) => [locale, {
 		common: JSON.parse(fs.readFileSync(path.join(base, 'public/locales', locale, 'common.json'), 'utf8')),
+		gyms: JSON.parse(fs.readFileSync(path.join(base, 'public/locales', locale, 'gyms.json'), 'utf8')),
 	}]));
 	await i18n.init({ resources, lng: 'en', ns: ['common'], defaultNS: 'common', initImmediate: false });
 	let mobile = false;
+	let tablet = false;
 	let reducedMotion = false;
-	dom.window.matchMedia = (query) => ({ matches: query.includes('reduced-motion') ? reducedMotion : mobile, media: query, addListener() {}, removeListener() {}, addEventListener() {}, removeEventListener() {} });
+	const mediaMatches = (query) => query.includes('reduced-motion') ? reducedMotion : query.includes('min-width:768px') ? tablet : query.includes('max-width:1199px') ? mobile || tablet : mobile;
+	dom.window.matchMedia = (query) => ({ matches: mediaMatches(query), media: query, addListener() {}, removeListener() {}, addEventListener() {}, removeEventListener() {} });
 	let user = { _id: '', memberType: 'USER' };
 	const pushes = [];
 	const events = new Map();
@@ -73,13 +116,13 @@ async function main() {
 	}, children));
 	const image = ({ fill, priority, ...props }) => React.createElement('img', props);
 	const mocks = {
-		'@mui/material': { ...require('@mui/material'), useMediaQuery: (query) => query.includes('reduced-motion') ? reducedMotion : mobile },
+		'@mui/material': { ...require('@mui/material'), useMediaQuery: mediaMatches },
 		'@mui/icons-material': { Logout: require('@mui/icons-material/Logout').default },
 		'phosphor-react': { CaretDown: () => React.createElement('svg', { 'aria-hidden': true }) },
 		'next/router': { useRouter: () => router, withRouter: (component) => component },
 		'next/link': { __esModule: true, default: link },
 		'next/image': { __esModule: true, default: image },
-		'next-i18next': { useTranslation: () => ({ t: i18n.getFixedT(router.locale), i18n }) },
+		'next-i18next': { useTranslation: (ns = 'common') => ({ t: i18n.getFixedT(router.locale, ns), i18n }) },
 		'next-i18next/serverSideTranslations': { serverSideTranslations: async () => ({}) },
 		'framer-motion': { motion: { create: (component) => component }, useReducedMotion: () => reducedMotion },
 		'@apollo/client': { useReactiveVar: (variable) => variable() },
@@ -331,6 +374,79 @@ async function main() {
 			assert(!form());
 			pass((mobile ? 'mobile' : 'desktop') + ' legacy customer navbar retains destinations and opens shared search');
 		}
+		const layoutMocks = { ...mocks,
+			'next/head': { __esModule: true, default: () => null },
+			'../Footer': { __esModule: true, default: ({ variant = 'default' }) => React.createElement('div', { 'data-footer': variant }) },
+			'../homepage/HomeHero': { __esModule: true, default: () => null },
+		};
+		const basicLayout = loadTs('libs/components/layout/LayoutBasic.tsx', layoutMocks).default;
+		const fullLayout = loadTs('libs/components/layout/LayoutFull.tsx', layoutMocks).default;
+		const homeLayout = loadTs('libs/components/layout/LayoutHome.tsx', layoutMocks).default;
+		const content = () => React.createElement('div', { id: 'responsive-route-content' });
+		const tabletHeaders = [];
+		user = { _id: '', memberType: 'USER' };
+		for (const locale of ['en', 'kr', 'ru']) {
+			router.locale = locale;
+			for (const [route, layout] of [['/program/detail', fullLayout], ['/trainer', basicLayout], ['/', homeLayout], ['/program', basicLayout], ['/gym', basicLayout], ['/gym/detail', basicLayout], ['/trainer/detail', basicLayout]]) {
+				router.pathname = route;
+				router.query = {};
+				const Wrapped = layout(content);
+				for (const width of [1440, 768, 390]) {
+					mobile = width === 390;
+					tablet = width === 768;
+					await render(React.createElement(Wrapped));
+					const affected = route === '/program/detail' || route === '/trainer';
+					assert.equal(Boolean(document.querySelector('.programs-header')), !affected || width !== 1440);
+					assert.equal(Boolean(document.querySelector('.programs-header-scope')), affected && width === 768);
+					assert.equal(document.querySelectorAll('#responsive-route-content').length, 1);
+					if (affected && width !== 390) {
+						assert.equal(document.querySelector('#pc-wrap').className.includes('program-discovery-layout'), false);
+						assert(document.querySelector('[data-footer="default"]'), 'legacy body/footer composition is preserved');
+					}
+					if (width === 390 && route !== '/') assert.deepEqual(
+						[...document.querySelectorAll('.programs-bottom-navigation a')].map((link) => link.getAttribute('href')),
+						['/', '/program', '/trainer', '/community?articleCategory=FREE', '/mypage'],
+					);
+					if (!affected || width !== 768) continue;
+					assert(document.querySelector('.programs-brand'));
+					assert(document.querySelector('.global-program-search-trigger'));
+					assert(document.querySelector('#programs-language-button'));
+					assert(document.querySelector('.programs-auth-link[href="/account/join"]'));
+					const menuButton = document.querySelector('#programs-navigation-button');
+					await act(async () => menuButton.focus());
+					await click(menuButton);
+					const menu = document.querySelector('#programs-navigation-menu [role="menu"]');
+					assert(menu.contains(document.activeElement));
+					const gymLink = menu.querySelector('a[href="/gym"]');
+					assert.equal(gymLink.textContent, resources[locale].gyms.navigation);
+					await escape(menu);
+					assert(!document.querySelector('#programs-navigation-menu'));
+					assert.equal(document.activeElement, menuButton);
+					tabletHeaders.push({ html: document.querySelector('.programs-header-scope').outerHTML,
+						mui: [...document.styleSheets].flatMap((sheet) => [...sheet.cssRules].map((rule) => rule.cssText)).join('\n') });
+				}
+			}
+			pass(locale + ' actual route layouts retain 1440 desktop and 390 mobile behavior; only affected 768 headers reuse compact controls, localized Gyms, focus/dismiss and five mobile destinations');
+		}
+		mobile = false;
+		tablet = true;
+		for (const role of ['USER', 'TRAINER']) {
+			user = { _id: 'header-member', memberType: role, memberNick: 'Member' };
+			for (const [route, layout] of [['/program/detail', fullLayout], ['/trainer', basicLayout]]) {
+				router.pathname = route;
+				await render(React.createElement(layout(content)));
+				assert(document.querySelector('.programs-header-scope #programs-account-button'));
+				assert(!document.querySelector('.programs-auth-link'));
+				await click(document.querySelector('#programs-account-button'));
+				assert(document.querySelector('[role="menuitem"][href="/mypage"]'));
+				await escape(document.querySelector('[role="menu"]'));
+			}
+			pass(role + ' affected tablet routes retain the existing avatar/account menu and My Page destination');
+		}
+		checkTabletGeometry(tabletHeaders);
+		tablet = false;
+		user = { _id: '', memberType: 'USER' };
+		router.locale = 'en';
 		const stub = (name) => ({ __esModule: true, default: () => React.createElement('section', { 'data-section': name }) });
 		const Home = loadTs('pages/index.tsx', { ...mocks,
 			'../libs/components/layout/LayoutHome': { __esModule: true, default: (component) => component },
@@ -352,5 +468,5 @@ async function main() {
 		dom.window.close();
 	}
 }
-const watchdog = setTimeout(() => { console.error('Homepage discovery tests did not settle'); process.exit(1); }, 90000);
+const watchdog = setTimeout(() => { console.error('Homepage discovery tests did not settle'); process.exit(1); }, 120000);
 main().catch((error) => { console.error(error); process.exitCode = 1; }).finally(() => clearTimeout(watchdog));
