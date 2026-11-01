@@ -979,17 +979,19 @@ module.exports = async function runFormChecks(loadTs, forms, options = {}) {
 		const action = ({ children, onClick, disabled }) => React.createElement('button', { onClick, disabled }, children);
 		const adminActions = [];
 		const AdminPanel = loadTs(path.join(__dirname, '../libs/components/admin/programs/ProgramList.tsx'), {
+			'next/router': { useRouter: () => ({ locale: 'en' }) },
+			'../../../admin-programs-labels': { adminProgramsLabels: () => JSON.parse(require('node:fs').readFileSync(path.join(__dirname, '../public/locales/en/admin-programs.json'), 'utf8')) },
 			'next/link': { __esModule: true, default: passthrough },
-			'@mui/material': { ...Object.fromEntries(['TableCell', 'TableHead', 'TableBody', 'TableRow', 'Table', 'TableContainer', 'Menu', 'Fade', 'Stack'].map(name => [name, passthrough])), Button: action, MenuItem: action },
+			'@mui/material': { ...Object.fromEntries(['TableCell', 'TableHead', 'TableBody', 'TableRow', 'Table', 'TableContainer', 'Menu', 'Fade', 'Stack', 'Avatar'].map(name => [name, passthrough])), Button: action, MenuItem: action, useMediaQuery: () => false },
 			'@mui/material/Avatar': { __esModule: true, default: () => null },
 			'@mui/material/Typography': { __esModule: true, default: passthrough },
-			'@mui/icons-material/Delete': { __esModule: true, default: () => null },
+			...Object.fromEntries(['ExpandMoreRounded', 'FitnessCenterRounded', 'DeleteOutlineRounded'].map(name => ['@mui/icons-material/' + name, { __esModule: true, default: () => null }])),
 		}).ProgramPanelList;
 		await act(async () => root.render(React.createElement(AdminPanel, {
 			programs: [{ ...program, programRevision: 7 }], anchorEl: [], menuIconClickHandler: () => {},
 			menuIconCloseHandler: () => {}, removeProgramHandler: () => {}, updateProgramHandler: input => adminActions.push(input),
 		})));
-		await act(async () => [...document.querySelectorAll('button')].find(button => button.textContent === 'ACTIVE').click());
+		await act(async () => [...document.querySelectorAll('button')].find(button => button.textContent === 'Active').click());
 		assert.deepEqual(adminActions, [{ _id: program._id, programStatus: 'ACTIVE', expectedRevision: 7 }]);
 		pass('existing Admin status action submits the revision belonging to its displayed Program');
 		return checks;

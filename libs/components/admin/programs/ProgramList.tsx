@@ -1,5 +1,6 @@
 import React from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/router';
 import {
 	TableCell,
 	TableHead,
@@ -11,114 +12,18 @@ import {
 	Menu,
 	Fade,
 	MenuItem,
+	Avatar,
+	useMediaQuery,
 } from '@mui/material';
-import Avatar from '@mui/material/Avatar';
-import { Stack } from '@mui/material';
+import ExpandMoreRoundedIcon from '@mui/icons-material/ExpandMoreRounded';
+import DeleteOutlineRoundedIcon from '@mui/icons-material/DeleteOutlineRounded';
+import FitnessCenterRoundedIcon from '@mui/icons-material/FitnessCenterRounded';
 import { Program } from '../../../types/program/program';
 import { REACT_APP_API_URL } from '../../../config';
-import DeleteIcon from '@mui/icons-material/Delete';
-import Typography from '@mui/material/Typography';
-import { ProgramStatus } from '../../../enums/program.enum';
+import { ProgramStatus, ProgramType } from '../../../enums/program.enum';
+import { adminProgramsLabels } from '../../../admin-programs-labels';
 
-interface Data {
-	id: string;
-	title: string;
-	price: string;
-	trainer: string;
-	location: string;
-	type: string;
-	status: string;
-	category: string;
-	duration: string;
-	capacity: string;
-}
-
-type Order = 'asc' | 'desc';
-
-interface HeadCell {
-	disablePadding: boolean;
-	id: keyof Data;
-	label: string;
-	numeric: boolean;
-}
-
-const headCells: readonly HeadCell[] = [
-	{
-		id: 'id',
-		numeric: true,
-		disablePadding: false,
-		label: 'ID',
-	},
-	{
-		id: 'title',
-		numeric: true,
-		disablePadding: false,
-		label: 'TITLE',
-	},
-	{
-		id: 'price',
-		numeric: false,
-		disablePadding: false,
-		label: 'PRICE',
-	},
-	{
-		id: 'trainer',
-		numeric: false,
-		disablePadding: false,
-		label: 'TRAINER',
-	},
-	{
-		id: 'location',
-		numeric: false,
-		disablePadding: false,
-		label: 'LOCATION',
-	},
-	{
-		id: 'type',
-		numeric: false,
-		disablePadding: false,
-		label: 'TYPE',
-	},
-	{
-		id: 'status',
-		numeric: false,
-		disablePadding: false,
-		label: 'STATUS',
-	},
-	{ id: 'category', numeric: false, disablePadding: false, label: 'CATEGORY' },
-	{ id: 'duration', numeric: false, disablePadding: false, label: 'MIN/SESSION' },
-	{ id: 'capacity', numeric: false, disablePadding: false, label: 'PARTICIPANTS/SESSION' },
-];
-
-interface EnhancedTableProps {
-	numSelected: number;
-	onRequestSort: (event: React.MouseEvent<unknown>, property: keyof Data) => void;
-	onSelectAllClick: (event: React.ChangeEvent<HTMLInputElement>) => void;
-	order: Order;
-	orderBy: string;
-	rowCount: number;
-}
-
-function EnhancedTableHead(props: EnhancedTableProps) {
-	const { onSelectAllClick } = props;
-
-	return (
-		<TableHead>
-			<TableRow>
-				{headCells.map((headCell) => (
-					<TableCell
-						key={headCell.id}
-						align={headCell.numeric ? 'left' : 'center'}
-						padding={headCell.disablePadding ? 'none' : 'normal'}
-					>
-						{headCell.label}
-					</TableCell>
-				))}
-			</TableRow>
-		</TableHead>
-	);
-}
-
+type Labels = ReturnType<typeof adminProgramsLabels>;
 interface ProgramPanelListType {
 	programs: Program[];
 	anchorEl: any;
@@ -127,125 +32,210 @@ interface ProgramPanelListType {
 	updateProgramHandler: any;
 	removeProgramHandler: any;
 	busy?: boolean;
+	feedback?: React.ReactNode;
 }
+const locationLabel = (program: Program, labels: Labels) =>
+	program.programType === ProgramType.ONLINE ? labels.types.ONLINE : labels.locations[program.programLocation];
 
+const ProgramIdentity = ({ program }: { program: Program }) => {
+	const content = (
+		<>
+			<Avatar
+				variant="rounded"
+				alt=""
+				src={program.programImages?.[0] ? `${REACT_APP_API_URL}/${program.programImages[0]}` : undefined}
+			>
+				<FitnessCenterRoundedIcon aria-hidden="true" />
+			</Avatar>
+			<strong>{program.programName}</strong>
+		</>
+	);
+	return program.programStatus === ProgramStatus.ACTIVE ? (
+		<Link className="program-identity" href={`/program/detail?id=${program._id}`}>
+			{content}
+		</Link>
+	) : (
+		<div className="program-identity">{content}</div>
+	);
+};
+const ProgramDetails = ({ program, labels }: { program: Program; labels: Labels }) => (
+	<details className="program-details">
+		<summary aria-label={`${labels.details}: ${program.programName}`}>
+			{labels.details}
+			<ExpandMoreRoundedIcon aria-hidden="true" />
+		</summary>
+		<dl>
+			<div>
+				<dt>{labels.programId}</dt>
+				<dd className="program-technical-id">{program._id}</dd>
+			</div>
+			<div>
+				<dt>{labels.location}</dt>
+				<dd>{locationLabel(program, labels)}</dd>
+			</div>
+			<div>
+				<dt>{labels.category}</dt>
+				<dd>{labels.categories[program.programCategory]}</dd>
+			</div>
+			<div>
+				<dt>{labels.duration}</dt>
+				<dd>{program.programDuration}</dd>
+			</div>
+			<div>
+				<dt>{labels.capacity}</dt>
+				<dd>{program.programCapacity}</dd>
+			</div>
+		</dl>
+	</details>
+);
+const ProgramControl = ({
+	program,
+	index,
+	labels,
+	controls,
+}: {
+	program: Program;
+	index: number;
+	labels: Labels;
+	controls: ProgramPanelListType;
+}) => {
+	const id = 'program-status-' + program._id;
+	const anchor = controls.anchorEl[index];
+	const open = Boolean(anchor?.isConnected);
+	return program.programStatus === ProgramStatus.DELETE ? (
+		<Button
+			className="program-control is-delete"
+			disabled={controls.busy}
+			aria-label={`${labels.remove}: ${program.programName}`}
+			onClick={() => controls.removeProgramHandler(program._id)}
+			startIcon={<DeleteOutlineRoundedIcon />}
+		>
+			{labels.statuses.DELETE}
+		</Button>
+	) : (
+		<>
+			<Button
+				id={id}
+				className={`program-control is-${program.programStatus.toLowerCase()}`}
+				disabled={controls.busy}
+				aria-label={`${labels.changeStatus}: ${program.programName}, ${labels.statuses[program.programStatus]}`}
+				aria-haspopup="menu"
+				aria-expanded={open}
+				aria-controls={open ? id + '-menu' : undefined}
+				onClick={(event) => controls.menuIconClickHandler(event, index)}
+				endIcon={<ExpandMoreRoundedIcon />}
+			>
+				{labels.statuses[program.programStatus]}
+			</Button>
+			<Menu
+				className="admin-programs-menu"
+				anchorEl={open ? anchor : null}
+				open={open}
+				onClose={controls.menuIconCloseHandler}
+				TransitionComponent={Fade}
+				MenuListProps={{ id: id + '-menu', 'aria-labelledby': id }}
+			>
+				{Object.values(ProgramStatus)
+					.filter((status) => status !== program.programStatus)
+					.map((status) => (
+						<MenuItem
+							key={status}
+							disabled={controls.busy}
+							onClick={() =>
+								controls.updateProgramHandler({
+									_id: program._id,
+									programStatus: status,
+									expectedRevision: program.programRevision,
+								})
+							}
+						>
+							{labels.statuses[status]}
+						</MenuItem>
+					))}
+			</Menu>
+		</>
+	);
+};
 export const ProgramPanelList = (props: ProgramPanelListType) => {
-	const {
-		programs,
-		anchorEl,
-		menuIconClickHandler,
-		menuIconCloseHandler,
-		updateProgramHandler,
-		removeProgramHandler,
-		busy,
-	} = props;
-
-	return (
-		<Stack>
-			<TableContainer>
-				<Table sx={{ minWidth: 750 }} aria-labelledby="tableTitle" size={'medium'}>
-					{/*@ts-ignore*/}
-					<EnhancedTableHead />
-					<TableBody>
-						{programs.length === 0 && (
-							<TableRow>
-								<TableCell align="center" colSpan={headCells.length}>
-									<span className={'no-data'}>data not found!</span>
-								</TableCell>
-							</TableRow>
-						)}
-
-						{programs.length !== 0 &&
-							programs.map((program: Program, index: number) => {
-								const programImage = `${REACT_APP_API_URL}/${program?.programImages[0]}`;
-
-								return (
-									<TableRow hover key={program?._id} sx={{ '&:last-child td, &:last-child th': { border: 0 } }}>
-										<TableCell align="left">{program._id}</TableCell>
-										<TableCell align="left" className={'name'}>
-											{program.programStatus === ProgramStatus.ACTIVE ? (
-												<Stack direction={'row'}>
-													<Link href={`/program/detail?id=${program?._id}`}>
-														<div>
-															<Avatar alt="Remy Sharp" src={programImage} sx={{ ml: '2px', mr: '10px' }} />
-														</div>
-													</Link>
-													<Link href={`/program/detail?id=${program?._id}`}>
-														<div>{program.programName}</div>
-													</Link>
-												</Stack>
-											) : (
-												<Stack direction={'row'}>
-													<div>
-														<Avatar alt="Remy Sharp" src={programImage} sx={{ ml: '2px', mr: '10px' }} />
-													</div>
-													<div style={{ marginTop: '10px' }}>{program.programName}</div>
-												</Stack>
-											)}
-										</TableCell>
-										<TableCell align="center">₩{program.programPrice.toLocaleString()} /session</TableCell>
-										<TableCell align="center">{program.memberData?.memberNick}</TableCell>
-										<TableCell align="center">{program.programLocation}</TableCell>
-										<TableCell align="center">{program.programType}</TableCell>
-										<TableCell align="center">
-											{program.programStatus === ProgramStatus.DELETE && (
-												<Button
-													disabled={busy}
-													variant="outlined"
-													sx={{ p: '3px', border: 'none', ':hover': { border: '1px solid #000000' } }}
-													onClick={() => removeProgramHandler(program._id)}
-												>
-													<DeleteIcon fontSize="small" />
-													DELETE
-												</Button>
-											)}
-
-											{program.programStatus !== ProgramStatus.DELETE && (
-												<>
-													<Button
-														disabled={busy}
-														onClick={(e: any) => menuIconClickHandler(e, index)}
-														className={'badge success'}
-													>
-														{program.programStatus}
-													</Button>
-
-													<Menu
-														className={'menu-modal'}
-														MenuListProps={{
-															'aria-labelledby': 'fade-button',
-														}}
-														anchorEl={anchorEl[index]}
-														open={Boolean(anchorEl[index])}
-														onClose={menuIconCloseHandler}
-														TransitionComponent={Fade}
-														sx={{ p: 1 }}
-													>
-														{Object.values(ProgramStatus)
-															.filter((ele) => ele !== program.programStatus)
-															.map((status: string) => (
-																<MenuItem
-																	onClick={() => updateProgramHandler({ _id: program._id, programStatus: status, expectedRevision: program.programRevision })}
-																	key={status}
-																>
-																	<Typography variant={'subtitle1'} component={'span'}>
-																		{status}
-																	</Typography>
-																</MenuItem>
-															))}
-													</Menu>
-												</>
-											)}
-										</TableCell>
-										<TableCell align="center">{program.programCategory}</TableCell>
-										<TableCell align="center">{program.programDuration}</TableCell>
-										<TableCell align="center">{program.programCapacity}</TableCell>
-									</TableRow>
-								);
-							})}
-					</TableBody>
-				</Table>
-			</TableContainer>
-		</Stack>
+	const { programs, feedback } = props;
+	const locale = useRouter().locale;
+	const labels = adminProgramsLabels(locale);
+	const mobile = useMediaQuery('(max-width:599px)');
+	const price = (program: Program) => (
+		<span className="program-price">
+			<strong>
+				₩{program.programPrice.toLocaleString(locale === 'kr' ? 'ko-KR' : locale === 'ru' ? 'ru-RU' : 'en-US')}
+			</strong>
+			<small>{labels.perSession}</small>
+		</span>
+	);
+	if (feedback || !programs.length) return <div className="program-feedback">{feedback ?? <p>{labels.empty}</p>}</div>;
+	return mobile ? (
+		<ul className="program-mobile-list" aria-label={labels.title}>
+			{programs.map((program, index) => (
+				<li className="program-mobile-row" key={program._id}>
+					<ProgramIdentity program={program} />
+					<p className="program-mobile-trainer">
+						<span>{labels.trainer}</span>
+						<strong>{program.memberData?.memberNick ?? '—'}</strong>
+					</p>
+					<div className="program-mobile-operation">
+						<div>
+							{price(program)}
+							<span className="program-type">{labels.types[program.programType]}</span>
+						</div>
+						<ProgramControl program={program} index={index} labels={labels} controls={props} />
+					</div>
+					<p className="program-mobile-context">
+						{locationLabel(program, labels)} · {labels.categories[program.programCategory]}
+					</p>
+					<ProgramDetails program={program} labels={labels} />
+				</li>
+			))}
+		</ul>
+	) : (
+		<TableContainer>
+			<Table aria-label={labels.title} className="program-table">
+				<TableHead>
+					<TableRow>
+						{[
+							['program', labels.program],
+							['trainer', labels.trainer],
+							['price', labels.price],
+							['type', labels.type],
+							['status', labels.status],
+							['context', labels.context],
+						].map(([key, label]) => (
+							<TableCell className={'program-col-' + key} key={key}>
+								{label}
+							</TableCell>
+						))}
+					</TableRow>
+				</TableHead>
+				<TableBody>
+					{programs.map((program, index) => (
+						<TableRow hover key={program._id}>
+							<TableCell className="program-col-program">
+								<ProgramIdentity program={program} />
+								<span className="program-tablet-type">{labels.types[program.programType]}</span>
+								<ProgramDetails program={program} labels={labels} />
+							</TableCell>
+							<TableCell className="program-col-trainer">
+								<span className="program-trainer">{program.memberData?.memberNick ?? '—'}</span>
+							</TableCell>
+							<TableCell className="program-col-price">{price(program)}</TableCell>
+							<TableCell className="program-col-type">{labels.types[program.programType]}</TableCell>
+							<TableCell className="program-col-status">
+								<ProgramControl program={program} index={index} labels={labels} controls={props} />
+							</TableCell>
+							<TableCell className="program-col-context">
+								<span>{locationLabel(program, labels)}</span>
+								<small>{labels.categories[program.programCategory]}</small>
+							</TableCell>
+						</TableRow>
+					))}
+				</TableBody>
+			</Table>
+		</TableContainer>
 	);
 };

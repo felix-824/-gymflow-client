@@ -8,6 +8,7 @@ const { execFileSync } = require('node:child_process');
 const rootPath = path.resolve(__dirname, '..');
 function load(file, mocks, cache = new Map()) {
 	file = path.resolve(rootPath, file);
+	if (file.endsWith('.json')) return JSON.parse(fs.readFileSync(file, 'utf8'));
 	if (cache.has(file)) return cache.get(file);
 	const code = ts.transpileModule(fs.readFileSync(file, 'utf8'), { fileName: file, compilerOptions: {
 		module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2021, jsx: ts.JsxEmit.ReactJSX, esModuleInterop: true,
@@ -17,7 +18,7 @@ function load(file, mocks, cache = new Map()) {
 		if (Object.hasOwn(mocks, name)) return mocks[name];
 		if (!name.startsWith('.')) return require(name);
 		const target = path.resolve(path.dirname(file), name);
-		return load(fs.existsSync(target + '.ts') ? target + '.ts' : target + '.tsx', mocks, cache);
+		return load(name.endsWith('.json') ? target : fs.existsSync(target + '.ts') ? target + '.ts' : target + '.tsx', mocks, cache);
 	};
 	vm.runInThisContext('(function(require,module,exports){' + code + '\n})', { filename: file })(localRequire, module, module.exports);
 	return module.exports;

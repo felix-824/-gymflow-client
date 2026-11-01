@@ -1,12 +1,11 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
+import { useRouter } from 'next/router';
+import { adminProgramsLabels } from '../../../libs/admin-programs-labels';
 import type { NextPage } from 'next';
 import withAdminLayout from '../../../libs/components/layout/LayoutAdmin';
-import { Box, List, ListItem, Stack } from '@mui/material';
-import Typography from '@mui/material/Typography';
-import Divider from '@mui/material/Divider';
+import { Button, Tab, Tabs } from '@mui/material';
 import Select from '@mui/material/Select';
 import MenuItem from '@mui/material/MenuItem';
-import { TabContext } from '@mui/lab';
 import TablePagination from '@mui/material/TablePagination';
 import { ProgramPanelList } from '../../../libs/components/admin/programs/ProgramList';
 import { AllProgramsInquiry } from '../../../libs/types/program/program.input';
@@ -20,6 +19,7 @@ import { REMOVE_PROGRAM_BY_ADMIN, UPDATE_PROGRAM_BY_ADMIN } from '../../../apoll
 import { T } from '../../../libs/types/common';
 
 const AdminPrograms: NextPage = ({ initialInquiry, ...props }: any) => {
+	const labels = adminProgramsLabels(useRouter().locale);
 	const [anchorEl, setAnchorEl] = useState<[] | HTMLElement[]>([]);
 	const [programsInquiry, setProgramsInquiry] = useState<AllProgramsInquiry>(initialInquiry);
 	const [programs, setPrograms] = useState<Program[]>([]);
@@ -147,84 +147,82 @@ const AdminPrograms: NextPage = ({ initialInquiry, ...props }: any) => {
 	};
 
 	return (
-		<Box component={'div'} className={'content'}>
-			<Typography variant={'h2'} className={'tit'} sx={{ mb: '24px' }}>
-				Program List
-			</Typography>
-			<Box component={'div'} className={'table-wrap'}>
-				<Box component={'div'} sx={{ width: '100%', typography: 'body1' }}>
-					<TabContext value={value}>
-						<Box component={'div'}>
-							<List className={'tab-menu'}>
-								<ListItem
-									onClick={(e) => tabChangeHandler(e, 'ALL')}
-									value="ALL"
-									className={value === 'ALL' ? 'li on' : 'li'}
-								>
-									All
-								</ListItem>
-								<ListItem
-									onClick={(e) => tabChangeHandler(e, 'ACTIVE')}
-									value="ACTIVE"
-									className={value === 'ACTIVE' ? 'li on' : 'li'}
-								>
-									Active
-								</ListItem>
-								<ListItem
-									onClick={(e) => tabChangeHandler(e, 'PAUSED')}
-									value="PAUSED"
-									className={value === 'PAUSED' ? 'li on' : 'li'}
-								>
-									Paused
-								</ListItem>
-								<ListItem
-									onClick={(e) => tabChangeHandler(e, 'DELETE')}
-									value="DELETE"
-									className={value === 'DELETE' ? 'li on' : 'li'}
-								>
-									Delete
-								</ListItem>
-							</List>
-							<Divider />
-							<Stack className={'search-area'} sx={{ m: '24px' }}>
-								<Select sx={{ width: '160px', mr: '20px' }} value={searchType}>
-									<MenuItem value={'ALL'} onClick={() => searchTypeHandler('ALL')}>
-										ALL
-									</MenuItem>
-									{Object.values(ProgramLocation).map((location: string) => (
-										<MenuItem value={location} onClick={() => searchTypeHandler(location)} key={location}>
-											{location}
-										</MenuItem>
-									))}
-								</Select>
-							</Stack>
-							<Divider />
-						</Box>
-						{getAllProgramsByAdminLoading && <p>Loading programs...</p>}
-						{getAllProgramsByAdminError && <p role="alert">Could not load programs.</p>}
-						<ProgramPanelList
-							busy={updating || removing}
-							programs={programs}
-							anchorEl={anchorEl}
-							menuIconClickHandler={menuIconClickHandler}
-							menuIconCloseHandler={menuIconCloseHandler}
-							updateProgramHandler={updateProgramHandler}
-							removeProgramHandler={removeProgramHandler}
-						/>
-
-						<TablePagination
-							rowsPerPageOptions={[10, 20, 40, 60]}
-							component="div"
-							count={programsTotal}
-							rowsPerPage={programsInquiry?.limit}
-							page={programsInquiry?.page - 1}
-							onPageChange={changePageHandler}
-							onRowsPerPageChange={changeRowsPerPageHandler}
-						/>
-					</TabContext>
-				</Box>
-			</Box>
-		</Box>
+		<div className="content admin-programs">
+			<h1>{labels.title}</h1>
+			<div className="table-wrap">
+				<Tabs
+					value={value}
+					onChange={tabChangeHandler}
+					aria-label={labels.tabsLabel}
+					variant="fullWidth"
+					className="program-tabs"
+				>
+					<Tab value="ALL" label={labels.all} />
+					{Object.values(ProgramStatus).map((status) => (
+						<Tab key={status} value={status} label={labels.statuses[status]} />
+					))}
+				</Tabs>
+				<div className="program-filters">
+					<label htmlFor="admin-program-location">{labels.location}</label>
+					<Select
+						id="admin-program-location"
+						value={searchType}
+						onChange={(event) => searchTypeHandler(event.target.value)}
+						inputProps={{ 'aria-label': labels.location }}
+						MenuProps={{ className: 'admin-programs-menu' }}
+					>
+						<MenuItem value="ALL">{labels.allLocations}</MenuItem>
+						{Object.values(ProgramLocation).map((location) => (
+							<MenuItem value={location} key={location}>
+								{labels.locations[location]}
+							</MenuItem>
+						))}
+					</Select>
+				</div>
+				<ProgramPanelList
+					busy={updating || removing}
+					programs={programs}
+					anchorEl={anchorEl}
+					menuIconClickHandler={menuIconClickHandler}
+					menuIconCloseHandler={menuIconCloseHandler}
+					updateProgramHandler={updateProgramHandler}
+					removeProgramHandler={removeProgramHandler}
+					feedback={
+						getAllProgramsByAdminLoading ? (
+							<p role="status">{labels.loading}</p>
+						) : getAllProgramsByAdminError ? (
+							<div role="alert">
+								<p>{labels.error}</p>
+								<Button onClick={() => void getAllProgramsByAdminRefetch().catch(() => undefined)}>
+									{labels.retry}
+								</Button>
+							</div>
+						) : undefined
+					}
+				/>
+				<TablePagination
+					rowsPerPageOptions={[10, 20, 40, 60]}
+					component="div"
+					count={programsTotal}
+					rowsPerPage={programsInquiry?.limit}
+					page={Math.min(programsInquiry?.page - 1, Math.max(0, Math.ceil(programsTotal / programsInquiry.limit) - 1))}
+					onPageChange={changePageHandler}
+					onRowsPerPageChange={changeRowsPerPageHandler}
+					labelRowsPerPage={labels.rowsPerPage}
+					labelDisplayedRows={({ from, to, count }) =>
+						labels.pagination
+							.replace('{{from}}', String(from))
+							.replace('{{to}}', String(to))
+							.replace('{{total}}', String(count))
+					}
+					getItemAriaLabel={(type) => (type === 'previous' ? labels.previousPage : labels.nextPage)}
+					backIconButtonProps={{ disabled: getAllProgramsByAdminLoading || programsInquiry.page === 1 }}
+					nextIconButtonProps={{
+						disabled: getAllProgramsByAdminLoading || programsInquiry.page * programsInquiry.limit >= programsTotal,
+					}}
+				/>
+			</div>
+		</div>
 	);
 };
 
