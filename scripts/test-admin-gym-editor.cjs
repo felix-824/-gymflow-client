@@ -235,6 +235,22 @@ module.exports = async function editorTests() {
 		assert.deepEqual(keys(resources.en['admin-gyms']), keys(resources.kr['admin-gyms'])); assert.deepEqual(keys(resources.en['admin-gyms']), keys(resources.ru['admin-gyms'])); lifecyclePass('EN/KR/RU exact translation parity and real localized conflict/dialog actions');
 		writeFault = ''; for (const locale of ['en', 'kr', 'ru']) { router.locale = locale; session += '-locale'; await route(undefined); assert.equal(document.querySelector('h1').textContent, resources[locale]['admin-gyms'].form.createTitle); assert(document.body.textContent.includes(resources[locale]['admin-gyms'].lifecycle.createdPaused)); assert.equal(document.querySelectorAll('.gym-editor-amenities input').length, 6); assert(!document.querySelector('.gym-editor-danger')); } pass('EN/KR/RU editor strings resolve with all six enum amenities');
 		assert(document.querySelector('.gym-editor-fields')); assert(document.querySelector('.gym-editor-actions')); assert(document.querySelector('a[href="/_admin/gyms"]')); const stylesheet = require('sass').compile(path.join(project, 'scss/pc/admin/gyms.scss'), { logger: require('sass').Logger.silent }).css; assert.match(stylesheet, /max-width: 699px/); assert.match(stylesheet, /grid-template-columns: minmax\(0, 1fr\)/); assert.match(stylesheet, /min-height: 44px/); assert.match(stylesheet, /focus-visible/); pass('responsive editor structure, compiled stacked-field SCSS and native accessible controls');
+		const singleLineHeight = window.getComputedStyle(input('gymName').closest('.MuiOutlinedInput-root')).height;
+		const editorStyles = document.createElement('style'); editorStyles.textContent = stylesheet; document.head.append(editorStyles);
+		const descriptionWrites = writes().length;
+		for (const locale of ['en', 'kr', 'ru']) {
+			router.locale = locale; session += '-description'; await route(undefined);
+			for (const value of ['', 'Short description', 'First line\nSecond line\nThird line\nFourth line\nFifth line', 'A long wrapping description with useful Gym information. '.repeat(12)]) {
+				edit('gymDesc', value); const textarea = input('gymDesc'), outline = textarea.closest('.MuiOutlinedInput-root');
+				assert.equal(textarea.tagName, 'TEXTAREA'); assert.equal(textarea.value, value); assert.equal(textarea.getAttribute('maxlength'), '2000');
+				assert.equal(window.getComputedStyle(outline).height, 'auto', 'multiline wrapper must grow with its native textarea instead of theme height');
+				assert.equal(window.getComputedStyle(input('gymName').closest('.MuiOutlinedInput-root')).height, singleLineHeight, 'single-line fields retain their existing height');
+				assert.equal(document.querySelector('label[for="gym-gymDesc"]').textContent, resources[locale]['admin-gyms'].basic.description);
+				textarea.focus(); assert.equal(document.activeElement, textarea); textarea.blur();
+			}
+			assert.equal(writes().length, descriptionWrites); pass(locale + ' empty/short/multiline/long Description keeps native input, associated label, focus and scoped auto-height without writes');
+		}
+		editorStyles.remove();
 		console.log(`${checks - lifecycleChecks} G3E and ${lifecycleChecks} G3F editor helper/DOM/query groups passed. Mutations used deterministic fixture transport only.`);
 		return checks;
 	} finally {

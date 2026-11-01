@@ -17,10 +17,11 @@ import {
 	TableRow,
 	Tabs,
 	TextField,
+	useMediaQuery,
 } from '@mui/material';
 import { Buildings } from 'phosphor-react';
 import { GET_ALL_GYMS_BY_ADMIN } from '../../../../apollo/admin/query';
-import { AdminGyms } from '../../../types/gym/gym';
+import { AdminGym, AdminGyms } from '../../../types/gym/gym';
 import { AllGymsInquiry } from '../../../types/gym/gym.input';
 import { Direction } from '../../../enums/common.enum';
 import { GymLocation, GymStatus } from '../../../enums/gym.enum';
@@ -28,9 +29,32 @@ import { gymImagesError, gymStatusLabelKeys } from '../../../admin-gyms';
 import { REACT_APP_API_URL } from '../../../config';
 import AdminGymAccess from './AdminGymAccess';
 
+const GymIdentity = ({ gym, alt }: { gym: AdminGym; alt: string }) => {
+	const cover = gym.gymImages[0];
+	const coverUrl = cover && !gymImagesError([cover]) ? `${REACT_APP_API_URL}/${cover}` : undefined;
+	return (
+		<div className="admin-gym-name">
+			<Avatar variant="rounded" src={coverUrl} alt={alt} sx={{ width: 48, height: 48 }} imgProps={{ loading: 'lazy' }}>
+				<Buildings role="img" aria-label={alt} size={24} />
+			</Avatar>
+			<span>{gym.gymName}</span>
+		</div>
+	);
+};
+
+const GymUpdated = ({ gym, locale }: { gym: AdminGym; locale: string }) => {
+	const updated = new Date(typeof gym.updatedAt === 'string' ? gym.updatedAt : gym.updatedAt.getTime());
+	return (
+		<time dateTime={updated.toISOString()}>
+			{updated.toLocaleDateString(locale, { year: 'numeric', month: 'short', day: 'numeric', timeZone: 'Asia/Seoul' })}
+		</time>
+	);
+};
+
 const GymList = () => {
 	const { t } = useTranslation(['admin-gyms', 'common']);
 	const { locale } = useRouter();
+	const mobile = useMediaQuery('(max-width:599px)');
 	const [text, setText] = useState('');
 	const [input, setInput] = useState<AllGymsInquiry>({
 		page: 1,
@@ -65,13 +89,23 @@ const GymList = () => {
 			return { ...current, page: 1, search };
 		});
 	};
+	const feedback = loading ? (
+		<p role="status">{t('list.loading')}</p>
+	) : error ? (
+		<div role="alert">
+			<p>{t('list.error')}</p>
+			<Button onClick={() => void refetch({ input }).catch(() => undefined)}>{t('list.retry')}</Button>
+		</div>
+	) : (
+		<p>{t(filtered ? 'list.filteredEmpty' : 'list.empty')}</p>
+	);
 	return (
 		<div className="content admin-gyms">
 			<header className="admin-gym-heading">
 				<h1>{t('list.title')}</h1>
 				<p>{t('list.intro')}</p>
 				<Link href="/_admin/gyms/detail" legacyBehavior passHref>
-					<Button component="a" variant="outlined">
+					<Button component="a" variant="contained" disableElevation className="admin-gym-create">
 						{t('list.create')}
 					</Button>
 				</Link>
@@ -80,7 +114,7 @@ const GymList = () => {
 				<Tabs
 					value={input.search.gymStatus ?? 'ALL'}
 					aria-label={t('list.statusFilter')}
-					variant="scrollable"
+					variant={mobile ? 'fullWidth' : 'scrollable'}
 					scrollButtons="auto"
 					onChange={(_, status: GymStatus | 'ALL') => {
 						setInput((current) => {
@@ -106,7 +140,7 @@ const GymList = () => {
 						size="small"
 						className="gym-search"
 					/>
-					<Button type="submit" variant="contained">
+					<Button type="submit" variant="outlined" className="admin-gym-search-action">
 						{t('list.search')}
 					</Button>
 					<TextField
@@ -143,87 +177,98 @@ const GymList = () => {
 						</Button>
 					)}
 				</form>
-				<TableContainer>
-					<Table aria-label={t('list.tableLabel')} aria-busy={loading}>
-						<TableHead>
-							<TableRow>
-								{['gym', 'location', 'address', 'status', 'updated', 'action'].map((column) => (
-									<TableCell key={column}>{t(`list.columns.${column}`)}</TableCell>
-								))}
-							</TableRow>
-						</TableHead>
-						<TableBody>
-							{loading || error || !gyms?.list.length ? (
+				{mobile ? (
+					loading || error || !gyms?.list.length ? (
+						<div className="admin-gym-mobile-feedback">{feedback}</div>
+					) : (
+						<ul className="admin-gym-mobile-list" aria-label={t('list.tableLabel')}>
+							{gyms.list.map((gym) => (
+								<li className="admin-gym-mobile-row" key={gym._id}>
+									<GymIdentity gym={gym} alt={t('list.coverAlt', { name: gym.gymName })} />
+									<div className="admin-gym-mobile-context">
+										<span className={`admin-gym-status is-${gym.gymStatus.toLowerCase()}`}>
+											{t(gymStatusLabelKeys[gym.gymStatus])}
+										</span>
+										<span>{t(gym.gymLocation, { ns: 'common' })}</span>
+									</div>
+									<p className="admin-gym-mobile-address">{gym.gymAddress}</p>
+									<div className="admin-gym-mobile-footer">
+										<div>
+											<span>{t('list.columns.updated')}</span>
+											<GymUpdated gym={gym} locale={dateLocale} />
+										</div>
+										<Link
+											className="admin-gym-mobile-action"
+											href={{ pathname: '/_admin/gyms/detail', query: { id: gym._id } }}
+											aria-label={t('list.detailAction', { name: gym.gymName })}
+										>
+											{t(gym.gymStatus === GymStatus.DELETE ? 'list.view' : 'list.edit')}
+										</Link>
+									</div>
+								</li>
+							))}
+						</ul>
+					)
+				) : (
+					<TableContainer>
+						<Table aria-label={t('list.tableLabel')} aria-busy={loading}>
+							<TableHead>
 								<TableRow>
-									<TableCell colSpan={6} className="admin-gym-empty">
-										{loading ? (
-											<p role="status">{t('list.loading')}</p>
-										) : error ? (
-											<div role="alert">
-												<p>{t('list.error')}</p>
-												<Button onClick={() => void refetch({ input }).catch(() => undefined)}>
-													{t('list.retry')}
-												</Button>
-											</div>
-										) : (
-											<p>{t(filtered ? 'list.filteredEmpty' : 'list.empty')}</p>
-										)}
-									</TableCell>
+									{['gym', 'location', 'address', 'status', 'updated', 'action'].map((column) => (
+										<TableCell className={`gym-col-${column}`} key={column}>
+											{t(`list.columns.${column}`)}
+										</TableCell>
+									))}
 								</TableRow>
-							) : (
-								gyms.list.map((gym) => {
-									const cover = gym.gymImages[0];
-									const coverUrl = cover && !gymImagesError([cover]) ? `${REACT_APP_API_URL}/${cover}` : undefined;
-									const alt = t('list.coverAlt', { name: gym.gymName });
-									const updated = new Date(typeof gym.updatedAt === 'string' ? gym.updatedAt : gym.updatedAt.getTime());
-									return (
-										<TableRow key={gym._id} hover>
-											<TableCell>
-												<div className="admin-gym-name">
-													<Avatar
-														variant="rounded"
-														src={coverUrl}
-														alt={alt}
-														sx={{ width: 48, height: 48 }}
-														imgProps={{ loading: 'lazy' }}
+							</TableHead>
+							<TableBody>
+								{loading || error || !gyms?.list.length ? (
+									<TableRow>
+										<TableCell colSpan={6} className="admin-gym-empty">
+											{feedback}
+										</TableCell>
+									</TableRow>
+								) : (
+									gyms.list.map((gym) => {
+										const alt = t('list.coverAlt', { name: gym.gymName });
+										return (
+											<TableRow key={gym._id} hover>
+												<TableCell className="gym-col-gym">
+													<GymIdentity gym={gym} alt={alt} />
+													<div className="gym-tablet-updated">
+														<span>{t('list.columns.updated')}</span>
+														<GymUpdated gym={gym} locale={dateLocale} />
+													</div>
+												</TableCell>
+												<TableCell className="gym-col-location">{t(gym.gymLocation, { ns: 'common' })}</TableCell>
+												<TableCell className="gym-col-address">
+													<span className="gym-tablet-location">{t(gym.gymLocation, { ns: 'common' })}</span>
+													{gym.gymAddress}
+												</TableCell>
+												<TableCell className="gym-col-status">
+													<span className={`admin-gym-status is-${gym.gymStatus.toLowerCase()}`}>
+														{t(gymStatusLabelKeys[gym.gymStatus])}
+													</span>
+												</TableCell>
+												<TableCell className="gym-col-updated">
+													<GymUpdated gym={gym} locale={dateLocale} />
+												</TableCell>
+												<TableCell className="gym-col-action">
+													<Link
+														href={{ pathname: '/_admin/gyms/detail', query: { id: gym._id } }}
+														aria-label={t('list.detailAction', { name: gym.gymName })}
 													>
-														<Buildings role="img" aria-label={alt} size={24} />
-													</Avatar>
-													<span>{gym.gymName}</span>
-												</div>
-											</TableCell>
-											<TableCell>{t(gym.gymLocation, { ns: 'common' })}</TableCell>
-											<TableCell>{gym.gymAddress}</TableCell>
-											<TableCell>
-												<span className={`admin-gym-status is-${gym.gymStatus.toLowerCase()}`}>
-													{t(gymStatusLabelKeys[gym.gymStatus])}
-												</span>
-											</TableCell>
-											<TableCell>
-												<time dateTime={updated.toISOString()}>
-													{updated.toLocaleDateString(dateLocale, {
-														year: 'numeric',
-														month: 'short',
-														day: 'numeric',
-														timeZone: 'Asia/Seoul',
-													})}
-												</time>
-											</TableCell>
-											<TableCell>
-												<Link
-													href={{ pathname: '/_admin/gyms/detail', query: { id: gym._id } }}
-													aria-label={t('list.detailAction', { name: gym.gymName })}
-												>
-													{t(gym.gymStatus === GymStatus.DELETE ? 'list.view' : 'list.edit')}
-												</Link>
-											</TableCell>
-										</TableRow>
-									);
-								})
-							)}
-						</TableBody>
-					</Table>
-				</TableContainer>
+														{t(gym.gymStatus === GymStatus.DELETE ? 'list.view' : 'list.edit')}
+													</Link>
+												</TableCell>
+											</TableRow>
+										);
+									})
+								)}
+							</TableBody>
+						</Table>
+					</TableContainer>
+				)}
 				<TablePagination
 					component="div"
 					count={total}

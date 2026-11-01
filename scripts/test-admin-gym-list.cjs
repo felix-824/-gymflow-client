@@ -43,7 +43,7 @@ module.exports = async function gymListTests() {
 		const store = { userVar: apollo.makeVar({}), authReadyVar: apollo.makeVar(false), authErrorVar: apollo.makeVar('') };
 		const admin = { _id: 'admin', memberType: 'ADMIN', memberStatus: 'ACTIVE', memberNick: 'Administrator' };
 		const events = new (require('node:events').EventEmitter)();
-		let desktop = true, session = 'session1', fault = false, empty = false, hold = false;
+		let desktop = true, width = 1440, session = 'session1', fault = false, empty = false, hold = false;
 		const router = { isReady: true, locale: 'en', pathname: '/_admin/gyms', events, push: async () => true };
 		const i18n = require('i18next').createInstance();
 		const resources = Object.fromEntries(['en', 'kr', 'ru'].map((lng) => [lng, Object.fromEntries(['common', 'admin-gyms'].map((ns) => [ns, JSON.parse(fs.readFileSync(path.join(rootPath, 'public/locales', lng, ns + '.json'), 'utf8'))]))]));
@@ -56,7 +56,7 @@ module.exports = async function gymListTests() {
 			'next/router': { useRouter: () => router, withRouter: (Component) => (props) => React.createElement(Component, { ...props, router }) },
 			'next/link': { __esModule: true, default: ({ href, children, legacyBehavior, ...props }) => { const url = typeof href === 'string' ? href : href.pathname + '?' + new URLSearchParams(href.query); return legacyBehavior ? React.cloneElement(children, { href: url, ...props }) : React.createElement('a', { href: url, ...props }, children); } },
 			'next-i18next': { useTranslation: (ns) => ({ t: i18n.getFixedT(router.locale, ns), i18n }) },
-			'@mui/material': { ...mui, useMediaQuery: () => desktop },
+			'@mui/material': { ...mui, useMediaQuery: (query) => query.includes('min-width') ? desktop : width <= 599 },
 		};
 		const requests = [];
 		const fixtures = Array.from({ length: 25 }, (_, index) => ({
@@ -66,6 +66,11 @@ module.exports = async function gymListTests() {
 			createdAt: '2026-10-30T10:00:00.000Z', updatedAt: '2026-10-31T10:00:00.000Z', deletedAt: null,
 		}));
 		fixtures[1].gymImages = ['https://untrusted.example/photo.jpg'];
+		fixtures[1].gymName = '서울 강남 프리미엄 스트렝스 앤 모빌리티 트레이닝 센터';
+		fixtures[1].gymAddress = '경기도 성남시 분당구 판교역로 235 에이치스퀘어 엔동 지하 1층 프리미엄 트레이닝 스튜디오';
+		fixtures[1].updatedAt = '2025-02-21T10:00:00.000Z';
+		fixtures[2].gymStatus = 'PAUSED';
+		fixtures[3].gymStatus = 'DELETE';
 		client = new apollo.ApolloClient({ cache: new apollo.InMemoryCache(), link: new apollo.ApolloLink((operation) => new apollo.Observable((observer) => {
 			assert.equal(operation.operationName, 'GetAllGymsByAdmin', 'Only read-only Gym list queries are allowed');
 			const input = JSON.parse(JSON.stringify(operation.variables.input)); requests.push(input);
@@ -135,6 +140,44 @@ module.exports = async function gymListTests() {
 		hold = true; changeText('hold'); const beforeHold = requests.length; click(button(messages.list.search)); await wait(() => requests.length > beforeHold); assert.equal(document.querySelector('[role="status"]').textContent, messages.list.loading); pass('localized loading replaces old rows');
 		hold = false; session = 'session2'; render(Gyms); await wait(() => document.querySelector('tbody time')); assert.deepEqual(last().search, {}); pass('session change remounts private filters and query');
 		for (const locale of ['kr', 'ru']) { router.locale = locale; render(Gyms); await tick(); assert.equal(document.querySelector('h1').textContent, resources[locale]['admin-gyms'].list.title); assert(document.querySelector('tbody').textContent.includes(resources[locale]['admin-gyms'].lifecycle.active)); assert(document.querySelector('tbody').textContent.includes(resources[locale].common.SEOUL)); } router.locale = 'en'; pass('KR/RU list, location and lifecycle translations render');
+		for (width of [1440, 768, 390]) {
+			render(Gyms); await tick();
+			assert.equal(Boolean(document.querySelector('table')), width > 599);
+			assert.equal(document.querySelectorAll('.admin-gym-name').length, 10);
+			assert(document.querySelector('.admin-gym-heading a.admin-gym-create.MuiButton-contained'));
+			assert.equal(document.querySelector('.admin-gym-heading a').getAttribute('href'), '/_admin/gyms/detail');
+			assert(document.querySelector('button.admin-gym-search-action.MuiButton-outlined'));
+			const scope = width <= 599 ? document.querySelector('.admin-gym-mobile-list') : document.querySelector('tbody');
+			assert(scope.textContent.includes(fixtures[1].gymName)); assert(scope.textContent.includes(fixtures[1].gymAddress));
+			assert(scope.textContent.includes(messages.lifecycle.active)); assert(scope.textContent.includes(messages.lifecycle.paused)); assert(scope.textContent.includes(messages.lifecycle.deleted));
+			const view = scope.querySelector('a[href="/_admin/gyms/detail?id=3"]'); assert.equal(view.textContent, messages.list.view);
+			assert(!document.querySelector('details'));
+			if (width <= 599) {
+				assert.equal(document.querySelectorAll('.admin-gym-mobile-row').length, 10);
+				for (const row of document.querySelectorAll('.admin-gym-mobile-row')) { assert(row.querySelector('.admin-gym-name')); assert(row.querySelector('.admin-gym-status')); assert(row.querySelector('.admin-gym-mobile-address')); assert(row.querySelector('time')); assert(row.querySelector('a.admin-gym-mobile-action')); }
+			} else { assert.equal(document.querySelectorAll('thead th').length, 6); assert(document.querySelector('.gym-tablet-updated time')); assert(document.querySelector('.gym-tablet-location')); }
+			pass(width + 'px branch preserves image/name, all statuses, full address/location, Updated, direct Edit/View and primary Create/secondary Search hierarchy');
+		}
+		for (const locale of ['en', 'kr', 'ru']) {
+			router.locale = locale; render(Gyms); await tick(); const labels = resources[locale]['admin-gyms'];
+			assert.equal(document.querySelector('.admin-gym-create').textContent, labels.list.create);
+			assert.equal(document.querySelector('.admin-gym-search-action').textContent, labels.list.search);
+			assert.equal(document.querySelector('.admin-gym-mobile-action').textContent, labels.list.edit);
+			assert(document.querySelector('.admin-gym-mobile-footer').textContent.includes(labels.list.columns.updated));
+			assert.equal(document.querySelector('.admin-gym-mobile-row time').dateTime, fixtures[0].updatedAt);
+		}
+		router.locale = 'en'; render(Gyms); await tick();
+		pass('EN/KR/RU mobile Create/Search/Edit, status/location and secondary Updated metadata reuse existing resources');
+		changeText('  Gym  '); await queryChange(() => click(button(messages.list.search))); assert.equal(last().search.text, 'Gym');
+		await queryChange(() => select(document.querySelector('.gym-location .MuiSelect-select'), resources.en.common.BUSAN)); assert.deepEqual(last().search.locationList, ['BUSAN']);
+		await queryChange(() => click(button(messages.lifecycle.paused))); assert.equal(last().search.gymStatus, 'PAUSED'); assert.equal(last().search.text, 'Gym');
+		await queryChange(() => click(button(messages.list.nextPage))); assert.equal(last().page, 2);
+		await queryChange(() => select(document.querySelector('.MuiTablePagination-root .MuiSelect-select'), '20')); assert.equal(last().limit, 20); assert.equal(last().page, 1);
+		changeText('missing'); await queryChange(() => click(button(messages.list.search))); await wait(() => document.querySelector('.admin-gym-mobile-feedback')?.textContent === messages.list.filteredEmpty);
+		assert(!document.querySelector('table'));
+		await queryChange(() => click(button(messages.list.clearFilters))); await wait(() => document.querySelector('.admin-gym-mobile-row'));
+		pass('mobile search/location/status/paging/page-size/filtered-empty/clear preserve original read-only inquiry semantics');
+		width = 1440;
 		const Menu = load('libs/components/admin/AdminMenuList.tsx', mocks).default;
 		for (const pathname of ['/_admin/gyms', '/_admin/gyms/detail', '/_admin/programs']) {
 			router.pathname = pathname; render(Menu); await tick(); const link = document.querySelector('a[href="/_admin/gyms"]'); assert(link); assert.equal(link.getAttribute('aria-current'), pathname.startsWith('/_admin/gyms') ? 'page' : null);
@@ -162,7 +205,7 @@ module.exports = async function gymListTests() {
 		const sass = require('sass'); const shellCss = sass.compileString('$font: sans-serif; @import "scss/pc/admin/admin.scss";', { loadPaths: [rootPath], logger: sass.Logger.silent }).css;
 		assert.match(shellCss, /@media \(max-width: 1199px\)/); assert.match(shellCss, /#pc-wrap.admin #bunker \{\s*width: 100%;\s*margin-left: 0;/);
 		const css = sass.compile(path.join(rootPath, 'scss/pc/admin/gyms.scss'), { logger: sass.Logger.silent }).css;
-		assert.match(css, /overflow-x: auto/); assert.match(css, /min-width: 840px/); assert.match(css, /flex-wrap: wrap/); assert.match(css, /max-width: 599px/); assert.match(css, /min-height: 44px/); assert.match(css, /overflow-wrap: anywhere/); pass('compiled SCSS contracts: narrow offset removed, internal table scroll, wrapping and touch sizes');
+		assert.match(css, /min-width: 840px/); assert.match(css, /max-width: 1199px/); assert.match(css, /min-width: 0/); assert.match(css, /gym-col-action/); assert.match(css, /admin-gym-mobile-list/); assert.match(css, /max-width: 599px/); assert.match(css, /min-height: 44px/); assert.match(css, /overflow-wrap: anywhere/); pass('compiled SCSS preserves desktop table, prioritizes tablet Edit, and provides mobile rows, wrapping, focus and touch targets');
 		assert.match(fs.readFileSync(path.join(rootPath, 'pages/_admin/gyms/detail.tsx'), 'utf8'), /withAdminLayout\(GymDetail\)/);
 		assert.doesNotMatch(fs.readFileSync(path.join(rootPath, 'libs/components/admin/gyms/Gyms.tsx'), 'utf8'), /useMutation|CREATE_GYM|UPDATE_GYM_BY_ADMIN/); pass('list remains read-only; detail route delegates to the Admin editor');
 		console.log(`${checks} G3C DOM/query/responsive contract groups passed. Browser viewport QA not performed.`);
