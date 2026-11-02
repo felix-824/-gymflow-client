@@ -192,6 +192,36 @@
 	}
 }
 
+@media (min-width: 600px) and (max-width: 1199px) {
+	#pc-wrap.admin #bunker .admin-application-list {
+		.MuiTable-root {
+			width: 100%;
+			min-width: 0;
+		}
+		.MuiTableCell-root {
+			padding: 16px 10px;
+		}
+		.MuiTableCell-root:first-child,
+		.MuiTableCell-root:nth-child(2) {
+			width: 24%;
+		}
+		.MuiTableCell-root:nth-child(3) {
+			width: 18%;
+		}
+		.MuiTableCell-root:last-child {
+			width: 136px;
+		}
+		tbody td:last-child > a {
+			display: inline-flex;
+			align-items: center;
+			justify-content: center;
+			min-width: 44px;
+			min-height: 44px;
+			padding: 8px;
+		}
+	}
+}
+
 @media (max-width: 599px) {
 	#pc-wrap.admin #bunker .admin-application-list {
 		color: #17191f;
