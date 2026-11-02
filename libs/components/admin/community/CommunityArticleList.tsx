@@ -1,7 +1,8 @@
 import React from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/router';
 import {
-	Box,
+	Avatar,
 	Button,
 	Fade,
 	Menu,
@@ -12,113 +13,17 @@ import {
 	TableContainer,
 	TableHead,
 	TableRow,
-	Tooltip,
+	useMediaQuery,
 } from '@mui/material';
-import IconButton from '@mui/material/IconButton';
-import Avatar from '@mui/material/Avatar';
-import Stack from '@mui/material/Stack';
-import OpenInBrowserRoundedIcon from '@mui/icons-material/OpenInBrowserRounded';
+import ExpandMoreRoundedIcon from '@mui/icons-material/ExpandMoreRounded';
+import DeleteOutlineRoundedIcon from '@mui/icons-material/DeleteOutlineRounded';
 import Moment from 'react-moment';
 import { BoardArticle } from '../../../types/board-article/board-article';
-import { REACT_APP_API_URL } from '../../../config';
-import DeleteIcon from '@mui/icons-material/Delete';
-import Typography from '@mui/material/Typography';
 import { BoardArticleStatus } from '../../../enums/board-article.enum';
+import { REACT_APP_API_URL } from '../../../config';
+import { adminCommunityLabels } from '../../../admin-community-labels';
 
-interface Data {
-	category: string;
-	title: string;
-	writer: string;
-	register: string;
-	view: number;
-	like: number;
-	status: string;
-	article_id: string;
-}
-
-interface HeadCell {
-	disablePadding: boolean;
-	id: keyof Data;
-	label: string;
-	numeric: boolean;
-}
-
-const headCells: readonly HeadCell[] = [
-	{
-		id: 'article_id',
-		numeric: true,
-		disablePadding: false,
-		label: 'ARTICLE ID',
-	},
-	{
-		id: 'title',
-		numeric: true,
-		disablePadding: false,
-		label: 'TITLE',
-	},
-	{
-		id: 'category',
-		numeric: true,
-		disablePadding: false,
-		label: 'CATEGORY',
-	},
-	{
-		id: 'writer',
-		numeric: true,
-		disablePadding: false,
-		label: 'WRITER',
-	},
-	{
-		id: 'view',
-		numeric: false,
-		disablePadding: false,
-		label: 'VIEW',
-	},
-	{
-		id: 'like',
-		numeric: false,
-		disablePadding: false,
-		label: 'LIKE',
-	},
-	{
-		id: 'register',
-		numeric: true,
-		disablePadding: false,
-		label: 'REGISTER DATE',
-	},
-	{
-		id: 'status',
-		numeric: false,
-		disablePadding: false,
-		label: 'STATUS',
-	},
-];
-
-interface EnhancedTableProps {
-	numSelected: number;
-	onRequestSort: (event: React.MouseEvent<unknown>, property: keyof Data) => void;
-	onSelectAllClick: (event: React.ChangeEvent<HTMLInputElement>) => void;
-	rowCount: number;
-}
-
-function EnhancedTableHead(props: EnhancedTableProps) {
-	return (
-		<TableHead>
-			<TableRow>
-				{headCells.map((headCell) => (
-					<TableCell
-						key={headCell.id}
-						align={headCell.numeric ? 'left' : 'center'}
-						padding={headCell.disablePadding ? 'none' : 'normal'}
-					>
-						{headCell.label}
-					</TableCell>
-				))}
-			</TableRow>
-		</TableHead>
-	);
-}
-
+type Labels = ReturnType<typeof adminCommunityLabels>;
 interface CommunityArticleListProps {
 	articles: BoardArticle[];
 	anchorEl: any;
@@ -128,115 +33,205 @@ interface CommunityArticleListProps {
 	removeArticleHandler: any;
 }
 
-const CommunityArticleList = (props: CommunityArticleListProps) => {
-	const { articles, anchorEl, menuIconClickHandler, menuIconCloseHandler, updateArticleHandler, removeArticleHandler } =
-		props;
+const ArticleIdentity = ({ article }: { article: BoardArticle }) =>
+	article.articleStatus === BoardArticleStatus.ACTIVE ? (
+		<Link
+			className="article-identity"
+			href={`/community/detail?articleCategory=${article.articleCategory}&id=${article._id}`}
+		>
+			{article.articleTitle}
+		</Link>
+	) : (
+		<span className="article-identity">{article.articleTitle}</span>
+	);
 
-	return (
-		<Stack>
-			<TableContainer>
-				<Table sx={{ minWidth: 750 }} aria-labelledby="tableTitle" size={'medium'}>
-					{/*@ts-ignore*/}
-					<EnhancedTableHead />
-					<TableBody>
-						{articles.length === 0 && (
-							<TableRow>
-								<TableCell align="center" colSpan={8}>
-									<span className={'no-data'}>data not found!</span>
-								</TableCell>
-							</TableRow>
-						)}
-
-						{articles.length !== 0 &&
-							articles.map((article: BoardArticle, index: number) => (
-								<TableRow hover key={article._id} sx={{ '&:last-child td, &:last-child th': { border: 0 } }}>
-									<TableCell align="left">{article._id}</TableCell>
-									<TableCell align="left">
-										<Box component={'div'}>
-											{article.articleTitle}
-											{article.articleStatus === BoardArticleStatus.ACTIVE && (
-                                              <Link
-												href={`/community/detail?articleCategory=${article.articleCategory}&id=${article._id}`}
-												className={'img_box'}
-										    	>
-												<IconButton className="btn_window">
-													<Tooltip title={'Open window'}>
-														<OpenInBrowserRoundedIcon />
-													</Tooltip>
-												</IconButton>
-											  </Link>
-											)}
-										</Box>
-									</TableCell>
-									<TableCell align="left">{article.articleCategory}</TableCell>
-									<TableCell align="left" className={'name'}>
-										<Link href={`/member?memberId=${article?.memberData?._id}`}>
-											<Avatar
-												alt="Remy Sharp"
-												src={
-													article?.memberData?.memberImage
-														? `${REACT_APP_API_URL}/${article?.memberData?.memberImage}`
-														: `/img/profile/defaultUser.svg`
-												}
-												sx={{ ml: '2px', mr: '10px' }}
-											/>
-											{article?.memberData?.memberNick}
-										</Link>
-									</TableCell>
-									<TableCell align="center">{article?.articleViews}</TableCell>
-									<TableCell align="center">{article?.articleLikes}</TableCell>
-									<TableCell align="left">
-										<Moment format={'DD.MM.YY HH:mm'}>{article?.createdAt}</Moment>
-									</TableCell>
-									<TableCell align="center">
-										{article.articleStatus === 'DELETE' ? (
-											<Button
-												variant="outlined"
-												sx={{ p: '3px', border: 'none', ':hover': { border: '1px solid #000000' } }}
-												onClick={() => removeArticleHandler(article._id)}
-											>
-												<DeleteIcon fontSize="small" />
-											</Button>
-										) : (
-											<>
-												<Button onClick={(e: any) => menuIconClickHandler(e, index)} className={'badge success'}>
-													{article.articleStatus}
-												</Button>
-
-												<Menu
-													className={'menu-modal'}
-													MenuListProps={{
-														'aria-labelledby': 'fade-button',
-													}}
-													anchorEl={anchorEl[index]}
-													open={Boolean(anchorEl[index])}
-													onClose={menuIconCloseHandler}
-													TransitionComponent={Fade}
-													sx={{ p: 1 }}
-												>
-													{Object.values(BoardArticleStatus)
-														.filter((ele) => ele !== article.articleStatus)
-														.map((status: string) => (
-															<MenuItem
-																onClick={() => updateArticleHandler({ _id: article._id, articleStatus: status })}
-																key={status}
-															>
-																<Typography variant={'subtitle1'} component={'span'}>
-																	{status}
-																</Typography>
-															</MenuItem>
-														))}
-												</Menu>
-											</>
-										)}
-									</TableCell>
-								</TableRow>
-							))}
-					</TableBody>
-				</Table>
-			</TableContainer>
-		</Stack>
+const ArticleWriter = ({ article }: { article: BoardArticle }) => {
+	const content = (
+		<>
+			<Avatar
+				alt=""
+				src={
+					article.memberData?.memberImage
+						? `${REACT_APP_API_URL}/${article.memberData.memberImage}`
+						: '/img/profile/defaultUser.svg'
+				}
+			/>
+			<span>{article.memberData?.memberNick ?? '—'}</span>
+		</>
+	);
+	return article.memberData?._id ? (
+		<Link className="article-writer" href={`/member?memberId=${article.memberData._id}`}>
+			{content}
+		</Link>
+	) : (
+		<span className="article-writer">{content}</span>
 	);
 };
 
+const ArticleDetails = ({ article, labels }: { article: BoardArticle; labels: Labels }) => (
+	<details className="article-details">
+		<summary aria-label={`${labels.details}: ${article.articleTitle}`}>
+			{labels.details}
+			<ExpandMoreRoundedIcon aria-hidden="true" />
+		</summary>
+		<dl>
+			<div>
+				<dt>{labels.articleId}</dt>
+				<dd>{article._id}</dd>
+			</div>
+			<div>
+				<dt>{labels.category}</dt>
+				<dd>{labels.categories[article.articleCategory]}</dd>
+			</div>
+			<div>
+				<dt>{labels.views}</dt>
+				<dd>{article.articleViews}</dd>
+			</div>
+			<div>
+				<dt>{labels.likes}</dt>
+				<dd>{article.articleLikes}</dd>
+			</div>
+			<div>
+				<dt>{labels.registerDate}</dt>
+				<dd>
+					<Moment format="DD.MM.YY HH:mm">{article.createdAt}</Moment>
+				</dd>
+			</div>
+		</dl>
+	</details>
+);
+
+const ArticleControl = ({
+	article,
+	index,
+	labels,
+	controls,
+}: {
+	article: BoardArticle;
+	index: number;
+	labels: Labels;
+	controls: CommunityArticleListProps;
+}) => {
+	const id = 'article-status-' + article._id;
+	const anchor = controls.anchorEl[index];
+	const open = Boolean(anchor?.isConnected);
+	return article.articleStatus === BoardArticleStatus.DELETE ? (
+		<Button
+			className="article-control is-delete"
+			aria-label={`${labels.remove}: ${article.articleTitle}`}
+			onClick={() => controls.removeArticleHandler(article._id)}
+			startIcon={<DeleteOutlineRoundedIcon />}
+		>
+			{labels.statuses.DELETE}
+		</Button>
+	) : (
+		<>
+			<Button
+				id={id}
+				className="article-control"
+				aria-label={`${labels.changeStatus}: ${article.articleTitle}, ${labels.statuses[article.articleStatus]}`}
+				aria-haspopup="menu"
+				aria-expanded={open}
+				aria-controls={open ? id + '-menu' : undefined}
+				onClick={(event) => controls.menuIconClickHandler(event, index)}
+				endIcon={<ExpandMoreRoundedIcon />}
+			>
+				{labels.statuses[article.articleStatus]}
+			</Button>
+			<Menu
+				className="admin-community-menu"
+				anchorEl={open ? anchor : null}
+				open={open}
+				onClose={controls.menuIconCloseHandler}
+				TransitionComponent={Fade}
+				MenuListProps={{ id: id + '-menu', 'aria-labelledby': id }}
+			>
+				{Object.values(BoardArticleStatus)
+					.filter((status) => status !== article.articleStatus)
+					.map((status) => (
+						<MenuItem
+							key={status}
+							onClick={() => controls.updateArticleHandler({ _id: article._id, articleStatus: status })}
+						>
+							{labels.statuses[status]}
+						</MenuItem>
+					))}
+			</Menu>
+		</>
+	);
+};
+
+const CommunityArticleList = (props: CommunityArticleListProps) => {
+	const { articles } = props;
+	const labels = adminCommunityLabels(useRouter().locale);
+	const mobile = useMediaQuery('(max-width:599px)');
+	if (!articles.length) return <p className="article-empty">{labels.empty}</p>;
+	return mobile ? (
+		<ul className="article-mobile-list" aria-label={labels.title}>
+			{articles.map((article, index) => (
+				<li className="article-mobile-row" key={article._id}>
+					<ArticleIdentity article={article} />
+					<p className="article-mobile-category">{labels.categories[article.articleCategory]}</p>
+					<div className="article-mobile-operation">
+						<div>
+							<span className="article-writer-label">{labels.writer}</span>
+							<ArticleWriter article={article} />
+						</div>
+						<ArticleControl article={article} index={index} labels={labels} controls={props} />
+					</div>
+					<ArticleDetails article={article} labels={labels} />
+				</li>
+			))}
+		</ul>
+	) : (
+		<TableContainer>
+			<Table aria-label={labels.title} className="article-table">
+				<TableHead>
+					<TableRow>
+						{[
+							['article', labels.article],
+							['writer', labels.writer],
+							['category', labels.category],
+							['engagement', labels.engagement],
+							['date', labels.registerDate],
+							['status', labels.status],
+						].map(([key, label]) => (
+							<TableCell className={'article-col-' + key} key={key}>
+								{label}
+							</TableCell>
+						))}
+					</TableRow>
+				</TableHead>
+				<TableBody>
+					{articles.map((article, index) => (
+						<TableRow hover key={article._id}>
+							<TableCell className="article-col-article">
+								<ArticleIdentity article={article} />
+								<ArticleDetails article={article} labels={labels} />
+							</TableCell>
+							<TableCell className="article-col-writer">
+								<ArticleWriter article={article} />
+							</TableCell>
+							<TableCell className="article-col-category">{labels.categories[article.articleCategory]}</TableCell>
+							<TableCell className="article-col-engagement">
+								<span>
+									{labels.views}: {article.articleViews}
+								</span>
+								<span>
+									{labels.likes}: {article.articleLikes}
+								</span>
+							</TableCell>
+							<TableCell className="article-col-date">
+								<Moment format="DD.MM.YY HH:mm">{article.createdAt}</Moment>
+							</TableCell>
+							<TableCell className="article-col-status">
+								<ArticleControl article={article} index={index} labels={labels} controls={props} />
+							</TableCell>
+						</TableRow>
+					))}
+				</TableBody>
+			</Table>
+		</TableContainer>
+	);
+};
 export default CommunityArticleList;

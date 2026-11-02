@@ -1,0 +1,12 @@
+{
+	"title": "Список статей",
+	"article": "Статья",
+	"writer": "Автор",
+	"articleId": "ID статьи",
+	"engagement": "Активность",
+	"registerDate": "Дата регистрации",
+	"changeStatus": "Изменить статус статьи",
+	"allCategories": "Все категории",
+	"tabsLabel": "Статус статьи",
+	"empty": "Статьи не найдены."
+}

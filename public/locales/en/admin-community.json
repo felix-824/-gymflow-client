@@ -1,0 +1,12 @@
+{
+	"title": "Article List",
+	"article": "Article",
+	"writer": "Writer",
+	"articleId": "Article ID",
+	"engagement": "Engagement",
+	"registerDate": "Register date",
+	"changeStatus": "Change article status",
+	"allCategories": "All categories",
+	"tabsLabel": "Article status",
+	"empty": "No articles found."
+}

@@ -1,0 +1,12 @@
+{
+	"title": "게시글 목록",
+	"article": "게시글",
+	"writer": "작성자",
+	"articleId": "게시글 ID",
+	"engagement": "조회 / 좋아요",
+	"registerDate": "등록일",
+	"changeStatus": "게시글 상태 변경",
+	"allCategories": "모든 카테고리",
+	"tabsLabel": "게시글 상태",
+	"empty": "게시글이 없습니다."
+}
