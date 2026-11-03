@@ -396,7 +396,7 @@ async function main() {
 		router.query = { applicationId: 'malformed' };
 		instance++;
 		render();
-		await tick();
+		await wait(() => document.body.textContent.includes(labels()['Not found']));
 		assert.equal(requests.length, before);
 		assert(document.body.textContent.includes(labels()['Not found']));
 		pass('malformed detail IDs do not issue an application query');

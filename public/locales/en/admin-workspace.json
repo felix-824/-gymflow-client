@@ -1,5 +1,6 @@
 {
 	"workspace": "Admin Workspace",
+	"gymAccess": "Gym Access Requests",
 	"management": "Management",
 	"users": "Users",
 	"applications": "Trainer Applications",

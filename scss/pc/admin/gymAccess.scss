@@ -1,0 +1,427 @@
+#pc-wrap.admin #bunker:has(.admin-gym-access) {
+	min-width: 0;
+}
+#pc-wrap.admin #bunker .admin-gym-access {
+	width: 100%;
+	min-width: 0;
+	max-width: 1200px;
+	color: #212121;
+	h1,
+	h2,
+	h3,
+	p {
+		margin-top: 0;
+	}
+	.access-heading {
+		margin-bottom: 28px;
+		h1 {
+			margin-bottom: 8px;
+			font-size: 28px;
+			line-height: 1.35;
+			font-weight: 600;
+		}
+		p {
+			color: #616161;
+			font-size: 14px;
+			line-height: 1.6;
+			max-width: 72ch;
+		}
+	}
+	a {
+		color: #a53425;
+		text-underline-offset: 3px;
+	}
+	a:focus-visible,
+	button:focus-visible {
+		outline: 2px solid #a53425;
+		outline-offset: 2px;
+	}
+	button,
+	.access-detail-link {
+		min-height: 44px;
+	}
+	.MuiButton-root {
+		text-transform: none;
+		white-space: normal;
+	}
+	.MuiButton-contained {
+		background: #a53425;
+		color: #fff;
+		&:hover {
+			background: #882b1f;
+		}
+		&:disabled {
+			background: #eceef1;
+			color: #686b73;
+		}
+	}
+	.access-list-surface,
+	.access-detail-surface {
+		border: 1px solid #e0e0e0;
+		border-radius: 8px;
+		background: #fff;
+		min-width: 0;
+	}
+	.access-list-surface {
+		overflow: hidden;
+	}
+	.MuiTabs-root {
+		border-bottom: 1px solid #e0e0e0;
+		padding: 0 12px;
+	}
+	.MuiTab-root {
+		text-transform: none;
+		min-height: 56px;
+		color: #616161;
+	}
+	.MuiTab-root.Mui-selected {
+		color: #a53425;
+	}
+	.MuiTabs-indicator {
+		background: #a53425;
+	}
+	.access-filters {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: flex-start;
+		gap: 12px;
+		padding: 24px;
+		border-bottom: 1px solid #e0e0e0;
+		.MuiTextField-root {
+			flex: 1 1 180px;
+			min-width: 0;
+		}
+		> p {
+			flex: 1 0 100%;
+			font-size: 12px;
+			line-height: 1.5;
+			color: #616161;
+			margin: 0;
+		}
+	}
+	.MuiTable-root {
+		table-layout: fixed;
+	}
+	.MuiTableCell-root {
+		padding: 20px 14px;
+		overflow-wrap: anywhere;
+		font-size: 13px;
+		&:first-child {
+			width: 23%;
+		}
+		&:last-child {
+			width: 9%;
+		}
+	}
+	.MuiTableCell-head {
+		background: #fafafa;
+		color: #616161;
+		font-weight: 600;
+		font-size: 12px;
+	}
+	.access-identity {
+		display: flex;
+		gap: 10px;
+		align-items: center;
+		min-width: 0;
+		> div:last-child {
+			display: grid;
+			gap: 4px;
+			min-width: 0;
+		}
+		strong,
+		span {
+			overflow-wrap: anywhere;
+		}
+		span {
+			color: #616161;
+			font-size: 12px;
+		}
+		.MuiAvatar-root {
+			flex-shrink: 0;
+			width: 36px;
+			height: 36px;
+		}
+	}
+	.access-status {
+		font-size: 12px;
+		font-weight: 600;
+		color: #655328;
+		&.is-approved {
+			color: #24543e;
+		}
+		&.is-rejected,
+		&.is-revoked {
+			color: #923e32;
+		}
+	}
+	.access-dates {
+		margin: 0;
+		display: grid;
+		gap: 8px;
+		font-size: 12px;
+		dt {
+			color: #616161;
+		}
+		dd {
+			margin: 2px 0 0;
+		}
+	}
+	.access-detail-link {
+		display: inline-flex;
+		align-items: center;
+	}
+	.access-feedback {
+		padding: 24px;
+		font-size: 14px;
+		line-height: 1.6;
+		text-align: center;
+	}
+	.MuiTablePagination-root {
+		border-top: 1px solid #e0e0e0;
+	}
+	.MuiTablePagination-toolbar {
+		flex-wrap: wrap;
+		gap: 4px;
+		padding: 8px 16px;
+	}
+	.MuiTablePagination-selectLabel,
+	.MuiTablePagination-displayedRows {
+		margin: 0;
+	}
+	.MuiTablePagination-actions button {
+		min-width: 44px;
+	}
+	.access-mobile-list {
+		list-style: none;
+		padding: 0;
+		margin: 0;
+		> li {
+			display: grid;
+			grid-template-columns: minmax(0, 1fr) auto;
+			gap: 14px 20px;
+			padding: 24px;
+			border-top: 1px solid #e0e0e0;
+			&:first-child {
+				border-top: 0;
+			}
+			h2 {
+				grid-column: 1 / -1;
+				font-size: 16px;
+				margin: 0;
+				overflow-wrap: anywhere;
+			}
+			> p {
+				grid-column: 1 / -1;
+				color: #616161;
+				margin: 0;
+			}
+			.access-status {
+				align-self: center;
+				max-width: 130px;
+			}
+			.access-dates {
+				display: flex;
+				flex-wrap: wrap;
+				gap: 12px 24px;
+			}
+			.access-detail-link {
+				justify-self: end;
+			}
+		}
+	}
+	.access-back {
+		margin-bottom: 24px;
+		a {
+			display: inline-flex;
+			align-items: center;
+			min-height: 44px;
+		}
+	}
+	.access-detail-surface {
+		max-width: 960px;
+		padding: 32px;
+	}
+	.access-detail-status {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		justify-content: space-between;
+		gap: 12px;
+		margin-bottom: 28px;
+		h2 {
+			font-size: 22px;
+			margin: 0;
+		}
+	}
+	.access-summaries {
+		display: grid;
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+		gap: 28px;
+		padding-bottom: 28px;
+		border-bottom: 1px solid #e0e0e0;
+		section {
+			min-width: 0;
+			overflow-wrap: anywhere;
+		}
+		h3 {
+			font-size: 14px;
+			margin-bottom: 16px;
+		}
+		p {
+			margin: 8px 0 0;
+			font-size: 13px;
+			line-height: 1.6;
+			color: #616161;
+		}
+	}
+	.access-detail-fields {
+		display: grid;
+		gap: 24px;
+		margin: 28px 0;
+		dt {
+			color: #616161;
+			font-size: 12px;
+			margin-bottom: 8px;
+		}
+		dd {
+			margin: 0;
+			font-size: 14px;
+			line-height: 1.65;
+			white-space: pre-wrap;
+			overflow-wrap: anywhere;
+		}
+	}
+	.access-decisions {
+		border-top: 1px solid #e0e0e0;
+		padding-top: 24px;
+		> p {
+			font-size: 13px;
+			color: #616161;
+			line-height: 1.6;
+		}
+		> div {
+			display: flex;
+			flex-wrap: wrap;
+			gap: 12px;
+			justify-content: flex-end;
+		}
+	}
+	.access-terminal {
+		border-top: 1px solid #e0e0e0;
+		padding-top: 24px;
+		color: #616161;
+		font-size: 13px;
+		line-height: 1.6;
+	}
+	.access-recovery {
+		padding: 16px 0;
+		p {
+			line-height: 1.6;
+			font-size: 14px;
+		}
+	}
+	@media (max-width: 599px) {
+		.access-heading h1 {
+			font-size: 24px;
+		}
+		.access-filters {
+			padding: 20px 16px;
+			.MuiTextField-root {
+				flex-basis: 100%;
+			}
+		}
+		.access-mobile-list > li {
+			padding: 20px 16px;
+			gap: 12px;
+		}
+		.access-detail-surface {
+			padding: 20px 16px;
+		}
+		.access-summaries {
+			grid-template-columns: minmax(0, 1fr);
+		}
+		.MuiTablePagination-spacer {
+			display: none;
+		}
+		.MuiTablePagination-toolbar {
+			justify-content: center;
+			padding: 8px;
+		}
+		.access-decisions > div > button {
+			flex: 1 1 120px;
+		}
+	}
+}
+.admin-access-dialog {
+	> form {
+		display: flex;
+		flex-direction: column;
+		min-height: 0;
+		max-height: inherit;
+	}
+	.MuiOutlinedInput-root {
+		height: auto;
+		align-items: flex-start;
+	}
+	.MuiDialogTitle-root {
+		font-size: 22px;
+	}
+	.MuiDialogContent-root {
+		padding-top: 8px !important;
+	}
+	.MuiDialogContentText-root,
+	.access-confirm-identity {
+		font-size: 14px;
+		line-height: 1.6;
+		overflow-wrap: anywhere;
+	}
+	.access-confirm-identity {
+		margin: 16px 0 24px;
+		font-weight: 600;
+	}
+	.access-reason-count {
+		text-align: right;
+		font-size: 12px;
+		color: #616161;
+	}
+	.MuiInputBase-root {
+		font-size: 16px;
+	}
+	.MuiDialogActions-root {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 8px;
+		padding: 16px 24px;
+	}
+	.MuiButton-root {
+		min-height: 44px;
+		text-transform: none;
+		white-space: normal;
+	}
+	.MuiButton-contained {
+		background: #a53425;
+		color: #fff;
+		&:hover {
+			background: #882b1f;
+		}
+		&:disabled {
+			background: #eceef1;
+			color: #686b73;
+		}
+	}
+	button:focus-visible {
+		outline: 2px solid #a53425;
+		outline-offset: 2px;
+	}
+	@media (max-width: 599px) {
+		margin: 16px;
+		width: calc(100% - 32px);
+		max-height: calc(100% - 32px);
+		.MuiDialogContent-root,
+		.MuiDialogTitle-root {
+			padding-left: 20px;
+			padding-right: 20px;
+		}
+	}
+}

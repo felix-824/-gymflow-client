@@ -1,5 +1,25 @@
 import { gql } from '@apollo/client';
 
+export const REVIEW_TRAINER_GYM_ACCESS = gql`
+	mutation ReviewTrainerGymAccess($input: TrainerGymAccessReview!) {
+		reviewTrainerGymAccess(input: $input) {
+			_id status relationshipType requestNote createdAt reviewedAt revokedAt rejectionReason revocationReason
+			trainerData { _id memberNick memberFullName memberImage memberType memberStatus }
+			gymData { _id gymName gymStatus gymLocation gymAddress gymImage }
+		}
+	}
+`;
+
+export const REVOKE_TRAINER_GYM_ACCESS = gql`
+	mutation RevokeTrainerGymAccess($input: TrainerGymAccessRevoke!) {
+		revokeTrainerGymAccess(input: $input) {
+			_id status relationshipType requestNote createdAt reviewedAt revokedAt rejectionReason revocationReason
+			trainerData { _id memberNick memberFullName memberImage memberType memberStatus }
+			gymData { _id gymName gymStatus gymLocation gymAddress gymImage }
+		}
+	}
+`;
+
 /**************************
  *           GYM          *
  *************************/

@@ -1,5 +1,28 @@
 import { gql } from '@apollo/client';
 
+export const GET_TRAINER_GYM_ACCESSES_BY_ADMIN = gql`
+	query GetTrainerGymAccessesByAdmin($input: TrainerGymAccessesAdminInquiry!) {
+		getTrainerGymAccessesByAdmin(input: $input) {
+			list {
+				_id status relationshipType createdAt reviewedAt revokedAt
+				trainerData { _id memberNick memberFullName memberImage memberType memberStatus }
+				gymData { _id gymName gymStatus gymLocation gymAddress gymImage }
+			}
+			metaCounter { total }
+		}
+	}
+`;
+
+export const GET_TRAINER_GYM_ACCESS_BY_ADMIN = gql`
+	query GetTrainerGymAccessByAdmin($accessId: String!) {
+		getTrainerGymAccessByAdmin(accessId: $accessId) {
+			_id status relationshipType requestNote createdAt reviewedAt revokedAt rejectionReason revocationReason
+			trainerData { _id memberNick memberFullName memberImage memberType memberStatus }
+			gymData { _id gymName gymStatus gymLocation gymAddress gymImage }
+		}
+	}
+`;
+
 /**************************
  *           GYM          *
  *************************/

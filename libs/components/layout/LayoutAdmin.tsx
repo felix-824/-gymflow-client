@@ -40,6 +40,7 @@ const withAdminLayout = (Component: ComponentType) => {
 				{
 					users: labels.users,
 					'trainer-applications': labels.applications,
+					'gym-access': labels.gymAccess,
 					programs: labels.programs,
 					gyms: labels.gyms,
 					community: labels.community,

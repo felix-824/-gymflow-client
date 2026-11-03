@@ -7,6 +7,7 @@ import AssignmentIndOutlinedIcon from '@mui/icons-material/AssignmentIndOutlined
 import FitnessCenterOutlinedIcon from '@mui/icons-material/FitnessCenterOutlined';
 import StorefrontOutlinedIcon from '@mui/icons-material/StorefrontOutlined';
 import ForumOutlinedIcon from '@mui/icons-material/ForumOutlined';
+import HowToRegOutlinedIcon from '@mui/icons-material/HowToRegOutlined';
 import { adminWorkspaceLabels } from '../../admin-workspace-labels';
 
 const AdminMenuList = ({ onNavigate }: { onNavigate?: () => void }) => {
@@ -15,6 +16,7 @@ const AdminMenuList = ({ onNavigate }: { onNavigate?: () => void }) => {
 	const items = [
 		{ path: 'users', label: labels.users, icon: <PeopleOutlineRoundedIcon /> },
 		{ path: 'trainer-applications', label: labels.applications, icon: <AssignmentIndOutlinedIcon /> },
+		{ path: 'gym-access', label: labels.gymAccess, icon: <HowToRegOutlinedIcon /> },
 		{ path: 'programs', label: labels.programs, icon: <FitnessCenterOutlinedIcon /> },
 		{ path: 'gyms', label: labels.gyms, icon: <StorefrontOutlinedIcon /> },
 		{ path: 'community', label: labels.community, icon: <ForumOutlinedIcon /> },

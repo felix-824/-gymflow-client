@@ -355,12 +355,12 @@ async function main() {
 		click(byText('[role="option"]', 'Seoul'));
 		await wait(() => loaded() && requests.at(-1).search.locationList?.[0] === 'SEOUL');
 		click(byText('[role="tab"]', 'Paused'));
-		await wait(() => loaded() && requests.at(-1).search.programStatus === 'PAUSED');
+		await wait(() => loaded() && requests.at(-1).search.programStatus === 'PAUSED' && !document.querySelector('.program-identity')?.hasAttribute('href'));
 		assert.deepEqual(requests.at(-1).search.locationList, ['SEOUL']);
 		assert.equal(requests.at(-1).page, 1);
 		assert(!document.querySelector('.program-identity').hasAttribute('href'));
 		click(byText('[role="tab"]', 'Delete'));
-		await wait(() => loaded() && requests.at(-1).search.programStatus === 'DELETE');
+		await wait(() => loaded() && requests.at(-1).search.programStatus === 'DELETE' && document.querySelector('.program-control.is-delete'));
 		assert(document.querySelector('.program-control.is-delete'));
 		click(byText('[role="tab"]', 'Active'));
 		await wait(() => loaded() && requests.at(-1).search.programStatus === 'ACTIVE');
