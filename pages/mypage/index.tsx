@@ -20,6 +20,7 @@ import TrainerSchedule from '../../libs/components/mypage/TrainerSchedule';
 import MyBookings from '../../libs/components/mypage/MyBookings';
 import TrainerReservations from '../../libs/components/mypage/TrainerReservations';
 import TrainerDashboard from '../../libs/components/mypage/TrainerDashboard';
+import TrainerGymAccess from '../../libs/components/mypage/TrainerGymAccess';
 import { TrainerWorkspaceHeader, TrainerWorkspaceNavigation } from '../../libs/components/mypage/TrainerWorkspaceNavigation';
 import { trainerReservationsAccess } from '../../libs/trainer-reservations';
 import { myBookingsAccess } from '../../libs/my-bookings';
@@ -37,10 +38,10 @@ import { adminWorkspaceLabels } from '../../libs/admin-workspace-labels';
 import { sweetErrorHandling, sweetMixinErrorAlert, sweetTopSmallSuccessAlert } from '../../libs/sweetAlert';
 
 export const getStaticProps = async ({ locale }: any) => {
-	if (process.env.NODE_ENV === 'development') await i18n?.reloadResources(locale, ['trainer-application']);
+	if (process.env.NODE_ENV === 'development') await i18n?.reloadResources(locale, ['trainer-application', 'trainer-gym-access', 'gyms']);
 	return {
 		props: {
-			...(await serverSideTranslations(locale, ['common', 'trainer-application'])),
+			...(await serverSideTranslations(locale, ['common', 'trainer-application', 'trainer-gym-access', 'gyms'])),
 		},
 	};
 };
@@ -65,7 +66,7 @@ const authError = useReactiveVar(authErrorVar);
 
 	/** LIFECYCLES **/
 	useEffect(() => {
-		if (router.isReady && category !== 'trainerApplication' && category !== 'writeArticle' && category !== 'editArticle' && category !== 'myArticles' && category !== 'myProfile' && category !== 'myFavorites' && category !== 'myBookings' && category !== 'trainerReservations' && category !== 'trainerDashboard' && authReady && !authError && !user._id) router.push('/').then();
+		if (router.isReady && category !== 'gymAccess' && category !== 'trainerApplication' && category !== 'writeArticle' && category !== 'editArticle' && category !== 'myArticles' && category !== 'myProfile' && category !== 'myFavorites' && category !== 'myBookings' && category !== 'trainerReservations' && category !== 'trainerDashboard' && authReady && !authError && !user._id) router.push('/').then();
 	}, [user, authReady, authError, router, category]);
 
 	/** HANDLERS **/
@@ -151,6 +152,7 @@ const likeMemberHandler = async (id: string, refetch: any, query: any) => {
 	if (category === 'trainerApplication') return <TrainerApplication />;
 	if (category === 'trainerReservations') return <TrainerReservations />;
 	if (category === 'trainerDashboard') return <TrainerDashboard />;
+	if (category === 'gymAccess') return <TrainerGymAccess />;
 	if (category === 'myProfile' && user.memberType === 'TRAINER') {
 		const access = trainerReservationsAccess(authReady && router.isReady, authError, user);
 		return <div className="trainer-profile-workspace">
@@ -198,6 +200,7 @@ if (user.memberType === 'TRAINER' && category === 'addProgram') return <AddProgr
 if (device === 'mobile') {
 		return <div>MY PAGE{user.memberType === 'TRAINER' && (
 			<><p><Link passHref href="/mypage?category=trainerSchedule" style={{ display: 'inline-flex', minHeight: 44, padding: '12px 20px' }}>{t('Trainer schedule.Schedule')}</Link></p>
+			{user.memberStatus === 'ACTIVE' && <p><Link href="/mypage?category=gymAccess" style={{ display: 'inline-flex', minHeight: 44, padding: '12px 20px' }}>{t('trainer-gym-access:Title')}</Link></p>}
 			<p><Link passHref href="/mypage?category=trainerReservations" style={{ display: 'inline-flex', minHeight: 44, padding: '12px 20px' }}>{t('Trainer schedule.Reservations')}</Link></p></>
 		)}{user.memberType === 'USER' && (
 			<p><Link passHref href="/mypage?category=myBookings" style={{ display: 'inline-flex', minHeight: 44, padding: '12px 20px' }}>{t('MyBookings.Title')}</Link></p>

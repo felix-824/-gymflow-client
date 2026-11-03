@@ -1,0 +1,395 @@
+#pc-wrap.trainer-gym-access-layout {
+	padding-bottom: 0;
+	.gym-access-workspace {
+		font-family: 'Plus Jakarta Sans', sans-serif;
+	}
+	#gym-access-page {
+		width: 100%;
+		max-width: 1184px;
+		margin: 0 auto;
+		padding: 40px 32px 64px;
+	}
+	.gym-access-page-heading {
+		display: flex;
+		align-items: flex-start;
+		justify-content: space-between;
+		gap: 24px;
+		margin-bottom: 24px;
+	}
+	h1 {
+		margin: 0 0 10px;
+		font-size: 32px;
+		line-height: 1.25;
+		letter-spacing: -0.03em;
+	}
+	h2 {
+		margin: 0 0 16px;
+		font-size: 20px;
+		line-height: 1.4;
+		letter-spacing: -0.02em;
+	}
+	h3 {
+		margin: 0;
+		font-size: 17px;
+		line-height: 1.5;
+	}
+	p {
+		max-width: 72ch;
+		font-size: 14px;
+	}
+	.gym-access-page-heading p,
+	.gym-access-muted,
+	.gym-access-field > p,
+	.gym-access-note-help,
+	.gym-access-form-panel > p {
+		color: #596171;
+	}
+	.MuiButton-root {
+		min-height: 44px;
+		border-radius: 8px;
+		padding: 10px 16px;
+		text-transform: none;
+		font-family: inherit;
+		font-size: 13px;
+		line-height: 1.5;
+		font-weight: 600;
+	}
+	.MuiButton-contained {
+		background: #eb6753;
+		color: #12151d;
+		box-shadow: none;
+		white-space: nowrap;
+	}
+	.MuiButton-contained:hover {
+		background: #e45c47;
+		box-shadow: none;
+	}
+	.MuiButton-outlined {
+		color: #973e2d;
+		border-color: #d8b2a9;
+	}
+	.MuiButton-text {
+		color: #973e2d;
+	}
+	.MuiButton-root.Mui-disabled {
+		color: #626978;
+		background: #edf0f3;
+		border-color: #dce0e6;
+	}
+	.MuiPaginationItem-root {
+		min-height: 36px;
+	}
+	.gym-access-policy {
+		margin: 24px 0;
+		color: #596171;
+	}
+	.gym-access-success {
+		margin-bottom: 20px;
+		padding: 16px;
+		background: #eaf5ef;
+		color: #245e43;
+		border-radius: 8px;
+	}
+	.gym-access-section {
+		margin: 28px 0;
+	}
+	.gym-access-grid {
+		display: grid;
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+		gap: 20px;
+		align-items: start;
+	}
+	.gym-access-card {
+		min-width: 0;
+		padding: 24px;
+		border: 1px solid #e7e9ee;
+		border-radius: 12px;
+		background: #fff;
+		overflow-wrap: anywhere;
+	}
+	.gym-access-card-heading {
+		display: flex;
+		align-items: flex-start;
+		justify-content: space-between;
+		gap: 16px;
+		margin-bottom: 6px;
+	}
+	.gym-access-card h3 {
+		min-width: 0;
+	}
+	.gym-access-status {
+		flex-shrink: 0;
+		max-width: 48%;
+		border-radius: 5px;
+		padding: 4px 8px;
+		font-size: 12px;
+		font-weight: 600;
+		line-height: 1.5;
+	}
+	.status-pending {
+		background: #fff3d9;
+		color: #775109;
+	}
+	.status-approved {
+		background: #eaf5ef;
+		color: #245e43;
+	}
+	.status-rejected {
+		background: #fcece8;
+		color: #993b2e;
+	}
+	.status-revoked {
+		background: #eceef4;
+		color: #4f526a;
+	}
+	.gym-access-relationship {
+		color: #596171;
+		margin-bottom: 16px;
+	}
+	.gym-access-meaning {
+		margin-bottom: 20px;
+	}
+	dl {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 12px 24px;
+		margin: 0 0 20px;
+		font-size: 12px;
+	}
+	dt {
+		color: #596171;
+		margin-bottom: 4px;
+	}
+	dd {
+		margin: 0;
+	}
+	details {
+		border-top: 1px solid #e7e9ee;
+		margin-bottom: 12px;
+	}
+	summary {
+		display: list-item;
+		min-height: 44px;
+		padding: 12px 0;
+		cursor: pointer;
+		font-size: 13px;
+		font-weight: 600;
+	}
+	.gym-access-note,
+	.gym-access-reason p {
+		white-space: pre-wrap;
+		overflow-wrap: anywhere;
+	}
+	.gym-access-reason {
+		padding: 12px 0 20px;
+	}
+	.gym-access-reason strong {
+		display: block;
+		margin-bottom: 6px;
+		font-size: 13px;
+	}
+	.gym-access-state {
+		padding: 48px 24px;
+		background: #fff;
+		border: 1px solid #e7e9ee;
+		border-radius: 12px;
+		text-align: center;
+	}
+	.gym-access-state p {
+		margin: 0 auto 20px;
+		color: #596171;
+	}
+	.gym-access-state > svg {
+		width: 32px;
+		height: 32px;
+		margin-bottom: 20px;
+		color: #737985;
+	}
+	.gym-access-state a {
+		display: inline-flex;
+		align-items: center;
+		min-height: 44px;
+		padding: 10px;
+		color: #973e2d;
+	}
+	.gym-access-loading {
+		display: grid;
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+		gap: 20px;
+	}
+	.gym-access-loading span:last-child {
+		color: #596171;
+		font-size: 14px;
+	}
+	.gym-access-form-panel {
+		background: #fff;
+		border: 1px solid #e7e9ee;
+		border-radius: 12px;
+		padding: 28px;
+		margin: 24px 0 32px;
+		scroll-margin-top: 20px;
+	}
+	.gym-access-form-panel > p {
+		margin-bottom: 24px;
+	}
+	fieldset {
+		display: grid;
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+		gap: 20px 24px;
+		border: 0;
+		padding: 0;
+		margin: 0;
+		min-width: 0;
+	}
+	fieldset > div:not(:first-child) {
+		grid-column: 1 / -1;
+	}
+	.gym-access-field {
+		display: flex;
+		flex-direction: column;
+		gap: 8px;
+		min-width: 0;
+	}
+	.gym-access-field label {
+		font-size: 14px;
+		font-weight: 600;
+	}
+	input,
+	select,
+	textarea {
+		width: 100%;
+		min-width: 0;
+		min-height: 48px;
+		padding: 12px;
+		border: 1px solid #aeb4bf;
+		border-radius: 8px;
+		background: #fff;
+		color: #17191f;
+		font: inherit;
+		font-size: 14px;
+		caret-color: #973e2d;
+	}
+	select {
+		text-overflow: ellipsis;
+		padding-right: 28px;
+	}
+	textarea {
+		resize: vertical;
+		line-height: 1.6;
+		max-width: 100%;
+	}
+	[aria-invalid='true'] {
+		border-color: #993b2e;
+	}
+	.gym-access-field p,
+	.gym-access-note-help {
+		font-size: 12px;
+		line-height: 1.6;
+		overflow-wrap: anywhere;
+	}
+	.gym-access-address {
+		color: #17191f;
+	}
+	.gym-access-note-help {
+		display: flex;
+		justify-content: space-between;
+		align-items: flex-start;
+		gap: 16px;
+	}
+	.gym-access-note-help > span {
+		white-space: nowrap;
+		font-variant-numeric: tabular-nums;
+	}
+	.gym-access-form-actions {
+		display: flex;
+		justify-content: flex-end;
+		gap: 12px;
+		margin-top: 24px;
+	}
+	.gym-access-card,
+	.gym-access-form-panel {
+		overflow-wrap: anywhere;
+	}
+	:focus-visible,
+	.MuiButton-root:focus-visible {
+		outline: 2px solid #973e2d;
+		outline-offset: 3px;
+	}
+	@media (max-width: 900px) {
+		.gym-access-grid {
+			grid-template-columns: minmax(0, 1fr);
+		}
+	}
+	@media (max-width: 767px) {
+		padding-bottom: calc(88px + env(safe-area-inset-bottom, 0px));
+		#gym-access-page {
+			padding: 28px 20px 40px;
+		}
+		h1 {
+			font-size: 26px;
+		}
+		.gym-access-page-heading {
+			flex-direction: column;
+			gap: 20px;
+		}
+		.gym-access-page-heading > .MuiButton-root {
+			width: 100%;
+		}
+		.gym-access-card {
+			padding: 20px;
+		}
+		.gym-access-card-heading {
+			flex-direction: column;
+			gap: 10px;
+		}
+		.gym-access-status {
+			max-width: 100%;
+		}
+		.gym-access-state {
+			padding: 32px 20px;
+		}
+		.gym-access-form-panel {
+			padding: 20px;
+		}
+		fieldset {
+			grid-template-columns: minmax(0, 1fr);
+		}
+		.gym-access-form-actions {
+			flex-direction: column-reverse;
+		}
+		.gym-access-form-actions .MuiButton-root {
+			width: 100%;
+		}
+		.gym-access-loading {
+			grid-template-columns: minmax(0, 1fr);
+		}
+	}
+}
+
+// The shared trainer shell now has six destinations; keep every label and touch target usable.
+#pc-wrap.trainer-schedule-layout {
+	@media (min-width: 768px) and (max-width: 1199px) {
+		.schedule-workspace-header-inner {
+			flex-wrap: wrap;
+			gap: 0 20px;
+			padding-top: 12px;
+			padding-bottom: 8px;
+		}
+		.schedule-desktop-navigation {
+			order: 3;
+			flex-basis: 100%;
+			flex-wrap: wrap;
+			gap: 4px 12px;
+		}
+		.schedule-desktop-navigation a {
+			white-space: normal;
+		}
+	}
+	@media (max-width: 767px) {
+		.schedule-mobile-navigation {
+			grid-template-columns: none;
+			grid-auto-flow: column;
+			grid-auto-columns: minmax(0, 1fr);
+		}
+	}
+}

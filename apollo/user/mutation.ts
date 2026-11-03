@@ -1,5 +1,15 @@
 import { gql } from '@apollo/client';
 
+export const SUBMIT_TRAINER_GYM_ACCESS = gql`
+	mutation SubmitTrainerGymAccess($input: TrainerGymAccessInput!) {
+		submitTrainerGymAccess(input: $input) {
+			_id gymId status relationshipType requestNote
+			rejectionReason revocationReason reviewedAt revokedAt createdAt
+			gymData { _id gymName }
+		}
+	}
+`;
+
 export const REFRESH_SESSION = gql`
 	mutation RefreshSession { refreshSession { accessToken } }
 `;

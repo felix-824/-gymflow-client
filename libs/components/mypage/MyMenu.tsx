@@ -14,6 +14,7 @@ import { useTranslation } from 'next-i18next';
 
 const MyMenu = () => {
 	const { t } = useTranslation('common');
+	const { t: accessT } = useTranslation('trainer-gym-access');
 	const device = useDeviceDetect();
 	const router = useRouter();
 	const pathname = router.query.category ?? 'myProfile';
@@ -69,6 +70,11 @@ const MyMenu = () => {
 							</ListItem>}
 							{user.memberType === 'TRAINER' && (
 								<>
+									{user.memberStatus === 'ACTIVE' && <ListItem className={pathname === 'gymAccess' ? 'focus' : ''}>
+										<Link passHref href={{ pathname: '/mypage', query: { category: 'gymAccess' } }} scroll={false}>
+											<div className="flex-box"><Typography className="sub-title" variant="subtitle1" component="p">{accessT('Title')}</Typography></div>
+										</Link>
+									</ListItem>}
 									<ListItem className={pathname === 'trainerReservations' ? 'focus' : ''}>
 										<Link passHref href={{ pathname: '/mypage', query: { category: 'trainerReservations' } }} scroll={false}>
 											<div className="flex-box"><Typography className="sub-title" variant="subtitle1" component="p">{t('Trainer schedule.Reservations')}</Typography></div>

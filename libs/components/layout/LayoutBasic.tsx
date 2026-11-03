@@ -38,6 +38,7 @@ const withLayoutBasic = (Component: any) => {
 		const trainerSchedule = router.pathname === '/mypage' && router.query.category === 'trainerSchedule';
 		const trainerReservations = router.pathname === '/mypage' && router.query.category === 'trainerReservations';
 		const trainerDashboard = router.pathname === '/mypage' && router.query.category === 'trainerDashboard';
+		const trainerGymAccess = router.pathname === '/mypage' && router.query.category === 'gymAccess';
 		const trainerProfile = router.pathname === '/mypage' && user.memberType === 'TRAINER' &&
 			(router.query.category == null || router.query.category === 'myProfile');
 		const trainerPrograms = router.pathname === '/mypage' && router.query.category === 'myPrograms';
@@ -143,14 +144,14 @@ const withLayoutBasic = (Component: any) => {
 				<main className="auth-layout"><Component {...props} /></main>
 			</ThemeProvider>;
 		}
-		if (trainerSchedule || trainerReservations || trainerDashboard || trainerProfile || trainerPrograms || trainerProgramEditor) {
+		if (trainerSchedule || trainerReservations || trainerDashboard || trainerProfile || trainerPrograms || trainerProgramEditor || trainerGymAccess) {
 			return (
-				<ThemeProvider theme={trainerSchedule ? theme : programTheme}>
+				<ThemeProvider theme={trainerSchedule || trainerGymAccess ? theme : programTheme}>
 					<Head>
 						<title>GymFlow</title>
 						<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" />
 					</Head>
-					<Stack id="pc-wrap" className={`trainer-schedule-layout${trainerReservations || trainerDashboard || trainerProfile || trainerPrograms || trainerProgramEditor ? ' trainer-reservations-layout' : ''}${trainerDashboard ? ' trainer-dashboard-layout' : ''}${trainerProfile ? ' trainer-profile-layout' : ''}${trainerPrograms ? ' trainer-programs-layout' : ''}${trainerProgramEditor ? ' trainer-program-editor-layout' : ''}`}>
+					<Stack id="pc-wrap" className={`trainer-schedule-layout${trainerReservations || trainerDashboard || trainerProfile || trainerPrograms || trainerProgramEditor ? ' trainer-reservations-layout' : ''}${trainerDashboard ? ' trainer-dashboard-layout' : ''}${trainerProfile ? ' trainer-profile-layout' : ''}${trainerPrograms ? ' trainer-programs-layout' : ''}${trainerProgramEditor ? ' trainer-program-editor-layout' : ''}${trainerGymAccess ? ' trainer-gym-access-layout' : ''}`}>
 						<Stack id="main" component="main"><Component {...props} /></Stack>
 						<Stack id="footer" component="footer"><Footer variant="programs" /></Stack>
 					</Stack>

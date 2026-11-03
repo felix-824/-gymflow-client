@@ -95,7 +95,7 @@ function unit() {
 	const page = fs.readFileSync(path.join(__dirname, '../pages/mypage/index.tsx'), 'utf8');
 	assert.match(page, /category === 'trainerApplication'\) return <TrainerApplication/);
 	assert.match(page, /category !== 'trainerApplication'/);
-	assert.match(page, /serverSideTranslations\(locale, \['common', 'trainer-application'\]/);
+	assert.match(page, /serverSideTranslations\(locale, \['common', 'trainer-application', 'trainer-gym-access', 'gyms'\]/);
 	const layout = fs.readFileSync(path.join(__dirname, '../libs/components/layout/LayoutBasic.tsx'), 'utf8');
 	assert.match(layout, /userFavorites \|\| trainerApplication\)/);
 	pass(

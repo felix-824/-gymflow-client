@@ -10,6 +10,7 @@ import CalendarMonthOutlinedIcon from '@mui/icons-material/CalendarMonthOutlined
 import EventNoteOutlinedIcon from '@mui/icons-material/EventNoteOutlined';
 import AccountCircleOutlinedIcon from '@mui/icons-material/AccountCircleOutlined';
 import VisibilityOutlinedIcon from '@mui/icons-material/VisibilityOutlined';
+import BusinessOutlinedIcon from '@mui/icons-material/BusinessOutlined';
 import { userVar } from '../../../apollo/store';
 import { REACT_APP_API_URL } from '../../config';
 
@@ -18,6 +19,7 @@ const workspaceDestinations = [
 	{ label: 'Programs', icon: FitnessCenterOutlinedIcon, category: 'myPrograms' },
 	{ label: 'Schedule', icon: CalendarMonthOutlinedIcon, category: 'trainerSchedule' },
 	{ label: 'Reservations', icon: EventNoteOutlinedIcon, category: 'trainerReservations' },
+	{ label: 'Gym Access', icon: BusinessOutlinedIcon, category: 'gymAccess' },
 	{ label: 'Profile', icon: AccountCircleOutlinedIcon, category: 'myProfile' },
 ];
 
@@ -25,16 +27,18 @@ export function TrainerWorkspaceNavigation({
 	active,
 	mobile = false,
 }: {
-	active: 'Dashboard' | 'Programs' | 'Schedule' | 'Reservations' | 'Profile';
+	active: 'Dashboard' | 'Programs' | 'Schedule' | 'Reservations' | 'Gym Access' | 'Profile';
 	mobile?: boolean;
 }) {
 	const { t } = useTranslation('common');
+	const { t: accessT } = useTranslation('trainer-gym-access');
+	const user = useReactiveVar(userVar);
 	return (
 		<nav
 			className={mobile ? 'schedule-mobile-navigation' : 'schedule-desktop-navigation'}
 			aria-label={t('Trainer schedule.Navigation')}
 		>
-			{workspaceDestinations.map(({ label, icon: Icon, category }) =>
+			{workspaceDestinations.filter((destination) => destination.category !== 'gymAccess' || (user._id && user.memberType === 'TRAINER' && user.memberStatus === 'ACTIVE')).map(({ label, icon: Icon, category }) =>
 				category ? (
 					<Link
 						passHref
@@ -43,7 +47,7 @@ export function TrainerWorkspaceNavigation({
 						aria-current={label === active ? 'page' : undefined}
 					>
 						{mobile && <Icon aria-hidden="true" />}
-						<span>{t(`Trainer schedule.${label}`)}</span>
+						<span>{label === 'Gym Access' ? accessT('Title') : t(`Trainer schedule.${label}`)}</span>
 					</Link>
 				) : (
 					<button key={label} type="button" disabled title={t('Trainer schedule.Not available')}>
@@ -59,7 +63,7 @@ export function TrainerWorkspaceNavigation({
 export function TrainerWorkspaceHeader({
 	active,
 }: {
-	active: 'Dashboard' | 'Programs' | 'Schedule' | 'Reservations' | 'Profile';
+	active: 'Dashboard' | 'Programs' | 'Schedule' | 'Reservations' | 'Gym Access' | 'Profile';
 }) {
 	const { t } = useTranslation('common');
 	const user = useReactiveVar(userVar);
