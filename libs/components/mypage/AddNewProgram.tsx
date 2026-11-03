@@ -34,6 +34,7 @@ import {
 	programUpdateError,
 	programFormError,
 	programPayload,
+	programUpdatePayload,
 	ProgramEditConstraints,
 	readProgramEditConstraints,
 	readTrainerProgramsInquiry,
@@ -82,6 +83,7 @@ const AddProgram = () => {
 	const [reservationError, setReservationError] = useState(false);
 	const [loadedCapacity, setLoadedCapacity] = useState(1);
 	const [loadedRevision, setLoadedRevision] = useState<number | null>(null);
+	const originalProgram = useRef<ProgramInput>(initialValues);
 	const [writeBlocked, setWriteBlocked] = useState(false);
 	const [refreshing, setRefreshing] = useState(false);
 	const refreshLock = useRef(false);
@@ -178,7 +180,8 @@ const AddProgram = () => {
 				}
 				if (!isProgramRevision(program.programRevision)) throw new Error('Missing Program revision');
 				setInsertProgramData(programPayload(program));
-			setCurrentGym(program.gymData ?? null);
+				originalProgram.current = programPayload(program);
+				setCurrentGym(program.gymData ?? null);
 				setLoadedCapacity(program.programCapacity);
 				setLoadedRevision(program.programRevision);
 				setLoadedScope(scope);
@@ -259,7 +262,7 @@ const AddProgram = () => {
 			else if (createEnvelopeRef.current) {
 				const kind = programCreateError(err);
 				setCreateTerminal(kind !== 'unknown');
-				setFormError(kind === 'payload' ? 'Create payload conflict' : kind === 'unavailable' ? 'Create unavailable' : 'Uncertain create');
+				setFormError(kind === 'access' ? 'Gym access' : kind === 'payload' ? 'Create payload conflict' : kind === 'unavailable' ? 'Create unavailable' : 'Uncertain create');
 			} else {
 				setCreateStorageError(true);
 				setFormError('Create storage failed');
@@ -478,7 +481,7 @@ const AddProgram = () => {
 		setFormError('');
 		let confirmedUpdate = false;
 		try {
-			const payload = programPayload(insertProgramData, Boolean(programId));
+			const payload = programUpdatePayload(insertProgramData, originalProgram.current);
 			if (programId) {
 				const response = await updateProgram({
 					variables: { input: { ...payload, _id: programId, expectedRevision: loadedRevision } },
@@ -504,7 +507,7 @@ const AddProgram = () => {
 					const kind = programUpdateError(err);
 					if (kind !== 'rejected') setWriteBlocked(true);
 					const messages = { stale: 'Conflict', contention: 'Contention', unavailable: 'Unavailable', unknown: 'Uncertain update' };
-					setFormError(kind === 'rejected' ? err.message ?? 'Could not save this program.' : kind === 'venue' ? 'Venue conflict' : messages[kind]);
+					setFormError(kind === 'rejected' ? err.graphQLErrors?.some((item: any) => item.message === 'Program owner is not authorized to use this Gym') ? 'Gym access' : err.message ?? 'Could not save this program.' : kind === 'venue' ? 'Venue conflict' : messages[kind]);
 					setValidationAttempt((attempt) => attempt + 1);
 				}
 			} else setFormError(err.message ?? 'Could not save this program.');
@@ -551,7 +554,7 @@ const AddProgram = () => {
 		'Program address cannot be changed while upcoming reservations exist.': 'Address locked',
 		'Program capacity cannot be reduced below occupied session seats.': 'Capacity locked',
 	};
-	const errorMessage = formError === 'Venue conflict' ? gymT('venue.conflict') : formError === 'Invalid Gym' ? gymT('venue.invalid') : ['Conflict', 'Contention', 'Uncertain update', 'Refresh failed', 'Unavailable', 'Updated', 'Created', 'Uncertain create', 'Create payload conflict', 'Create unavailable', 'Create storage failed'].includes(formError)
+	const errorMessage = formError === 'Gym access' ? gymT('venue.accessError') : formError === 'Venue conflict' ? gymT('venue.conflict') : formError === 'Invalid Gym' ? gymT('venue.invalid') : ['Conflict', 'Contention', 'Uncertain update', 'Refresh failed', 'Unavailable', 'Updated', 'Created', 'Uncertain create', 'Create payload conflict', 'Create unavailable', 'Create storage failed'].includes(formError)
 		? t('Trainer program form.' + formError)
 		: messageKeys[formError] ? t('Trainer program form.' + messageKeys[formError]) : formError;
 

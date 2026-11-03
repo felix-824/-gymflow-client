@@ -314,6 +314,38 @@
 		grid-template-columns: minmax(0, 1fr) minmax(0, 2fr);
 		gap: 16px;
 	}
+	.editor-gym-venue {
+		display: grid;
+		gap: 12px;
+		min-width: 0;
+		margin-bottom: 16px;
+		p { margin: 0; }
+	}
+	.editor-gym-current {
+		display: grid;
+		gap: 5px;
+		font-size: 12px;
+		line-height: 1.5;
+		overflow-wrap: anywhere;
+		span { color: #5b5e68; }
+	}
+	.editor-gym-results {
+		min-height: 76px;
+		font-size: 12px;
+		line-height: 1.5;
+		overflow-wrap: anywhere;
+	}
+	.editor-gym-actions, .editor-gym-pagination {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 8px 16px;
+		a, button {
+			min-height: 44px;
+			display: inline-flex;
+			align-items: center;
+			white-space: normal;
+		}
+	}
 	.editor-note {
 		display: flex;
 		align-items: flex-start;

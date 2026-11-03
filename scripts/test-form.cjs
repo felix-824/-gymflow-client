@@ -59,13 +59,14 @@ module.exports = async function runFormChecks(loadTs, forms, options = {}) {
 		state.queries.push(request);
 		assert.equal(request.fetchPolicy, 'no-cache');
 		assert.deepEqual(request.context, { queryDeduplication: false, handleErrorLocally: true });
-		if (request.query === 'GET_GYMS') {
+		if (request.query === 'GET_MY_APPROVED_GYMS') {
 			const { page, limit, search } = request.variables.input;
-			assert.equal(limit, 20);
+			assert([20, 100].includes(limit));
+			assert.deepEqual(Object.keys(request.variables.input).sort(), ['limit', 'page', 'search']);
 			assert.equal(search.gymStatus, undefined);
 			if (state.failGyms) throw new Error('Gym read failed');
 			const list = state.gyms.filter((gym) => !search.text || gym.gymName.includes(search.text));
-			return { data: { getGyms: { list: list.slice((page - 1) * limit, page * limit), metaCounter: [{ total: list.length }] } } };
+			return { data: { getMyApprovedGyms: { list: list.slice((page - 1) * limit, page * limit), metaCounter: [{ total: list.length }] } } };
 		}
 		if (request.query === 'GET_TRAINER_RESERVATIONS') {
 			assert.deepEqual(request.variables.input, { page: request.variables.input.page, limit: 100, search: { programId: router.query.programId.toLowerCase(), period: 'UPCOMING' } });
@@ -116,7 +117,8 @@ module.exports = async function runFormChecks(loadTs, forms, options = {}) {
 		'../../../apollo/store': variables,
 		'@apollo/client': { useApolloClient: () => client, useMutation, useReactiveVar: (variable) => variable() },
 		'../../../apollo/user/mutation': { CREATE_PROGRAM: 'CREATE_PROGRAM', UPDATE_PROGRAM: 'UPDATE_PROGRAM' },
-		'../../../apollo/user/query': { GET_GYMS: 'GET_GYMS', GET_TRAINER_PROGRAMS: 'GET_TRAINER_PROGRAMS', GET_TRAINER_RESERVATIONS: 'GET_TRAINER_RESERVATIONS' },
+		'../../../apollo/user/query': { GET_TRAINER_PROGRAMS: 'GET_TRAINER_PROGRAMS', GET_TRAINER_RESERVATIONS: 'GET_TRAINER_RESERVATIONS' },
+		'../apollo/user/query': { GET_MY_APPROVED_GYMS: 'GET_MY_APPROVED_GYMS' },
 		'../../sweetAlert': { sweetMixinSuccessAlert: async (message) => { state.success.push(message); if (router.query.programId === undefined) assert.equal(forms.readProgramCreateEnvelope(trainer._id)?.status, 'confirmed'); if (state.feedbackError) throw new Error('Feedback failed'); }, sweetConfirmAlert: async (message) => { state.confirmations.push(message); return state.confirmRefresh; } },
 		'axios': { post: async (url, body, config) => {
 			state.authEvents.push('post');
@@ -845,7 +847,9 @@ module.exports = async function runFormChecks(loadTs, forms, options = {}) {
 		assert.equal(document.querySelector('#program-address').disabled, true);
 		await act(async () => Simulate.change(document.querySelector('#program-name'), { target: { value: 'Allowed renamed class' } }));
 		await submitGymEditor();
-		assert.equal(state.mutations.at(-1).variables.input.gymId, gymA._id);
+		assert.equal(state.mutations.at(-1).variables.input.gymId, undefined);
+		assert.equal(state.mutations.at(-1).variables.input.programLocation, undefined);
+		assert.equal(state.mutations.at(-1).variables.input.programAddress, undefined);
 		assert.equal(state.mutations.at(-1).variables.input.expectedRevision, 0);
 		assert.equal(state.mutations.at(-1).variables.input.__v, undefined);
 		pass('G5 linked edit initializes authoritative Gym, protects derived fields and uses expectedRevision');
@@ -890,9 +894,9 @@ module.exports = async function runFormChecks(loadTs, forms, options = {}) {
 		await searchGyms('');
 		await act(async () => document.querySelectorAll('.editor-gym-pagination button')[1].click());
 		await settleGyms();
-		assert.equal(state.queries.filter(query => query.query === 'GET_GYMS').at(-1).variables.input.page, 2);
+		assert.equal(state.queries.filter(query => query.query === 'GET_MY_APPROVED_GYMS' && query.variables.input.limit === 20).at(-1).variables.input.page, 2);
 		await searchGyms('Busan');
-		assert.equal(state.queries.filter(query => query.query === 'GET_GYMS').at(-1).variables.input.page, 1);
+		assert.equal(state.queries.filter(query => query.query === 'GET_MY_APPROVED_GYMS' && query.variables.input.limit === 20).at(-1).variables.input.page, 1);
 		assert.equal(document.querySelector('#program-gym').options.length, 2);
 		await selectGym(gymB._id);
 		state.failGyms = true;
@@ -916,8 +920,12 @@ module.exports = async function runFormChecks(loadTs, forms, options = {}) {
 			assert.equal(document.querySelector('#program-gym').value, gymA._id);
 			assert.equal([...document.querySelector('#program-gym').options].find(option => option.value === gymA._id).disabled, true);
 			assert.equal(document.querySelector('#program-gym-note').textContent.trim(), resources[locale].gyms.venue.historical);
+			await act(async () => Simulate.change(document.querySelector('#program-description'), { target: { value: 'Only the description has changed.' } }));
 			await submitGymEditor();
-			assert.equal(state.mutations.at(-1).variables.input.gymId, gymA._id);
+			assert.equal(state.mutations.at(-1).variables.input.gymId, undefined);
+			assert.equal(state.mutations.at(-1).variables.input.programLocation, undefined);
+			assert.equal(state.mutations.at(-1).variables.input.programAddress, undefined);
+			assert.equal(state.mutations.at(-1).variables.input.programDesc, 'Only the description has changed.');
 			assert.equal(state.mutations.at(-1).variables.input.expectedRevision, 7);
 		}
 		await i18n.changeLanguage('en');
@@ -974,6 +982,51 @@ module.exports = async function runFormChecks(loadTs, forms, options = {}) {
 		assert.equal(document.querySelector('#program-gym').value, '');
 		assert.equal(document.querySelector('#program-address').disabled, false);
 		pass('G5 selection allocates no create key; linked frozen receipt survives remount/retry and Start New clears the venue');
+
+		state.gyms = [];
+		await renderGymEditor('tg-c2-empty');
+		assert(document.querySelector('#program-gym-state').textContent.includes(resources.en.gyms.venue.noApproved));
+		assert.equal(document.querySelector('#program-gym').options.length, 1);
+		assert.equal(document.querySelector('.editor-gym-actions a').getAttribute('href'), '/mypage?category=gymAccess');
+		assert.equal(document.querySelector('#program-address').disabled, false);
+		pass('TG-C2 zero approved has deliberate guidance, real Manage route and independent venue fields');
+		state.failGyms = true;
+		await render('tg-c2-loading');
+		assert(document.querySelector('#program-gym-state [role=status]'));
+		assert.equal(document.querySelector('#program-gym').options.length, 1);
+		await settleGyms();
+		assert(document.querySelector('#program-gym-state [role=alert]'));
+		assert.equal(document.querySelector('#program-gym').options.length, 1);
+		state.failGyms = false; state.gyms = [gymB];
+		await act(async () => document.querySelector('.editor-gym-actions button').click());
+		await settleGyms();
+		assert(document.querySelector('#program-gym option[value="' + gymB._id + '"]'));
+		pass('TG-C2 loading/error never offer public venues; Retry recovers approved options');
+		for (const status of ['REVOKED', 'PENDING', 'REJECTED', 'ABSENT']) {
+			router.query = { programId: program._id };
+			state.program = { ...program, gymId: gymA._id, gymData: gymA, programAddress: gymA.gymAddress, programRevision: 9 };
+			await renderGymEditor('tg-c2-' + status);
+			assert(document.querySelector('.editor-gym-current').textContent.includes(gymA.gymName));
+			assert(document.querySelector('.editor-gym-current').textContent.includes(resources.en.gyms.venue.accessInactive));
+			assert(document.querySelector('#program-gym option[value="' + gymA._id + '"]').disabled);
+			await act(async () => Simulate.change(document.querySelector('#program-description'), { target: { value: 'Preserved venue metadata edit.' } }));
+			await submitGymEditor();
+			const input = state.mutations.at(-1).variables.input;
+			for (const key of ['gymId', 'programLocation', 'programAddress']) assert(!Object.hasOwn(input, key));
+			assert.equal(input.expectedRevision, 9);
+			assert.equal(document.querySelector('#program-gym').value, gymA._id);
+			pass('TG-C2 ' + status + ' named current venue stays stored; description-only payload omits all venue fields');
+		}
+		await selectGym(gymB._id);
+		state.policyError = 'Program owner is not authorized to use this Gym';
+		await submitGymEditor();
+		assert.equal(document.querySelector('.editor-error').textContent, resources.en.gyms.venue.accessError);
+		assert.equal(document.querySelector('#program-gym').value, gymB._id);
+		state.policyError = '';
+		await act(async () => window.dispatchEvent(new window.Event('focus')));
+		await settleGyms();
+		assert(state.queries.every(query => query.query !== 'GET_GYMS'));
+		pass('TG-C2 stale-access rejection is localized and preserves draft; focus refetch uses owner contract only');
 
 		const passthrough = ({ children }) => React.createElement('div', null, children);
 		const action = ({ children, onClick, disabled }) => React.createElement('button', { onClick, disabled }, children);

@@ -51,8 +51,9 @@ export function clearProgramCreateEnvelope(ownerId: string): void {
 	window.sessionStorage.removeItem('gymflow:program-create:' + ownerId);
 }
 
-export function programCreateError(error: any): 'payload' | 'unavailable' | 'unknown' {
+export function programCreateError(error: any): 'payload' | 'unavailable' | 'access' | 'unknown' {
 	for (const item of error?.graphQLErrors ?? []) {
+		if (item.message === 'Program owner is not authorized to use this Gym') return 'access';
 		const reason = item.extensions?.reason ?? item.extensions?.originalError?.reason;
 		if (reason === 'PROGRAM_CREATE_PAYLOAD_CONFLICT' || item.message === 'This create request belongs to a different Program submission.')
 			return 'payload';
@@ -334,4 +335,13 @@ export function programPayload(input: ProgramInput, updating = false): ProgramIn
 			: {}),
 		...(input.programDesc?.trim() ? { programDesc: input.programDesc.trim() } : updating ? { programDesc: null } : {}),
 	};
+}
+
+export function programUpdatePayload(input: ProgramInput, original: ProgramInput): Partial<ProgramInput> {
+	const payload: Partial<ProgramInput> = programPayload(input, true);
+	const baseline = programPayload(original, true);
+	for (const field of ['gymId', 'programLocation', 'programAddress'] as const) {
+		if (payload[field] === baseline[field]) delete payload[field];
+	}
+	return payload;
 }

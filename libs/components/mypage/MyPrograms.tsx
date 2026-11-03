@@ -22,6 +22,7 @@ import { getAuthSessionId } from '../../auth';
 import { REACT_APP_API_URL } from '../../config';
 import { ProgramStatus } from '../../enums/program.enum';
 import { readTrainerProgramsInquiry } from '../../program';
+import { findApprovedProgramGym } from '../../program-gym';
 import { trainerReservationsAccess } from '../../trainer-reservations';
 import { TrainerProgramsInquiry } from '../../types/program/program.input';
 import { Program, Programs } from '../../types/program/program';
@@ -49,6 +50,7 @@ function ManagementProgramImage({ program }: { program: Program }) {
 
 function ProgramsContent({ memberId, sessionIdentity }: { memberId: string; sessionIdentity: string }) {
 	const { t } = useTranslation('common');
+	const { t: gymT } = useTranslation('gyms');
 	const router = useRouter();
 	const client = useApolloClient();
 	const [updateProgram] = useMutation(UPDATE_PROGRAM);
@@ -63,6 +65,8 @@ function ProgramsContent({ memberId, sessionIdentity }: { memberId: string; sess
 	const [feedback, setFeedback] = useState('');
 	const [confirmation, setConfirmation] = useState<{ program: Program; status: ProgramStatus } | null>(null);
 	const [pending, setPending] = useState('');
+	const [resumeAccess, setResumeAccess] = useState<{ confirmation: typeof confirmation; status: 'approved' | 'unavailable' | 'error' } | null>(null);
+	const [approvalRetry, setApprovalRetry] = useState(0);
 	const mounted = useRef(false);
 	const request = useRef(0);
 	const currentInput = useRef<TrainerProgramsInquiry>(input);
@@ -82,6 +86,17 @@ function ProgramsContent({ memberId, sessionIdentity }: { memberId: string; sess
 			getAuthSessionId() === sessionIdentity,
 		[memberId, sessionIdentity],
 	);
+	const needsApproval = confirmation?.status === ProgramStatus.ACTIVE && Boolean(confirmation.program.gymId);
+	const approvalStatus = resumeAccess?.confirmation === confirmation ? resumeAccess?.status : undefined;
+	const resumeBlocked = needsApproval && approvalStatus !== 'approved';
+	useEffect(() => {
+		let current = true;
+		setResumeAccess(null);
+		if (needsApproval && confirmation) void findApprovedProgramGym(client, confirmation.program.gymId!, () => current && activeAccount())
+			.then((gym) => { if (current && activeAccount()) setResumeAccess({ confirmation, status: gym ? 'approved' : 'unavailable' }); })
+			.catch(() => { if (current && activeAccount()) setResumeAccess({ confirmation, status: 'error' }); });
+		return () => { current = false; };
+	}, [client, confirmation, needsApproval, activeAccount, approvalRetry]);
 
 	/** APOLLO REQUESTS **/
 	const refetchPrograms = useCallback(
@@ -195,6 +210,7 @@ function ProgramsContent({ memberId, sessionIdentity }: { memberId: string; sess
 	};
 	const confirm = async () => {
 		if (
+			resumeBlocked ||
 			!activeAccount() ||
 			!confirmation ||
 			!actionLock.current ||
@@ -220,7 +236,8 @@ function ProgramsContent({ memberId, sessionIdentity }: { memberId: string; sess
 				context: { handleErrorLocally: true },
 			});
 		} catch (error: any) {
-			outcome = error?.networkError || !error?.graphQLErrors?.length ? 'Uncertain' : 'Mutation error';
+			outcome = error?.graphQLErrors?.some((item: any) => item.message === 'Program owner is not authorized to use this Gym')
+				? 'Gym access' : error?.networkError || !error?.graphQLErrors?.length ? 'Uncertain' : 'Mutation error';
 		}
 		if (!activeAccount()) return;
 		// Read after every attempt. Never repeat an uncertain write.
@@ -285,7 +302,7 @@ function ProgramsContent({ memberId, sessionIdentity }: { memberId: string; sess
 				<section className="trainer-programs-collection" aria-label={t('Trainer programs.Title')} aria-busy={busy}>
 					{feedback && (
 						<p className="trainer-programs-feedback" role="status">
-							{t(`Trainer programs.${feedback}`)}
+							{feedback === 'Gym access' ? gymT('venue.accessError') : t(`Trainer programs.${feedback}`)}
 						</p>
 					)}
 					{loading && (
@@ -435,13 +452,18 @@ function ProgramsContent({ memberId, sessionIdentity }: { memberId: string; sess
 						{t(`Trainer programs.${action} description`)}
 					</DialogContentText>
 					<p className="trainer-program-confirm-name">{confirmation?.program.programName}</p>
+					{resumeBlocked && <div aria-live="polite">
+						<p role={approvalStatus === 'error' ? 'alert' : 'status'}>{gymT(!approvalStatus ? 'venue.checking' : approvalStatus === 'error' ? 'venue.checkError' : 'venue.resumeBlocked')}</p>
+						{approvalStatus === 'error' && <Button onClick={() => setApprovalRetry((value) => value + 1)}>{gymT('retry')}</Button>}
+						<Link href="/mypage?category=gymAccess">{gymT('venue.manage')}</Link>
+					</div>}
 				</DialogContent>
 				<DialogActions>
 					<Button disabled={Boolean(pending)} onClick={cancel}>
 						{t('Trainer programs.Cancel')}
 					</Button>
 					<Button
-						disabled={Boolean(pending)}
+						disabled={Boolean(pending) || resumeBlocked}
 						className={action === 'Delete' ? 'is-destructive' : ''}
 						onClick={() => void confirm()}
 					>

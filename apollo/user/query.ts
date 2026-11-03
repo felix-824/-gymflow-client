@@ -1,5 +1,14 @@
 import { gql } from '@apollo/client';
 
+export const GET_MY_APPROVED_GYMS = gql`
+	query GetMyApprovedGyms($input: TrainerApprovedGymsInquiry!) {
+		getMyApprovedGyms(input: $input) {
+			list { _id gymName gymLocation gymAddress }
+			metaCounter { total }
+		}
+	}
+`;
+
 export const GET_MY_TRAINER_GYM_ACCESSES = gql`
 	query GetMyTrainerGymAccesses($input: MyTrainerGymAccessesInquiry!) {
 		getMyTrainerGymAccesses(input: $input) {

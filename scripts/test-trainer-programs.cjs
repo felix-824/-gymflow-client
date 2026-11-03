@@ -14,6 +14,7 @@ const pass = (name) => {
 function loadTs(file, mocks = {}, cache = new Map()) {
 	file = path.resolve(file);
 	if (cache.has(file)) return cache.get(file);
+	if (file.endsWith('.json')) return { __esModule: true, default: JSON.parse(fs.readFileSync(file, 'utf8')) };
 	const code = ts.transpileModule(fs.readFileSync(file, 'utf8'), {
 		fileName: file,
 		compilerOptions: {
@@ -30,6 +31,7 @@ function loadTs(file, mocks = {}, cache = new Map()) {
 		if (name.endsWith('.css') || name.startsWith('swiper/css')) return {};
 		if (name.startsWith('.')) {
 			const resolved = path.resolve(path.dirname(file), name);
+			if (resolved.endsWith('.json')) return loadTs(resolved, mocks, cache);
 			return loadTs(fs.existsSync(resolved + '.ts') ? resolved + '.ts' : resolved + '.tsx', mocks, cache);
 		}
 		return require(name);
@@ -47,11 +49,12 @@ async function staticChecks() {
 			locale,
 			{
 				common: JSON.parse(fs.readFileSync(path.join(__dirname, '../public/locales', locale, 'common.json'), 'utf8')),
+				gyms: JSON.parse(fs.readFileSync(path.join(__dirname, '../public/locales', locale, 'gyms.json'), 'utf8')),
 			},
 		]),
 	);
 	const i18n = require('i18next').createInstance();
-	await i18n.init({ resources, lng: 'en', defaultNS: 'common', ns: ['common'], initImmediate: false });
+	await i18n.init({ resources, lng: 'en', defaultNS: 'common', ns: ['common', 'gyms'], initImmediate: false });
 	for (const locale of ['en', 'kr', 'ru']) {
 		assert.deepEqual(
 			Object.keys(resources[locale].common['Trainer programs']).sort(),
@@ -254,7 +257,7 @@ async function integration({ i18n, resources }) {
 			'next/link': { __esModule: true, default: link },
 			'next/head': noop,
 			'next/image': { __esModule: true, default: (props) => React.createElement('img', props) },
-			'next-i18next': { useTranslation: () => ({ t: i18n.getFixedT(router.locale) }) },
+			'next-i18next': { useTranslation: (namespace) => ({ t: i18n.getFixedT(router.locale, namespace) }) },
 			'next-i18next/serverSideTranslations': { serverSideTranslations: async () => ({}) },
 			'@mui/material': {
 				...require('@mui/material'),
