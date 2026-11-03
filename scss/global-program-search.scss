@@ -100,7 +100,7 @@
 			height: 2px;
 			background: transparent;
 		}
-		&:focus-within::after { background: #eb6753; }
+		&:focus-within::after { background: #a53425; width: calc(100% - 48px); }
 	}
 	.global-search-name { padding-left: 8px; &::after { left: 8px; } }
 	.MuiInputLabel-root {
@@ -161,7 +161,7 @@
 				height: 2px;
 				background: transparent;
 			}
-			&:focus-within::after { background: #eb6753; }
+			&:focus-within::after { background: #a53425; width: 100%; }
 		}
 		.MuiInputLabel-root {
 			position: static;

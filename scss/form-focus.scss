@@ -1,0 +1,77 @@
+// Text controls own one focus boundary. Important declarations here arbitrate
+// legacy page-wide focus rings without changing their buttons/radios/links.
+:root {
+	--gymflow-form-focus: #a53425;
+	--gymflow-form-error: #ba1a1a;
+}
+
+// Native text-like controls: the 2px inset outline covers the existing edge,
+// forming one continuous coral boundary without changing border-box dimensions.
+input:is(:not([type]), [type='text'], [type='search'], [type='email'], [type='password'], [type='tel'], [type='url'], [type='number'], [type='date'], [type='time'], [type='datetime-local'], [type='month'], [type='week']):not(.MuiInputBase-input),
+select:not(.MuiInputBase-input),
+textarea:not(.MuiInputBase-input) {
+	&:focus:not(:disabled) {
+		border-color: var(--gymflow-form-focus) !important;
+		outline: 2px solid var(--gymflow-form-focus) !important;
+		outline-offset: -2px !important;
+		box-shadow: none !important;
+		&[aria-invalid='true'],
+		&:user-invalid {
+			border-color: var(--gymflow-form-error) !important;
+			outline-color: var(--gymflow-form-error) !important;
+		}
+	}
+}
+
+// Outlined MUI fields own their boundary on the notched fieldset, including
+// multiline inputs and Select's focusable div. Keep MUI error/disabled states.
+.MuiOutlinedInput-root {
+	&.Mui-focused:not(.Mui-disabled) {
+		outline: none !important;
+		box-shadow: none !important;
+		.MuiOutlinedInput-notchedOutline {
+			border-color: var(--gymflow-form-focus) !important;
+		}
+		&.Mui-error .MuiOutlinedInput-notchedOutline {
+			border-color: #d32f2f !important;
+		}
+	}
+	.MuiInputBase-input:focus {
+		outline: none !important;
+		box-shadow: none !important;
+	}
+}
+
+// Borderless inner controls delegate focus to their existing composite wrapper.
+:is(.editor-number-control, .user-profile-field > div, .trainer-profile-field
+		> div, .trainer-search-input, .gym-name-search, .help-search, .leave-review-text) {
+	&:focus-within {
+		border-color: var(--gymflow-form-focus) !important;
+		outline: 2px solid var(--gymflow-form-focus) !important;
+		outline-offset: -2px !important;
+		box-shadow: none !important;
+	}
+	:is(input, textarea):not(.MuiInputBase-input):focus:not(:disabled) {
+		border-color: transparent !important;
+		outline: none !important;
+		box-shadow: none !important;
+	}
+	&:has([aria-invalid='true']:focus, :user-invalid:focus) {
+		border-color: var(--gymflow-form-error) !important;
+		outline-color: var(--gymflow-form-error) !important;
+	}
+}
+
+@media (forced-colors: active) {
+	:root {
+		--gymflow-form-focus: Highlight;
+		--gymflow-form-error: CanvasText;
+	}
+	.MuiOutlinedInput-root.Mui-focused.Mui-error .MuiOutlinedInput-notchedOutline {
+		border-color: CanvasText !important;
+	}
+	.global-program-search-form .MuiFormControl-root:focus-within::after {
+		background: Highlight !important;
+		forced-color-adjust: none;
+	}
+}
