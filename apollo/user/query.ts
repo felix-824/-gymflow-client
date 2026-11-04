@@ -74,6 +74,7 @@ export const GET_TRAINER_RESERVATIONS = gql`
 				programId
 				createdAt
 				updatedAt
+				venueSnapshot { gymId gymName programLocation programAddress }
 				programData { _id programName programImages programType programLocation programAddress }
 				memberData { _id memberFullName memberNick memberImage }
 			}
@@ -98,6 +99,7 @@ export const GET_MY_RESERVATIONS = gql`
 				programId
 				createdAt
 				updatedAt
+				venueSnapshot { gymId gymName programLocation programAddress }
 				programData {
 					_id
 					programName

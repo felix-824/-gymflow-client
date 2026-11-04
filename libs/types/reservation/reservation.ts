@@ -32,6 +32,13 @@ export interface ReservationTrainerSummary {
 	memberImage: string;
 }
 
+export interface ReservationVenueSnapshot {
+	readonly gymId: string | null;
+	readonly gymName: string | null;
+	readonly programLocation: ProgramLocation;
+	readonly programAddress: string;
+}
+
 export interface MyReservation extends ReservationReceipt {
 	reviewId?: string | null;
 	specialRequest?: string | null;
@@ -39,6 +46,7 @@ export interface MyReservation extends ReservationReceipt {
 	trainerId: string;
 	createdAt: string;
 	updatedAt: string;
+	readonly venueSnapshot?: ReservationVenueSnapshot | null;
 	programData?: ReservationProgramSummary | null;
 	trainerData?: ReservationTrainerSummary | null;
 }

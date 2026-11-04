@@ -23,7 +23,7 @@ import { formatBookingDate } from '../../booking';
 import { REACT_APP_API_URL } from '../../config';
 import { ReservationPeriod } from '../../enums/reservation-query.enum';
 import { ReservationStatus } from '../../enums/reservation.enum';
-import { ProgramLocation, ProgramType } from '../../enums/program.enum';
+import { ProgramLocation } from '../../enums/program.enum';
 import { lastReservationPage, reservationTotal } from '../../my-bookings';
 import {
 	readTrainerReservationsQuery,
@@ -62,14 +62,16 @@ function ReservationRow({
 	processing?: ReservationAction | null;
 	onAction: (reservation: TrainerReservation, status: ReservationStatus) => void;
 }) {
-	const { t } = useTranslation('common');
+	const { t } = useTranslation(['common', 'reservation-venue']);
 	const { locale = 'en' } = useRouter();
 	const { memberData: member, programData: program } = reservation;
 	const name =
 		member?.memberFullName?.trim() || member?.memberNick?.trim() || t('Trainer reservations.Missing client') || '';
 	const request = reservation.specialRequest?.trim();
-	const online = program?.programType === ProgramType.ONLINE || program?.programLocation === ProgramLocation.ONLINE;
-	const address = !online ? program?.programAddress?.trim() : '';
+	const venue = reservation.venueSnapshot;
+	const location = venue ? t(venue.programLocation) : t('reservation-venue:Unavailable');
+	const gymName = venue?.gymName?.trim();
+	const address = venue && venue.programLocation !== ProgramLocation.ONLINE ? venue.programAddress.trim() : '';
 	const date = formatBookingDate(reservation.reservationDate, locale, {
 		weekday: 'short',
 		month: 'short',
@@ -131,13 +133,14 @@ function ReservationRow({
 								<span className="trainer-reservation-desktop-type" aria-hidden="true">
 									·
 								</span>
-								<LocationOnOutlinedIcon aria-hidden="true" />
-								<span>
-									{t(online ? 'ONLINE' : program.programLocation)}
-									{address && ` · ${address}`}
-								</span>
 							</>
 						)}
+						<LocationOnOutlinedIcon aria-hidden="true" />
+						<span>
+							{gymName && `${gymName} · `}
+							{location}
+							{address && ` · ${address}`}
+						</span>
 					</div>
 				</td>
 				<td className="trainer-reservation-status">

@@ -22,7 +22,7 @@ import { authErrorVar, authReadyVar, userVar } from '../../../apollo/store';
 import { getJwtToken, updateUserInfo } from '../../auth';
 import { formatBookingDate } from '../../booking';
 import { REACT_APP_API_URL } from '../../config';
-import { ProgramLocation, ProgramType } from '../../enums/program.enum';
+import { ProgramLocation } from '../../enums/program.enum';
 import { ReservationPeriod } from '../../enums/reservation-query.enum';
 import { ReservationStatus } from '../../enums/reservation.enum';
 import {
@@ -87,14 +87,15 @@ function ReservationCard({
 	now: number;
 	onCancel: (reservation: MyReservation) => void;
 }) {
-	const { t } = useTranslation('common');
+	const { t } = useTranslation(['common', 'reservation-venue']);
 	const { locale = 'en', query } = useRouter();
 	const { programData: program, trainerData: trainer } = reservation;
 	const name = program?.programName || t('MyBookings.Missing program') || '';
 	const trainerName = trainer?.memberFullName || trainer?.memberNick || t('MyBookings.Missing trainer');
-	const online = program?.programType === ProgramType.ONLINE || program?.programLocation === ProgramLocation.ONLINE;
-	const location = program ? t(online ? 'ONLINE' : program.programLocation) : '';
-	const address = !online ? program?.programAddress?.trim() : '';
+	const venue = reservation.venueSnapshot;
+	const location = venue ? t(venue.programLocation) : t('reservation-venue:Unavailable');
+	const gymName = venue?.gymName?.trim();
+	const address = venue && venue.programLocation !== ProgramLocation.ONLINE ? venue.programAddress.trim() : '';
 	const specialRequest = reservation.specialRequest?.trim();
 	const date = formatBookingDate(reservation.reservationDate, locale, {
 		weekday: 'short',
@@ -132,6 +133,7 @@ function ReservationCard({
 						<>
 							<LocationOnOutlinedIcon aria-hidden="true" />
 							<p>
+								{gymName && <>{gymName} · </>}
 								{location}
 								{address && <span>{address}</span>}
 							</p>

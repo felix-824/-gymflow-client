@@ -38,10 +38,10 @@ import { adminWorkspaceLabels } from '../../libs/admin-workspace-labels';
 import { sweetErrorHandling, sweetMixinErrorAlert, sweetTopSmallSuccessAlert } from '../../libs/sweetAlert';
 
 export const getStaticProps = async ({ locale }: any) => {
-	if (process.env.NODE_ENV === 'development') await i18n?.reloadResources(locale, ['trainer-application', 'trainer-gym-access', 'gyms']);
+	if (process.env.NODE_ENV === 'development') await i18n?.reloadResources(locale, ['trainer-application', 'trainer-gym-access', 'gyms', 'reservation-venue']);
 	return {
 		props: {
-			...(await serverSideTranslations(locale, ['common', 'trainer-application', 'trainer-gym-access', 'gyms'])),
+			...(await serverSideTranslations(locale, ['common', 'trainer-application', 'trainer-gym-access', 'gyms', 'reservation-venue'])),
 		},
 	};
 };

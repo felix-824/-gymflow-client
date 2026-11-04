@@ -395,8 +395,11 @@ const { fixtureAccessToken } = require(path.join(backend, 'apps/gymflow-api/test
 		const { ApolloClient, ApolloProvider, InMemoryCache, HttpLink } = require('@apollo/client');
 		const store = loadTs(path.join(__dirname, '../apollo/store.ts'));
 		const texts = JSON.parse(fs.readFileSync(path.join(__dirname, '../public/locales/en/common.json'), 'utf8'));
+		const venueTexts = JSON.parse(fs.readFileSync(path.join(__dirname, '../public/locales/en/reservation-venue.json'), 'utf8'));
 		const t = (key, values = {}) => {
-			const value = key.split('.').reduce((a, k) => a?.[k], texts) || key;
+			const value = key.startsWith('reservation-venue:')
+				? venueTexts[key.split(':')[1]] || key
+				: key.split('.').reduce((a, k) => a?.[k], texts) || key;
 			return value.replace(/{{(\w+)}}/g, (_, k) => values[k] ?? '');
 		};
 		let fault = '',
@@ -676,10 +679,14 @@ const { fixtureAccessToken } = require(path.join(backend, 'apps/gymflow-api/test
 		await until(() => text().includes(texts.MyBookings['Cancel success']) && !row(pending[4]._id));
 		pass('unresolved outcome blocks additional cancellation until read Retry verifies the real cancelled record');
 		await programs.collection.updateOne({ _id: program._id }, { $unset: { programAddress: 1 } });
-		window.dispatchEvent(new window.Event('focus'));
-		await until(() => !text().includes('Fixture room'));
-		assert.ok(text().includes('Seoul'));
-		pass('missing physical address has no invented substitute');
+		await client.refetchQueries({ include: ['GetMyReservations'] });
+		const venues = [...document.querySelectorAll('.my-bookings-location')];
+		assert.ok(venues.length > 0);
+		for (const venue of venues) {
+			assert.ok(venue.textContent.includes(venueTexts.Unavailable));
+			assert.ok(!venue.textContent.includes('Seoul') && !venue.textContent.includes('Fixture room'));
+		}
+		pass('legacy null snapshot stays unavailable when the current Program address changes');
 		await reservations.deleteMany({ memberId: user._id });
 		window.dispatchEvent(new window.Event('focus'));
 		await until(() => text().includes(texts.MyBookings['No upcoming']));
