@@ -2,7 +2,8 @@ import { useMemo } from 'react';
 import { ApolloClient, ApolloLink, HttpLink, InMemoryCache, from, NormalizedCacheObject, Observable } from '@apollo/client';
 import createUploadLink from 'apollo-upload-client/public/createUploadLink.js';
 import { onError } from '@apollo/client/link/error';
-import { ensureAccessToken, getAuthGeneration, getJwtToken, invalidateSession, isAuthenticationError, updateUserInfo } from '../libs/auth';
+import { ensureAccessToken, getAuthGeneration, getJwtToken, invalidateSession, isAuthenticationError, renewExpiredAccessToken, updateUserInfo } from '../libs/auth';
+import { isAccessExpiry, isPublicQuery, isRetryableQuery } from './auth-policy';
 import { sweetErrorAlert } from '../libs/sweetAlert';
 import { getApiGraphqlUrl } from '../libs/config';
 let apolloClient: ApolloClient<NormalizedCacheObject>;
@@ -15,36 +16,65 @@ function createIsomorphicLink() {
 		let stopped = false;
 		let subscription: { unsubscribe(): void } | undefined;
 		const current = () => !stopped && generation === getAuthGeneration();
+		const publicQuery = isPublicQuery(operation.query, operation.operationName);
+		const fail = (error: unknown) => { if (!stopped) observer.error(error); };
+		const actionRequired = () => Object.assign(
+			new Error('Your session was renewed. Check the result before trying again.'),
+			{ code: 'AUTH_ACTION_RETRY_REQUIRED' },
+		);
+		const dispatch = (token: string, retried = false) => {
+			if (!current()) { fail(new Error('Authentication session changed')); return; }
+			let recovering = false;
+			operation.setContext(({ headers = {} }) => ({
+				authGeneration: generation,
+				headers: {
+					...Object.fromEntries(Object.entries(headers).filter(([name]) => name.toLowerCase() !== 'authorization')),
+					'Apollo-Require-Preflight': 'true', ...(token ? { Authorization: 'Bearer ' + token } : {}),
+				},
+			}));
+			subscription = forward(operation).subscribe({
+				next: (result) => {
+					if (!current()) { observer.error(new Error('Authentication session changed')); return; }
+					if (!operation.getContext().skipAuth && !operation.getContext().skipRefresh && token && isAccessExpiry(result.errors)) {
+						recovering = true;
+						if (retried) { fail(actionRequired()); return; }
+						void renewExpiredAccessToken(token).then((renewed) => {
+							if (!current()) throw new Error('Authentication session changed');
+							if (result.data == null && isRetryableQuery(operation.query, operation.operationName)) dispatch(renewed, true);
+							else fail(actionRequired()); // Never replay mutations, partial results, or queries with side effects.
+						}).catch(fail);
+						return;
+					}
+					if (!operation.getContext().skipAuth && isAuthenticationError({ graphQLErrors: result.errors })) {
+						void invalidateSession();
+						observer.error(Object.assign(new Error('Please sign in again'), { graphQLErrors: result.errors }));
+						return;
+					}
+					// An anonymous response must not overwrite a newly restored identity's personalization.
+					if (publicQuery && !result.errors?.length && !token && getJwtToken() && !retried && !operation.getContext().skipAuth) {
+						recovering = true;
+						void ensureAccessToken().then((renewed) => {
+							if (!current()) throw new Error('Authentication session changed');
+							dispatch(renewed, true);
+						}).catch(fail);
+						return;
+					}
+					// Fence before Apollo sees the result, including cache-writing mutations.
+					if (current()) observer.next(result);
+				},
+				error: (error) => {
+					if (!current()) { observer.error(new Error('Authentication session changed')); return; }
+					if (!operation.getContext().skipAuth && isAuthenticationError({ networkError: error })) void invalidateSession();
+					observer.error(error);
+				},
+				complete: () => { if (!recovering) observer.complete(); },
+			});
+		};
 		void (async () => {
 			try {
 				const token = operation.getContext().skipAuth ? '' : operation.getContext().skipRefresh
-					? getJwtToken() : await ensureAccessToken();
-				if (!current()) throw new Error('Authentication session changed');
-				operation.setContext(({ headers = {} }) => ({
-					authGeneration: generation,
-					headers: {
-						...Object.fromEntries(Object.entries(headers).filter(([name]) => name.toLowerCase() !== 'authorization')),
-						'Apollo-Require-Preflight': 'true', ...(token ? { Authorization: 'Bearer ' + token } : {}),
-					},
-				}));
-				subscription = forward(operation).subscribe({
-					next: (result) => {
-						if (!current()) { observer.error(new Error('Authentication session changed')); return; }
-						if (!operation.getContext().skipAuth && isAuthenticationError({ graphQLErrors: result.errors })) {
-							void invalidateSession();
-							observer.error(Object.assign(new Error('Please sign in again'), { graphQLErrors: result.errors }));
-							return;
-						}
-						// Fence before Apollo sees the result, including cache-writing mutations.
-						if (current()) observer.next(result);
-					},
-					error: (error) => {
-						if (!current()) { observer.error(new Error('Authentication session changed')); return; }
-						if (!operation.getContext().skipAuth && isAuthenticationError({ networkError: error })) void invalidateSession();
-						observer.error(error);
-					},
-					complete: () => observer.complete(),
-				});
+					? getJwtToken() : publicQuery && !getJwtToken() ? '' : await ensureAccessToken();
+				dispatch(token);
 			} catch (error) { if (!stopped) observer.error(error); }
 		})();
 		return () => { stopped = true; subscription?.unsubscribe(); };

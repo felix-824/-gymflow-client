@@ -163,6 +163,7 @@ async function logoutContract() {
 		'../config': loadTs(path.join(__dirname, '../libs/config.ts')),
 		'../enums/member.enum': loadTs(path.join(__dirname, '../libs/enums/member.enum.ts')),
 		'../../apollo/client': { initializeApollo: () => client },
+		'../../apollo/auth-policy': loadTs(path.join(__dirname, '../apollo/auth-policy.ts')),
 		'../../apollo/store': store,
 		'../../apollo/user/mutation': loadTs(path.join(__dirname, '../apollo/user/mutation.ts')),
 		'../../apollo/user/query': loadTs(path.join(__dirname, '../apollo/user/query.ts')),

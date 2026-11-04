@@ -334,11 +334,13 @@ async function integration() {
 		);
 		let confirmedLogout = false,
 			logoutCalls = 0;
+		let lastLogout = Promise.resolve();
 		const authExports = {
 			...auth,
 			logOut: (...args) => {
 				logoutCalls++;
-				return auth.logOut(...args);
+				lastLogout = auth.logOut(...args);
+				return lastLogout;
 			},
 		};
 		const sweet = {
@@ -506,6 +508,8 @@ async function integration() {
 			});
 		const writes = () => requests.filter((request) => request.operationName === 'UpdateMember');
 		const signIn = async (member) => {
+			// Fixture-only identity injection must respect the real explicit-login revocation ordering.
+			await lastLogout;
 			await auth.invalidateSession();
 			const jwtToken = token(member);
 			auth.setJwtToken(jwtToken);

@@ -83,6 +83,7 @@ async function main() {
 					ensureAccessToken: (...args) => auth.ensureAccessToken(...args), getAuthGeneration: () => auth.getAuthGeneration(),
 					getJwtToken: () => auth.getJwtToken(), invalidateSession: () => auth.invalidateSession(),
 					isAuthenticationError: (...args) => auth.isAuthenticationError(...args), updateUserInfo: (...args) => auth.updateUserInfo(...args),
+					renewExpiredAccessToken: (...args) => auth.renewExpiredAccessToken(...args),
 				}, '../libs/sweetAlert': { sweetErrorAlert: () => {} },
 			});
 			const client = clientModule.initializeApollo();

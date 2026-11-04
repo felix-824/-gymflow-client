@@ -55,7 +55,7 @@ const TrainerList: NextPage = ({ initialInput }: any) => {
 		error: getTrainersError,
 		refetch: getTrainersRefetch,
 	} = useQuery(GET_TRAINERS, {
-		skip: !router.isReady || !authReady,
+		skip: !router.isReady,
 		fetchPolicy: 'network-only',
 		variables: { input: searchFilter },
 		notifyOnNetworkStatusChange: true,

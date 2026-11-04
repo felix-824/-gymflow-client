@@ -10,6 +10,8 @@ import { MemberType } from '../enums/member.enum';
 import { LOGIN, SIGN_UP, REFRESH_SESSION, LOGOUT_SESSION } from '../../apollo/user/mutation';
 import { GET_MY_MEMBER } from '../../apollo/user/query';
 import { getApiGraphqlUrl } from '../config';
+import { NetworkStatus } from '@apollo/client';
+import { isPublicQuery } from '../../apollo/auth-policy';
 
 let accessToken = '';
 let sessionId = '';
@@ -133,6 +135,18 @@ export async function ensureAccessToken(required = false): Promise<string> {
 	if (required && !token) throw authFailure();
 	return token;
 }
+export async function renewExpiredAccessToken(rejectedToken: string): Promise<string> {
+	if (!rejectedToken || !accessToken || localStorage.getItem(logoutPendingKey) || signingOut)
+		throw authFailure();
+	// Late expiry responses from one cohort reuse the credential already renewed by that cohort.
+	if (accessToken !== rejectedToken) {
+		try { tokenClaims(accessToken); return accessToken; }
+		catch { /* The newer credential also expired while this response was in flight. */ }
+	}
+	const token = await refreshAccessToken();
+	if (!token) throw authFailure();
+	return token;
+}
 function applyOwner(member: OwnerMember): void {
 	const { accessToken: ignoredCredential, ...profile } = member;
 	const next = {
@@ -140,10 +154,22 @@ function applyOwner(member: OwnerMember): void {
 		memberImage: member.memberImage ?? '', memberAddress: member.memberAddress ?? '',
 		memberDesc: member.memberDesc ?? '', memberFullName: member.memberFullName ?? '',
 	};
+	const identityChanged = next._id !== userVar()._id;
 	if (JSON.stringify(next) !== JSON.stringify(userVar())) userVar(next);
 	authErrorVar('');
 	authReadyVar(true);
 	bootstrapped = true;
+	if (identityChanged) {
+		// Replace anonymous discovery personalization without refetching private forms.
+		void initializeApollo().refetchQueries?.({
+			include: 'active',
+			onQueryUpdated: (query) => isPublicQuery(query.options.query)
+				? query.reobserve({
+					fetchPolicy: 'network-only',
+					context: { ...query.options.context, queryDeduplication: false },
+				}, NetworkStatus.refetch) : false,
+		}).catch(() => undefined);
+	}
 }
 export const updateUserInfo = (_legacyToken?: string, member?: OwnerMember): Promise<void> => {
 	if (typeof window === 'undefined') return Promise.resolve();

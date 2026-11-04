@@ -204,7 +204,12 @@ async function createFixture(options = {}) {
 			imports: [
 				MongooseModule.forRoot(mongoUri),
 				ComponentsModule,
-				GraphQLModule.forRoot({ driver: ApolloDriver, autoSchemaFile: true, context: ({ req, res }) => ({ req, res }) }),
+				GraphQLModule.forRoot({
+					driver: ApolloDriver, autoSchemaFile: true, context: ({ req, res }) => ({ req, res }),
+					...(options.productionErrors ? {
+						formatError: (formatted, original) => require(path.join(backend, 'apps/gymflow-api/src/libs/graphql.config.ts')).formatGraphqlError(formatted, original, true),
+					} : {}),
+				}),
 			],
 		})
 			.overrideProvider(JwtService)

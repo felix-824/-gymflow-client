@@ -52,7 +52,7 @@ const TrainerDetail: NextPage = () => {
 	} = useQuery(GET_MEMBER, {
 		fetchPolicy: 'network-only',
 		variables: { input: trainerId },
-		skip: !router.isReady || !validTrainerId || !authReady,
+		skip: !router.isReady || !validTrainerId,
 		notifyOnNetworkStatusChange: true,
 	});
 	const trainer: PublicMember | null = data?.getMember?._id === trainerId ? data.getMember : null;
