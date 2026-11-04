@@ -153,6 +153,7 @@ async function integration() {
 			}),
 		});
 		const auth = loadTs(path.join(__dirname, '../libs/auth/index.ts'), {
+			'next/router': { __esModule: true, default: { replace: (href) => router.replace(href) } },
 			'../../apollo/client': { initializeApollo: () => client },
 			'../../apollo/store': store,
 		});
@@ -386,14 +387,14 @@ async function integration() {
 					texts['Trainer schedule'][active],
 			);
 			for (const selector of ['.schedule-desktop-navigation', '.schedule-mobile-navigation']) {
-				assert.equal(document.querySelectorAll(selector + ' a').length, 5);
+				assert.equal(document.querySelectorAll(selector + ' a').length, 6);
 				assert.equal(
 					document.querySelector(selector + ' a[aria-current="page"]').textContent,
 					texts['Trainer schedule'][active],
 				);
 			}
 		}
-		pass('shared desktop/mobile five-item workspace navigation preserves every destination and active state');
+		pass('shared desktop/mobile six-item workspace navigation preserves every destination and active state');
 		const customer = await members.create({
 			memberNick: 'Promoted profile customer', memberPhone: 'profile-history-customer',
 			memberPassword: 'fixture', memberType: 'USER',
@@ -434,7 +435,7 @@ async function integration() {
 				assert.equal(window.getComputedStyle(target).display, 'inline-flex');
 				assert.equal(window.getComputedStyle(target).minHeight, '44px');
 				for (const selector of ['.schedule-desktop-navigation', '.schedule-mobile-navigation']) {
-					assert.equal(document.querySelectorAll(selector + ' a').length, 5);
+					assert.equal(document.querySelectorAll(selector + ' a').length, 6);
 					assert.ok(document.querySelector(selector + ' a[href*="category=trainerReservations"]'));
 					assert.ok(!document.querySelector(selector + ' a[href*="category=myBookings"]'));
 				}
@@ -545,11 +546,14 @@ async function integration() {
 		assert.equal(window.localStorage.getItem('accessToken'), null);
 		assert.equal(store.userVar()._id, '');
 		pass('real centralized logout confirmation, token clearing and removal of trainer content');
+		await until(() => router.pathname === '/');
 		await signIn(admin);
+		router.pathname = router.asPath = '/mypage';
 		for (mobile of [false, true]) {
 			router.query = { category: 'myProfile' };
 			render();
-			await until(() => adminDestinations.at(-1) === '/_admin');
+			await until(() => adminDestinations.at(-1) === '/_admin' &&
+				!document.querySelector('#my-profile-page, .trainer-profile-layout, [data-test="legacy-top"]'));
 			assert.ok(!document.querySelector('#my-profile-page, .trainer-profile-layout, [data-test="legacy-top"]'));
 		}
 		await signIn(user);

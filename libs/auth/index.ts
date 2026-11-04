@@ -1,7 +1,8 @@
 import decodeJWT from 'jwt-decode';
+import Router from 'next/router';
 import { print } from 'graphql';
 import { initializeApollo } from '../../apollo/client';
-import { authErrorVar, authReadyVar, emptyUser, userVar } from '../../apollo/store';
+import { authErrorVar, authReadyVar, emptyUser, logoutInProgressVar, userVar } from '../../apollo/store';
 import { CustomJwtPayload } from '../types/customJwtPayload';
 import { OwnerMember } from '../types/member/member';
 import { MemberInput } from '../types/member/member.input';
@@ -226,15 +227,18 @@ export const signUp = async (
 	};
 	await authenticate(SIGN_UP, input, 'signup', context);
 };
-export const logOut = async (options: { redirectToPublic?: boolean } = {}): Promise<boolean> => {
-	const isUser = Boolean(userVar()._id) && userVar().memberType === 'USER';
-	localStorage.setItem(logoutPendingKey, '1');
-	signal('logout');
-	const clearing = invalidateSession();
-	const current = generation;
-	let cacheCleared = true;
-	await clearing.catch(() => { cacheCleared = false; });
+export const logOut = async (_options: { redirectToPublic?: boolean } = {}): Promise<boolean> => {
+	if (logoutInProgressVar()) return false;
+	// Publish before invalidation so the app unmounts protected pages during cleanup/navigation.
+	logoutInProgressVar(true);
+	let current = generation;
 	try {
+		localStorage.setItem(logoutPendingKey, '1');
+		signal('logout');
+		const clearing = invalidateSession();
+		current = generation;
+		let cacheCleared = true;
+		await clearing.catch(() => { cacheCleared = false; });
 		await withAuthLock(() => {
 			if (generation !== current) throw new Error('Authentication session changed');
 			return authRequest('logoutSession');
@@ -242,13 +246,19 @@ export const logOut = async (options: { redirectToPublic?: boolean } = {}): Prom
 		if (generation !== current) return true;
 		localStorage.removeItem(logoutPendingKey);
 		if (!cacheCleared) { authErrorVar('Signed out. Please reload to finish clearing your session.'); return false; }
-		if (isUser || options.redirectToPublic) window.location.replace('/');
-		else window.location.reload();
+		try {
+			if (!(await Router.replace('/'))) throw new Error('Navigation cancelled');
+		} catch {
+			if (generation === current) authErrorVar('Signed out. Could not open Home. Please retry navigation.');
+			return false;
+		}
 		return true;
 	} catch {
 		if (generation !== current) return false;
 		authErrorVar('Could not confirm sign out. Please retry.');
 		return false;
+	} finally {
+		logoutInProgressVar(false);
 	}
 };
 export function handleAuthStorage(event: StorageEvent): void {

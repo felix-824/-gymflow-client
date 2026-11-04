@@ -88,6 +88,7 @@ async function main() {
 			const client = clientModule.initializeApollo();
 			clients.push(client);
 			auth = loadTs(path.join(__dirname, '../libs/auth/index.ts'), {
+				'next/router': { __esModule: true, default: { replace: async (href) => { navigation.push(href); return true; } } },
 				'../../apollo/client': clientModule, '../../apollo/store': store,
 				'../../apollo/user/query': queries, '../../apollo/user/mutation': mutations,
 			});

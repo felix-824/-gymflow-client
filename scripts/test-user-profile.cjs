@@ -212,7 +212,7 @@ function legacyNavigation() {
 		assert.equal(communityMemberHref(undefined, 'TRAINER', false, 'owner'), undefined);
 		inspect(AdminMenu, { router: { pathname: '/_admin/users' } }, (document) => {
 			const titles = [...document.querySelectorAll('.MuiListItemText-primary')].map((node) => node.textContent);
-			assert.deepEqual(titles, ['Users', 'Trainer Applications', 'Programs', 'Gyms', 'Community']);
+			assert.deepEqual(titles, ['Users', 'Trainer Applications', 'Gym Access Requests', 'Programs', 'Gyms', 'Community']);
 			assert(document.querySelector('a[href="/_admin/trainer-applications"]'));
 		});
 		const top = fs.readFileSync(path.join(__dirname, '../libs/components/Top.tsx'), 'utf8');
@@ -309,18 +309,14 @@ async function integration() {
 				},
 			}),
 		});
-		// JSDOM cannot navigate; observe the real helper's full-page navigation through a window facade.
+		// Observe the real helper's client-side replacement using the controlled router.
 		const auth = loadTs(
 			path.join(__dirname, '../libs/auth/index.ts'),
 			{
 				'../../apollo/client': { initializeApollo: () => client },
 				'../../apollo/store': store,
-			},
-			new Map(),
-			{
-				location: {
-					reload: () => dom.window.location.reload(),
-					replace: (href) => {
+				'next/router': { __esModule: true, default: {
+					replace: async (href) => {
 						assert.equal(window.localStorage.getItem('accessToken'), null);
 						assert.equal(store.userVar()._id, '');
 						assert.equal(store.authReadyVar(), true);
@@ -331,8 +327,9 @@ async function integration() {
 						router.query = {};
 						dom.reconfigure({ url: 'http://localhost' + href });
 						render();
+						return true;
 					},
-				},
+				} },
 			},
 		);
 		let confirmedLogout = false,

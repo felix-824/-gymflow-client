@@ -159,6 +159,7 @@ async function logoutContract() {
 	}).outputText;
 	const module = { exports: {} };
 	const mocks = {
+		'next/router': { __esModule: true, default: { replace: async (href) => { navigation.push(href); return true; } } },
 		'../config': loadTs(path.join(__dirname, '../libs/config.ts')),
 		'../enums/member.enum': loadTs(path.join(__dirname, '../libs/enums/member.enum.ts')),
 		'../../apollo/client': { initializeApollo: () => client },
@@ -197,7 +198,7 @@ async function logoutContract() {
 	release();
 	assert.equal(await pending, true);
 	assert.deepEqual(navigation, ['/']);
-	pass('central no-argument USER logout captures role before invalidation and waits for cache cleanup before Home');
+	pass('central no-argument USER logout waits for cache cleanup before replacing the route with Home');
 	clearCache = () => Promise.resolve();
 	for (const [memberType, id] of [
 		['TRAINER', 'a'.repeat(24)],
@@ -207,11 +208,11 @@ async function logoutContract() {
 	]) {
 		authenticate(memberType, id);
 		assert.equal(await auth.logOut(), true);
-		assert.deepEqual(navigation, ['reload']);
+		assert.deepEqual(navigation, ['/']);
 		assert.equal(storage.has('accessToken'), false);
 		assert.equal(store.userVar()._id, '');
 	}
-	pass('TRAINER, ADMIN and guest logout retain their existing reload behavior');
+	pass('TRAINER, ADMIN and guest logout replace the route with public Home');
 	authenticate('ADMIN');
 	assert.equal(await auth.logOut({ redirectToPublic: true }), true);
 	assert.deepEqual(navigation, ['/']);

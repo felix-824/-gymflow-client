@@ -3,6 +3,7 @@ import { ThemeProvider, createTheme } from '@mui/material/styles';
 import { CssBaseline } from '@mui/material';
 import React, { useEffect, useState } from 'react';
 import { handleAuthStorage, updateUserInfo } from '../libs/auth';
+import LogoutTransition from '../libs/components/auth/LogoutTransition';
 import { light } from '../scss/MaterialTheme';
 import { ApolloProvider } from '@apollo/client';
 import { useApollo } from '../apollo/client';
@@ -40,7 +41,9 @@ const App = ({ Component, pageProps }: AppProps) => {
 		<ApolloProvider client={client}>
 			<ThemeProvider theme={theme}>
 				<CssBaseline />
-				<Component {...pageProps} />
+				<LogoutTransition>
+					<Component {...pageProps} />
+				</LogoutTransition>
 			</ThemeProvider>
 		</ApolloProvider>
 	);

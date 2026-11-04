@@ -26,6 +26,7 @@ export const emptyUser: UserProfile = {
 export const userVar = makeVar<UserProfile>({ ...emptyUser });
 export const authReadyVar = makeVar(false);
 export const authErrorVar = makeVar('');
+export const logoutInProgressVar = makeVar(false);
 
 //@ts-ignore
 export const socketVar = makeVar<WebSocket>();
