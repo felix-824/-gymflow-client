@@ -192,6 +192,55 @@ async function main() {
 		const reload = harness(); await reload.auth.updateUserInfo(); assert.equal(reload.store.userVar()._id, '');
 		pass('logout during refresh cannot resurrect credentials; server revocation survives reload');
 		await login(h);
+		held = false; hold = 'LogoutSession';
+		const delayedLogout = h.auth.logOut();
+		await until(() => held && !h.store.logoutInProgressVar());
+		assert.equal(navigation.at(-1), '/'); assert.equal(h.auth.getJwtToken(), '');
+		assert(storage.has('gymflow.logoutPending'));
+		const refreshesWhilePending = count('RefreshSession'), revocationsWhilePending = count('LogoutSession');
+		await h.auth.updateUserInfo();
+		assert.equal(count('LogoutSession'), revocationsWhilePending, 'Focus must not duplicate the active logout');
+		const publicPrograms = require('@apollo/client').gql`query PublicLogoutHome($input: ProgramsInquiry!) {
+			getPrograms(input: $input) { list { _id } }
+		}`;
+		const publicResult = await h.client.query({ query: publicPrograms, variables: { input: { page: 1, limit: 3, search: {} } }, fetchPolicy: 'no-cache' });
+		assert(publicResult.data.getPrograms.list.length > 0);
+		assert.equal(new Headers(requests.at(-1).headers).get('authorization'), null);
+		assert.equal(await h.auth.ensureAccessToken(), '');
+		await assert.rejects(h.auth.ensureAccessToken(true), /awaiting confirmation/);
+		const pendingReload = harness();
+		assert.equal(await pendingReload.auth.ensureAccessToken(), '');
+		assert.equal(count('RefreshSession'), refreshesWhilePending);
+		release(); assert.equal(await delayedLogout, true);
+		await pendingReload.auth.updateUserInfo();
+		assert.equal(pendingReload.store.userVar()._id, '');
+		pass('Home public GraphQL reads remain anonymous before revocation acknowledgement; required auth, focus and reload cannot resurrect the session');
+		await login(h);
+		held = false; hold = 'LogoutSession';
+		const previousNavigator = Object.getOwnPropertyDescriptor(global, 'navigator');
+		Object.defineProperty(global, 'navigator', { configurable: true, value: {} });
+		try {
+			const pendingLogout = h.auth.logOut(); await until(() => held && !h.store.logoutInProgressVar());
+			const loginsBeforeAcknowledgement = count('Login');
+			const nextLogin = login(h, fixture.trainer);
+			await new Promise((resolve) => setImmediate(resolve));
+			assert.equal(count('Login'), loginsBeforeAcknowledgement);
+			assert.equal(h.auth.getJwtToken(), '');
+			release(); assert.equal(await pendingLogout, true); await nextLogin;
+			assert.equal(h.store.userVar()._id, String(fixture.trainer._id));
+		} finally { Object.defineProperty(global, 'navigator', previousNavigator); }
+		pass('explicit login waits for pending revocation even without Web Locks, preventing a late logout from clearing the new refresh cookie');
+		await login(h);
+		fail = 'LogoutSession';
+		assert.equal(await h.auth.logOut(), false);
+		assert.equal(navigation.at(-1), '/'); assert.equal(h.store.logoutInProgressVar(), false);
+		assert.equal(h.auth.getJwtToken(), ''); assert(storage.has('gymflow.logoutPending'));
+		assert.equal(await h.auth.ensureAccessToken(), '');
+		await assert.rejects(h.auth.ensureAccessToken(true), /awaiting confirmation/);
+		const recovery = harness(); await recovery.auth.updateUserInfo();
+		assert.equal(recovery.store.userVar()._id, ''); assert(!storage.has('gymflow.logoutPending'));
+		pass('uncertain logout transport leaves anonymous Home and pending refresh fence; reload retries revocation without restoring the owner');
+		await login(h);
 		held = false; hold = 'RefreshSession'; advance();
 		const obsolete = h.auth.ensureAccessToken().catch(() => '');
 		await until(() => held); resetClock();

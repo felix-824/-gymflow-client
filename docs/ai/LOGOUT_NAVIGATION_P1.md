@@ -1,6 +1,8 @@
 # P1 logout navigation
 
 November 4, 2026 (Asia/Seoul). Automated implementation; browser visual QA is pending.
+Historical record of `5ea1df4`; see [the follow-up](LOGOUT_TRANSITION_FOLLOWUP.md)
+for the current ordering that releases Home before revocation acknowledgement.
 Deployment rehearsal remains paused. Frontend starting HEAD: `fd8afbfd87cab738a92d354cf97067f16b4cd2a0`.
 
 ## Cause and sequences

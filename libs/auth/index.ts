@@ -17,6 +17,8 @@ let generation = 0;
 let bootstrapped = false;
 let refreshing: { generation: number; promise: Promise<string> } | null = null;
 let restoring: { generation: number; promise: Promise<void> } | null = null;
+let signingOut = false;
+let revokingSession: Promise<boolean> | null = null;
 const signalKey = 'gymflow.auth';
 const logoutPendingKey = 'gymflow.logoutPending';
 
@@ -119,7 +121,10 @@ async function refreshAccessToken(): Promise<string> {
 }
 export async function ensureAccessToken(required = false): Promise<string> {
 	if (typeof window === 'undefined') return '';
-	if (localStorage.getItem(logoutPendingKey)) throw new Error('Sign out is awaiting confirmation');
+	if (localStorage.getItem(logoutPendingKey)) {
+		if (required) throw new Error('Sign out is awaiting confirmation');
+		return '';
+	}
 	if (accessToken) {
 		try { if (tokenClaims(accessToken).exp! * 1000 > Date.now() + 30000) return accessToken; }
 		catch { /* Expiry requires cookie-authorized renewal, never bearer-based renewal. */ }
@@ -149,6 +154,7 @@ export const updateUserInfo = (_legacyToken?: string, member?: OwnerMember): Pro
 		applyOwner(member);
 		return Promise.resolve();
 	}
+	if (signingOut) return Promise.resolve();
 	const current = generation;
 	if (restoring?.generation === current) return restoring.promise;
 	if (!userVar()._id) authReadyVar(false);
@@ -194,6 +200,8 @@ export const updateUserInfo = (_legacyToken?: string, member?: OwnerMember): Pro
 	return promise;
 };
 async function authenticate(mutation: any, input: any, field: 'login' | 'signup', context: object): Promise<void> {
+	// An explicit new login must not race a late logout response that clears the refresh cookie.
+	if (revokingSession) await revokingSession;
 	const clearing = invalidateSession();
 	const current = generation;
 	await clearing;
@@ -228,7 +236,8 @@ export const signUp = async (
 	await authenticate(SIGN_UP, input, 'signup', context);
 };
 export const logOut = async (_options: { redirectToPublic?: boolean } = {}): Promise<boolean> => {
-	if (logoutInProgressVar()) return false;
+	if (signingOut) return false;
+	signingOut = true;
 	// Publish before invalidation so the app unmounts protected pages during cleanup/navigation.
 	logoutInProgressVar(true);
 	let current = generation;
@@ -239,25 +248,44 @@ export const logOut = async (_options: { redirectToPublic?: boolean } = {}): Pro
 		current = generation;
 		let cacheCleared = true;
 		await clearing.catch(() => { cacheCleared = false; });
-		await withAuthLock(() => {
-			if (generation !== current) throw new Error('Authentication session changed');
-			return authRequest('logoutSession');
-		});
-		if (generation !== current) return true;
-		localStorage.removeItem(logoutPendingKey);
-		if (!cacheCleared) { authErrorVar('Signed out. Please reload to finish clearing your session.'); return false; }
-		try {
-			if (!(await Router.replace('/'))) throw new Error('Navigation cancelled');
-		} catch {
-			if (generation === current) authErrorVar('Signed out. Could not open Home. Please retry navigation.');
+		revokingSession = (async () => {
+			try {
+				await withAuthLock(() => {
+					if (generation !== current) throw new Error('Authentication session changed');
+					return authRequest('logoutSession');
+				});
+				if (generation === current) localStorage.removeItem(logoutPendingKey);
+				return true;
+			} catch {
+				if (generation === current) authErrorVar('Could not confirm sign out. Please retry.');
+				return false;
+			}
+		})();
+		if (generation !== current) return await revokingSession;
+		if (!cacheCleared) {
+			await revokingSession;
+			if (generation === current) authErrorVar('Signed out. Please reload to finish clearing your session.');
 			return false;
 		}
-		return true;
+		let navigated = false;
+		try {
+			navigated = await Router.replace('/');
+			if (!navigated) throw new Error('Navigation cancelled');
+		} catch {
+			if (generation === current) authErrorVar('Signed out. Could not open Home. Please retry navigation.');
+		} finally {
+			// Home can mount once its route and the cache are ready; revocation need not hold the UI.
+			logoutInProgressVar(false);
+		}
+		const confirmed = await revokingSession;
+		return navigated && confirmed;
 	} catch {
 		if (generation !== current) return false;
 		authErrorVar('Could not confirm sign out. Please retry.');
 		return false;
 	} finally {
+		revokingSession = null;
+		signingOut = false;
 		logoutInProgressVar(false);
 	}
 };

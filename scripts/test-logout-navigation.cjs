@@ -114,10 +114,17 @@ async function main() {
 			cacheGate.resolve(); await until(() => requests.length === before + 1);
 			assert.equal(Object.keys(client.cache.extract()).length, 0);
 			assert(store.logoutInProgressVar()); assert(!document.querySelector('[role="alert"]'));
-			serverGate.resolve(); await until(() => navigation.at(-1) === '/' && localStorage.getItem('gymflow.logoutPending') === null);
+			await until(() => navigation.at(-1) === '/');
 			assert(store.logoutInProgressVar()); assert(!document.body.textContent.includes('Sign in'));
 			navigationGate.resolve(); await until(() => !store.logoutInProgressVar());
 			await until(() => document.body.textContent === 'ANONYMOUS HOME');
+			assert.equal(localStorage.getItem('gymflow.logoutPending'), '1', 'Home does not wait for revocation acknowledgement');
+			assert.equal(await auth.ensureAccessToken(), '', 'Public Home requests are anonymous while revocation is pending');
+			await assert.rejects(auth.ensureAccessToken(true), /awaiting confirmation/);
+			await auth.updateUserInfo();
+			assert.equal(requests.length, before + 1, 'Focus/bootstrap must not duplicate an in-flight revocation');
+			assert.equal(await auth.logOut(), false, 'Revocation is still owned after the UI transition ends');
+			serverGate.resolve(); await until(() => localStorage.getItem('gymflow.logoutPending') === null);
 			assert.deepEqual(history, ['/program', '/']);
 			assert(frames.length > 1); assert(frames.every((frame) => !/active administrator|Sign in|MEMBER ACCESS DENIED|PRIVATE|INVALID AUTHENTICATED/.test(frame)), frames.join('\n'));
 			cacheGate = serverGate = navigationGate = null;
@@ -127,7 +134,7 @@ async function main() {
 			router.pathname = router.asPath = nextRole === 'ADMIN' ? '/_admin/profile' : '/mypage'; render();
 			await until(() => document.querySelector('[role="alert"]'));
 			assert(!document.body.textContent.includes('PRIVATE'));
-			pass(nextRole + ': real cleanup, delayed cache/server/navigation, every committed frame, replace history and protected revisit');
+			pass(nextRole + ': Home before revocation acknowledgement, anonymous public access, no refresh, every committed frame and protected history revisit');
 		}
 		role = 'ADMIN'; router.pathname = router.asPath = '/_admin/profile'; render();
 		await until(() => document.body.textContent.includes('An active administrator account is required.'));
@@ -138,7 +145,11 @@ async function main() {
 			let pending; flushSync(() => { pending = auth.logOut(); });
 			assert.equal(await pending, false); await tick();
 			assert.equal(store.logoutInProgressVar(), false); assert.equal(auth.getJwtToken(), ''); assert.equal(store.userVar()._id, '');
-			assert(!document.body.textContent.includes('PRIVATE')); assert(document.querySelector('[role="alert"]'));
+			assert(!document.body.textContent.includes('PRIVATE'));
+			if (failure === 'server') {
+				assert.equal(document.body.textContent, 'ANONYMOUS HOME');
+				assert.match(store.authErrorVar(), /Could not confirm sign out/);
+			} else assert(document.querySelector('[role="alert"]'));
 			assert.equal(localStorage.getItem('gymflow.logoutPending'), failure === 'server' ? '1' : null);
 			if (failure === 'server') await assert.rejects(auth.ensureAccessToken(true), /awaiting confirmation/);
 			if (failure === 'navigation' || failure === 'cancel') assert.match(store.authErrorVar(), /Could not open Home/);
